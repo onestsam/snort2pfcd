@@ -72,6 +72,7 @@ s2c_parse_and_block_blisted(char *ret, struct blist_head *blist)
 	} else {
 		for(aux2=blist->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
 			if(!strcmp(aux2->baddr, ret)){
+				free(ipb);
 				return(1);
 			} else if(!aux2->elem.le_next) {
 				LIST_INSERT_AFTER(aux2, ipb, elem);
