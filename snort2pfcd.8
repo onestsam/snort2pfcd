@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd August 24, 2016
+.Dd September 19, 2016
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -39,6 +39,7 @@
 .Nm snort2pfcd
 .Op Fl e Ar External Interface
 .Op Fl w Ar WhiteListFile
+.Op Fl b Ar BlackListFile
 .Op Fl l Ar LogFile
 .Op Fl a Ar AlertFile
 .Op Fl t Ar Seconds (to block an ip address)
@@ -72,12 +73,19 @@ interface only for paranoid configurations. Lo0 is always whitelisted.
 also automatically whitelists addresses found within the /etc/resolv.conf file as these
 addresses should also be handled by specific pf rules.
 .Pp
+A static blacklist table is also maintained and populated within pf with the addresses
+found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses
+can be supplied by the user or automatically populated with addresses supplied by the snort
+and pulledpork communities.
+.Pp
 The options are as follows:
 .Bl -tag -width Ds
 .It Fl e Ar External Interface
 external interface e.g. eth0 or "all" to whitelist all interfaces, default is to whitelist all interfaces
 .It Fl w Ar WhiteListFile
 whitelist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
+.It Fl b Ar BlackListFile
+blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
 .It Fl l Ar LogFile
 log file, default is /var/log/snort2pfcd.log.
 .It Fl a Ar AlertFile

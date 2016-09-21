@@ -127,7 +127,6 @@ s2c_parse_ip(char *cad, char ret[WLMAX])
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error A03 - exit");
 		exit(EXIT_FAILURE);
 		}
-
 	
 	if (regcomp(expr, REG_ADDR, REG_EXTENDED) !=0) {
 		syslog(LOG_ERR | LOG_DAEMON, "error compiling regex expr - exit");
@@ -162,11 +161,9 @@ s2c_parse_and_block(int dev, char *logfile, char *line, char *tablename, struct 
 	 0: Blocked.
 */
 	unsigned int i = 0;
-	char message[WLMAX];
 	char ret[WLMAX];
-	long timebuf = 0;
+
 	bzero(ret, WLMAX);
-	bzero(message, WLMAX);
 
 	i = s2c_parse_ip(line, ret);
 	
@@ -179,11 +176,9 @@ s2c_parse_and_block(int dev, char *logfile, char *line, char *tablename, struct 
 			return(1);
 	}
 
-	/* Maintain out own blist and log once without bothering pf */
+	/* Maintain out own blist and log once */
 	if(!s2c_parse_and_block_blisted(ret, bh)){
-		timebuf = time(NULL);
-		sprintf(message, "%s not whitelisted, added to block table %s %s", ret, tablename, asctime(localtime(&timebuf)));
-		s2c_pf_block_log(logfile, message);
+		s2c_pf_block_log(ret, logfile);
 	}
 
 	s2c_pf_block(dev, tablename, ret);
@@ -277,6 +272,48 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 	freeifaddrs(ifaddr);
 
 	return(0);
+}
+
+int
+s2c_parse_load_bl(int dev, char *tablename, char *namefile)
+{
+	char cad[WLMAX];
+	char ret[WLMAX];
+	struct stat info;
+	struct ifreq ifr;
+	struct flock lock;
+	FILE *bfile = NULL;
+
+	bzero(cad, WLMAX);
+	bzero(ret, WLMAX);
+	memset(&info, 0x00, sizeof(struct stat));
+	memset(&ifr, 0x00, sizeof(struct ifreq));
+	lstat(namefile, &info);
+
+	if (info.st_mode & S_IFDIR) {
+		syslog(LOG_ERR | LOG_DAEMON, "bfile is a directory: %s - exit", namefile);
+		exit(EXIT_FAILURE);
+	}
+
+	bfile = fopen(namefile, "r");
+
+	if (bfile == NULL)
+		return(1);
+
+	memset(&lock, 0x00, sizeof(struct flock));
+	lock.l_type = F_RDLCK;
+	fcntl(fileno(bfile), F_SETLKW, &lock);
+
+	while(s2c_parse_line(cad, bfile) == 1) {
+		if (s2c_parse_ip(cad, ret) == 1)
+			s2c_pf_block(dev, tablename, ret);
+	}
+
+	lock.l_type = F_UNLCK;
+	fcntl(fileno(bfile), F_SETLKW, &lock);
+	fclose(bfile);
+
+	return (0);
 }
 
 int

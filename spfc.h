@@ -35,6 +35,7 @@
 #define _SPFC_H
 
 #define PFDEVICE "/dev/pf"
+#define WLMAX   1024
 
 #include <net/if.h>
 #include <net/pfvar.h>
@@ -42,15 +43,14 @@
 int	s2c_pf_init(void);
 int	s2c_pf_intbl(int, char *);
 int	s2c_pf_block(int, char *, char *);
-int     s2c_pf_block_log(char *, char *);
 int	s2c_pf_tbladd(int, char *);
 int	s2c_pf_ruleadd(int, char *);
+int	s2c_pf_block_log(char *, char *);
 void    *s2c_pf_expiretable(void *);
 
 extern char *__progname;
 
-typedef struct _thread_data_t {
-  int tid;
+typedef struct thread_expt_t {
   int dev;
   int t;
   char tablename[PF_TABLE_NAME_SIZE];

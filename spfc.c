@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "spfc.h"
 #include "ioctl_helpers.h"
@@ -167,18 +168,22 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 }
 
 int
-s2c_pf_block_log(char *logfile, char *message)
+s2c_pf_block_log(char *ip, char *logfile)
 {
+	char message[WLMAX];
+	long timebuf = 0;
 	struct flock lock;
 	FILE *lfile = NULL;
 
-	lfile = fopen(logfile, "a");
-
-	if (lfile == NULL)
-		return(-1);
-
+	bzero(message, WLMAX);
 	memset(&lock, 0x00, sizeof(struct flock));
-	lock.l_type = F_RDLCK;
+
+	timebuf = time(NULL);
+	sprintf(message, "%s not whitelisted, added to block table at %s", ip, asctime(localtime(&timebuf)));
+
+	lfile = fopen(logfile, "a");
+	
+	lock.l_type = F_WRLCK;
 	fcntl(fileno(lfile), F_SETLKW, &lock);
 
 	fwrite(message , 1 , sizeof(char)*(1024) , lfile );

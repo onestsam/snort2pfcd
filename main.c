@@ -60,47 +60,57 @@ int
 main(int argc, char **argv)
 {	
 	int fd, dev, kq, ch, i, t = 0;
-	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist"; 
+	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist";
+	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
 	char *alertfile = "/var/log/snort/alert";
 	char *extif = "all";
 	char pidfile[32];
 	char logfile[32];
-	char tablename[32];
+	char dyn_tablename[32];
+	char static_tablename[32];
 	struct wlist_head whead;
 	struct pidfh *pfh;
 	pid_t otherpid;
 	pthread_t expt_thr;
+	pthread_attr_t expt_attr;
 	thread_expt_t expt_data;
 
-	bzero(tablename, 32);
 	bzero(pidfile, 32);
 	bzero(logfile, 32);
+	bzero(dyn_tablename, 32);
+	bzero(static_tablename, 32);
 	memset(&whead, 0x00, sizeof(struct wlist_head));
-	memset(&expt_thr, 0x00, sizeof(pthread_t));
-	memset(&expt_data, 0x00, sizeof(thread_expt_t));
 	memset(&otherpid, 0x00, sizeof(pid_t));
+	memset(&expt_thr, 0x00, sizeof(pthread_t));
+	memset(&expt_attr, 0x00, sizeof(pthread_attr_t));
+	memset(&expt_data, 0x00, sizeof(thread_expt_t));
 
-	strlcpy(tablename, __progname, 32);
+	strlcpy(dyn_tablename, __progname, 32);
+	strlcpy(static_tablename, __progname, 32);
+	strlcat(static_tablename, "_static", 32);
 
 	if (getuid() != 0) {
-		fprintf(stderr, "Error: must be root to run %s - exit\n", tablename);
+		fprintf(stderr, "Error: must be root to run %s - exit\n", __progname);
 		exit(EXIT_FAILURE);
 	}
 
-	fprintf(stdout, "%s version %s\n", tablename, VERSION);
+	fprintf(stdout, "%s version %s\n", __progname, VERSION);
 	
 	memcpy(pidfile, "/var/run/", 32);
-	strlcat(pidfile,  tablename, 32);
+	strlcat(pidfile,  __progname, 32);
 	strlcat(pidfile, ".pid", 32);
 
 	memcpy(logfile, "/var/log/", 32);
-	strlcat(logfile,  tablename, 32);
+	strlcat(logfile,  __progname, 32);
 	strlcat(logfile, ".log", 32);
 
 	while ((ch = getopt(argc, argv, "hw:a:e:t:l:")) != -1)
 		switch(ch) {
 			case 'w':
 				wfile = optarg;
+				break;
+			case 'b':
+				bfile = optarg;
 				break;
 			case 'a':
 				alertfile = optarg;
@@ -135,8 +145,8 @@ main(int argc, char **argv)
 		pidfile_remove(pfh);
 		exit(EXIT_FAILURE);
 	} else {
-		openlog(tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
-		syslog(LOG_DAEMON | LOG_NOTICE, "%s started, pid: %d", tablename, getpid());
+		openlog(__progname, LOG_CONS | LOG_PID, LOG_DAEMON);
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s started, pid: %d", __progname, getpid());
 	}
 
 	pidfile_write(pfh);
@@ -174,25 +184,41 @@ main(int argc, char **argv)
 	/* wlist init */	
 	i = s2c_parse_load_wl(wfile, extif, &whead);
 	if (i == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to load a whitelist file - warning");
+		syslog(LOG_ERR | LOG_DAEMON, "unable to load whitelist file - warning");
 	}
 
 	/* initrule mode */
-	i = s2c_pf_ruleadd(dev, tablename);
+	i = s2c_pf_ruleadd(dev, dyn_tablename);
 	if (i == 1) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
 		exit(EXIT_FAILURE);
 	}
 
+	/* initrule mode */
+        i = s2c_pf_ruleadd(dev, static_tablename);
+        if (i == 1) {
+                syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
+                exit(EXIT_FAILURE);
+        }
+
+	/* blist load */
+	i = s2c_parse_load_bl(dev, static_tablename, bfile);
+	if (i == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to load blacklist file - warning");
+	}
+
 	/* incorporate expiretable as threaded async process */
 	expt_data.t = t;
 	expt_data.dev = dev;
-	memcpy(expt_data.tablename, tablename, PF_TABLE_NAME_SIZE);
-
-	if((i = pthread_create(&expt_thr, NULL, s2c_pf_expiretable, &expt_data)))
+	memcpy(expt_data.tablename, dyn_tablename, PF_TABLE_NAME_SIZE);
+	if(pthread_attr_init(&expt_attr))
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init expt thread attributes - warning");
+	if(pthread_attr_setdetachstate(&expt_attr, PTHREAD_CREATE_DETACHED))
+		syslog(LOG_ERR | LOG_DAEMON, "unable to set expt thread attributes - warning");
+	if(pthread_create(&expt_thr, &expt_attr, s2c_pf_expiretable, &expt_data))
 		syslog(LOG_ERR | LOG_DAEMON, "unable to expire entries from ruletable - warning");
 
-	s2c_kevent_loop(fd, dev, kq, logfile, tablename, whead);
+	s2c_kevent_loop(fd, dev, kq, logfile, dyn_tablename, whead);
 
 	return(0);
 }
@@ -200,8 +226,8 @@ main(int argc, char **argv)
 void 
 usage()
 {
-	fprintf(stderr, "usage: %s [-h] [-e extif] [-w wfile] [-a alertfile] [-l logfile] [-t expiretime]\n", __progname);
-	fprintf(stderr, "wfile, logfile, alertfile: path to file, expiretime in seconds.");
+	fprintf(stderr, "usage: %s [-h] [-e extif] [-w wfile] [-b bfile] [-a alertfile] [-l logfile] [-t expiretime]\n", __progname);
+	fprintf(stderr, "wfile, bfile, logfile, alertfile: path to file, expiretime in seconds.");
 	exit(EXIT_FAILURE);
 }
 
