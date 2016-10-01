@@ -75,11 +75,10 @@ s2c_kevent_open(char *file)
 
 
 void
-s2c_kevent_loop(int fd, int dev, int kq, char *logfile, char *tablename, struct wlist_head whead)
+s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head whead)
 {
 	struct kevent ke;
 	struct blist_head bhead;
-	int i = 0;
 	char buf[BUFSIZ];
 
 	memset(&bhead, 0x00, sizeof(struct blist_head));
@@ -88,17 +87,13 @@ s2c_kevent_loop(int fd, int dev, int kq, char *logfile, char *tablename, struct 
 		memset(&ke, 0x00, sizeof(struct kevent));
 		bzero(buf, BUFSIZ);
 
-		i = kevent(kq, NULL, 0, &ke, 1, NULL);
-		if (i == -1) {
-				syslog(LOG_ERR | LOG_DAEMON, "kevent request error - exit");
-				exit(EXIT_FAILURE);
+		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
+			syslog(LOG_ERR | LOG_DAEMON, "kevent request error - exit");
+			exit(EXIT_FAILURE);
 		}
-		if (ke.filter == EVFILT_READ) {
-			i = s2c_kevent_read_f(fd, dev, logfile, &whead, &bhead, buf, tablename, BUFSIZ, ke.data);
-			if ( i == -1) {
-					syslog(LOG_ERR | LOG_DAEMON, "warning some error reading..");
-			}
-		}
+		if (ke.filter == EVFILT_READ)
+			if (s2c_kevent_read_f(fd, dev, priority, logfile, &whead, &bhead, buf, tablename, BUFSIZ, ke.data) == -1)
+				syslog(LOG_ERR | LOG_DAEMON, "warning, kevent read error.");
 	}
 }
 
@@ -119,17 +114,17 @@ s2c_kevent_read_l(int fd, char *buf, size_t len)
 }
 
 int
-s2c_kevent_read_f(int fd, int dev, char *logfile, struct wlist_head *whead, struct blist_head *bhead, char *buf, char *tablename, size_t len, int nbytes)
+s2c_kevent_read_f(int fd, int dev, int priority, char *logfile, struct wlist_head *whead, struct blist_head *bhead, char *buf, char *tablename, size_t len, int nbytes)
 {
-	int i, z, total = 0;
+	int i, total = 0;
 
 	do  {
 		i = s2c_kevent_read_l(fd, buf, len);
 		if (i == -1)
 			return(-1);
 
-		z = s2c_parse_and_block(dev, logfile, buf, tablename, whead, bhead);
-			total += i;
+		s2c_parse_and_block(dev, priority, logfile, buf, tablename, whead, bhead);
+		total += i;
 
 		memset(buf, 0x00, len);
 

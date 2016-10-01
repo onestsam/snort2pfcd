@@ -45,8 +45,10 @@ int	s2c_pf_intbl(int, char *);
 int	s2c_pf_block(int, char *, char *);
 int	s2c_pf_tbladd(int, char *);
 int	s2c_pf_ruleadd(int, char *);
-int	s2c_pf_block_log(char *, char *);
+void	*s2c_pf_block_log(void *);
 void    *s2c_pf_expiretable(void *);
+void	s2c_spawn_log_thread(void *);
+void	s2c_spawn_expt_thread(void *);
 
 extern char *__progname;
 
@@ -55,6 +57,11 @@ typedef struct thread_expt_t {
   int t;
   char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
+
+typedef struct thread_log_t {
+  char logip[WLMAX];
+  char logfile[WLMAX];
+} thread_log_t;
 
 #endif /* _SPFC_H */
 

@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <netdb.h>
 #include <pthread.h>
 
 #include "spfc.h"
@@ -73,14 +74,15 @@ void
 	struct pfr_table target;
 	struct pfr_addr *del_addrs_list;
 	int astats_count, del_addrs_count, del_addrs_result;
+	struct thread_expt_t *data = (struct thread_expt_t *)arg;
 
 	unsigned long age = 60*60*3;
 	long min_timestamp, oldest_entry;
-	int i = 0;
+	int local_dev, i = 0;
 	int flags = PFR_FLAG_FEEDBACK;
-	thread_expt_t *data = (thread_expt_t *)arg;
 
 	if(data->t) age = (unsigned long)data->t;
+	local_dev = data->dev;
 
 	/* already been strlcpy'd */
 	memcpy(target.pfrt_name, data->tablename, PF_TABLE_NAME_SIZE);
@@ -89,7 +91,7 @@ void
 		memset(&target, 0x00, sizeof(struct pfr_table));
 		min_timestamp = (long)time(NULL) - age;
 		oldest_entry = time(NULL);
-		astats_count = radix_get_astats(data->dev, &astats, &target,0);
+		astats_count = radix_get_astats(local_dev, &astats, &target,0);
 
 		if (astats_count > 0) {
 
@@ -121,7 +123,7 @@ void
 			}
 
 			if (del_addrs_count > 0) {
-				del_addrs_result = radix_del_addrs(data->dev, &target, del_addrs_list, del_addrs_count, flags);
+				del_addrs_result = radix_del_addrs(local_dev, &target, del_addrs_list, del_addrs_count, flags);
 				free(del_addrs_list);
 			}
 			free(astats);
@@ -132,6 +134,65 @@ void
 
 		sleep(60);
 	}
+}
+
+void
+s2c_spawn_expt_thread(void *data)
+{
+	pthread_t *expt_thr;
+	pthread_attr_t *expt_attr;
+	thread_expt_t *expt_data;
+
+	expt_thr = (pthread_t *)malloc(sizeof(pthread_t));
+	expt_attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
+	expt_data = (thread_expt_t *)data;
+
+	memset(expt_thr, 0x00, sizeof(pthread_t));
+	memset(expt_attr, 0x00, sizeof(pthread_attr_t));
+
+	if(pthread_attr_init(expt_attr)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init expiretable thread attributes - warning");
+
+	} else if(pthread_attr_setdetachstate(expt_attr, PTHREAD_CREATE_DETACHED)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to set expiretable thread attributes - warning");
+
+	} else if(pthread_create(expt_thr, expt_attr, *s2c_pf_expiretable, expt_data))
+		syslog(LOG_ERR | LOG_DAEMON, "unable to launch expiretable thread - warning");
+
+
+	free(expt_attr);
+	free(expt_thr);
+	return;
+}
+
+
+void
+s2c_spawn_log_thread(void *data)
+{
+	pthread_t *log_thr;
+	pthread_attr_t *log_attr;
+	thread_log_t *log_data;
+
+	log_thr = (pthread_t *)malloc(sizeof(pthread_t));
+	log_attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
+	log_data = (thread_log_t *)data;
+
+	memset(log_thr, 0x00, sizeof(pthread_t));
+	memset(log_attr, 0x00, sizeof(pthread_attr_t));
+
+	if(pthread_attr_init(log_attr)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init log thread attributes - warning");
+
+	} else if(pthread_attr_setdetachstate(log_attr, PTHREAD_CREATE_DETACHED)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to set log thread attributes - warning");
+
+	} else if(pthread_create(log_thr, log_attr, s2c_pf_block_log, log_data))
+		syslog(LOG_ERR | LOG_DAEMON, "unable to launch log thread - warning");
+
+
+	free(log_attr);
+	free(log_thr);
+	return;
 }
 
 int 
@@ -167,32 +228,48 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	return(0);
 }
 
-int
-s2c_pf_block_log(char *ip, char *logfile)
+void
+*s2c_pf_block_log(void *arg)
 {
 	char message[WLMAX];
+	char local_logip[WLMAX];
+	char local_logfile[WLMAX];
+	char hbuf[NI_MAXHOST];
 	long timebuf = 0;
-	struct flock lock;
 	FILE *lfile = NULL;
+	struct sockaddr sa;
+	struct sockaddr_in *sin;
+	struct thread_log_t *data = (struct thread_log_t *)arg;
 
 	bzero(message, WLMAX);
-	memset(&lock, 0x00, sizeof(struct flock));
+	bzero(hbuf, NI_MAXHOST);
+	bzero(local_logip, WLMAX);
+	bzero(local_logfile, WLMAX);
+	memset(&sa,  0x00, sizeof(struct sockaddr_in));
+
+	memcpy(local_logip, data->logip, WLMAX);
+	memcpy(local_logfile, data->logfile, WLMAX);
 
 	timebuf = time(NULL);
-	sprintf(message, "%s not whitelisted, added to block table at %s", ip, asctime(localtime(&timebuf)));
 
-	lfile = fopen(logfile, "a");
-	
-	lock.l_type = F_WRLCK;
-	fcntl(fileno(lfile), F_SETLKW, &lock);
+	sa.sa_family = AF_INET;
+	sin = (struct sockaddr_in *) &sa;
 
-	fwrite(message , 1 , sizeof(char)*(1024) , lfile );
+	if(inet_pton(AF_INET, local_logip, &((struct sockaddr_in *)&sa)->sin_addr)){
+		if (getnameinfo(&sa, sizeof(sa), hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD) == EAI_NONAME)
+			strlcpy(hbuf, "Unresolvable", 13);
+	}
 
-	lock.l_type = F_UNLCK;
-	fcntl(fileno(lfile), F_SETLKW, &lock);
+	sprintf(message, "%s (%s) not whitelisted, added to block table %s", local_logip, hbuf, asctime(localtime(&timebuf)));
+
+	lfile = fopen(local_logfile, "a");
+	flockfile(lfile);
+	fputs(message, lfile);
+	funlockfile(lfile);
 	fclose(lfile);
 
-	return(0);
+	free(data);
+	pthread_exit(NULL);
 }
 
 int 

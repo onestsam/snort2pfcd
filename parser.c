@@ -50,6 +50,7 @@
 #include <syslog.h>
 #include <libcidr.h>
 #include <ifaddrs.h>
+#include <pthread.h>
 
 #include "parser.h"
 #include "spfc.h"
@@ -107,6 +108,24 @@ s2c_parse_line(char buf[WLMAX] , FILE* wfile)
 }
 
 int
+s2c_parse_priority(int priority, char *cad)
+{
+	char prio[WLMAX];
+	char *p;
+
+	bzero(prio, WLMAX);
+
+	p = strstr(cad, "Priority:");
+	if(p) memcpy(prio, p, 12);
+
+	if(isdigit(prio[10]))
+		if(priority >= (prio[10] - 48))
+			return(1);
+
+	return(0);
+}
+
+int
 s2c_parse_ip(char *cad, char ret[WLMAX])
 {
 	int len;
@@ -152,38 +171,37 @@ s2c_parse_ip(char *cad, char ret[WLMAX])
 	}
 }
 
-int     
-s2c_parse_and_block(int dev, char *logfile, char *line, char *tablename, struct wlist_head *wh, struct blist_head *bh)
+void
+s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tablename, struct wlist_head *wh, struct blist_head *bh)
 {
-/*
-	-1: No ip found.
-	 1: Whitelisted.
-	 0: Blocked.
-*/
-	unsigned int i = 0;
 	char ret[WLMAX];
+	thread_log_t *log_data;
+
+	log_data = (thread_log_t *)malloc(sizeof(thread_log_t));
 
 	bzero(ret, WLMAX);
+	memset(log_data, 0x00, sizeof(thread_log_t));
 
-	i = s2c_parse_ip(line, ret);
-	
-	if (i == 0)
-		return(-1);
-	
-	if (!LIST_EMPTY(wh)) {
-		i = s2c_parse_search_wl(ret, wh);
-		if (i == 1)
-			return(1);
-	}
+	if(!s2c_parse_priority(priority, line))
+		return;
+
+	if (!s2c_parse_ip(line, ret))
+		return;
+
+	if (!LIST_EMPTY(wh))
+		if (s2c_parse_search_wl(ret, wh))
+			return;
 
 	/* Maintain out own blist and log once */
 	if(!s2c_parse_and_block_blisted(ret, bh)){
-		s2c_pf_block_log(ret, logfile);
+		strlcpy(log_data->logfile, logfile, WLMAX);
+		strlcpy(log_data->logip, ret, WLMAX);
+		s2c_spawn_log_thread(log_data);
 	}
 
 	s2c_pf_block(dev, tablename, ret);
 
-	return(0);
+	return;
 }
 
 int
@@ -191,25 +209,21 @@ s2c_parse_load_wl_file(char *wlist_file, struct ipwlist *ipw1)
 {
 	char cad[WLMAX];
 	char ret[WLMAX];
-	struct flock lock;
 	struct ipwlist *ipw2 = NULL;
 	FILE *wfile = NULL;
 
 	bzero(cad, WLMAX);
 	bzero(ret, WLMAX);
-	memset(&lock, 0x00, sizeof(struct flock));
 
 	wfile = fopen(wlist_file, "r");
 
 	if (wfile == NULL)
 		return(1);
 
-	memset(&lock, 0x00, sizeof(struct flock));
-	lock.l_type = F_RDLCK;
-	fcntl(fileno(wfile), F_SETLKW, &lock);
+	flockfile(wfile);
 
-	while(s2c_parse_line(cad, wfile) == 1) {
-		if (s2c_parse_ip(cad, ret) == 1) {
+	while(s2c_parse_line(cad, wfile)) {
+		if (s2c_parse_ip(cad, ret)) {
 			ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 			if(ipw2 == NULL) {
 				syslog(LOG_DAEMON | LOG_ERR, "malloc error A04 - exit");
@@ -227,8 +241,7 @@ s2c_parse_load_wl_file(char *wlist_file, struct ipwlist *ipw1)
 		}
 	}
 
-	lock.l_type = F_UNLCK;
-	fcntl(fileno(wfile), F_SETLKW, &lock);
+	funlockfile(wfile);
 	fclose(wfile);
 
 	return(0);
@@ -275,13 +288,12 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 }
 
 int
-s2c_parse_load_bl(int dev, char *tablename, char *namefile)
+s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *wh)
 {
 	char cad[WLMAX];
 	char ret[WLMAX];
 	struct stat info;
 	struct ifreq ifr;
-	struct flock lock;
 	FILE *bfile = NULL;
 
 	bzero(cad, WLMAX);
@@ -300,17 +312,19 @@ s2c_parse_load_bl(int dev, char *tablename, char *namefile)
 	if (bfile == NULL)
 		return(1);
 
-	memset(&lock, 0x00, sizeof(struct flock));
-	lock.l_type = F_RDLCK;
-	fcntl(fileno(bfile), F_SETLKW, &lock);
+	flockfile(bfile);
 
-	while(s2c_parse_line(cad, bfile) == 1) {
-		if (s2c_parse_ip(cad, ret) == 1)
-			s2c_pf_block(dev, tablename, ret);
-	}
+	while(s2c_parse_line(cad, bfile))
+		if (s2c_parse_ip(cad, ret)){
+			if (!LIST_EMPTY(wh)){
+				if (!s2c_parse_search_wl(ret, wh))
+					s2c_pf_block(dev, tablename, ret);
+			} else {
+				s2c_pf_block(dev, tablename, ret);
+			}
+		}
 
-	lock.l_type = F_UNLCK;
-	fcntl(fileno(bfile), F_SETLKW, &lock);
+	funlockfile(bfile);
 	fclose(bfile);
 
 	return (0);

@@ -63,10 +63,11 @@ LIST_HEAD(wlist_head, ipwlist);
 LIST_HEAD(blist_head, ipblist);
 
 int	s2c_parse_ip(char *, char *);
+int	s2c_parse_priority(int, char *);
 int     s2c_parse_line(char *, FILE *);
 int	s2c_parse_and_block_blisted(char *, struct blist_head *);
-int	s2c_parse_and_block(int, char *, char *, char *, struct wlist_head *, struct blist_head *);
-int	s2c_parse_load_bl(int, char *, char *);
+void	s2c_parse_and_block(int, int, char *, char *, char *, struct wlist_head *, struct blist_head *);
+int	s2c_parse_load_bl(int, char *, char *, struct wlist_head *);
 int	s2c_parse_load_wl(char *, char *, struct wlist_head *);
 int	s2c_parse_load_wl_file(char *, struct ipwlist *);
 int     s2c_parse_load_wl_ifaces(struct ipwlist *);
