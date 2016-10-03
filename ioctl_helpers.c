@@ -21,19 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* 
- * radix_ioctl returns pt->pfrio_size on success or -1 on failure. If the 
- * return value >= 0 a (possibly zero-sized) object is allocated, and needs
- * to be freed at a later time.
- */
-
 int
 radix_ioctl(int dev, unsigned long request, struct pfioc_table *pt) {
 	void *newinbuf;
 	size_t len = 0;
 	pt->pfrio_buffer = newinbuf = malloc(0);
 
-	/* This really shouldn't happen. */
 	if (newinbuf == NULL) 
 		return(-1);
 
@@ -77,7 +70,7 @@ radix_get_astats(int dev, struct pfr_astats **astats, const struct pfr_table *fi
 
 	if (filter != NULL) {
 		pt.pfrio_table = *filter;
-		pt.pfrio_table.pfrt_flags = 0; /* No flags are allowed in this context */
+		pt.pfrio_table.pfrt_flags = 0;
 	}
 
 	if (radix_ioctl(dev, DIOCRGETASTATS, &pt) < 0)
@@ -172,14 +165,14 @@ get_states(int dev, struct pf_state **states) {
 			return(-1);
 		}
 		if (ps.ps_len + sizeof(struct pfioc_states) < len)
-			break; /* We have states! */
+			break;
 		if (ps.ps_len == 0)
-			return(0); /* No states available */
+			return(0);
 		if (len == 0)
 			len = ps.ps_len;
 		len *= 2;
 	}
 
-	*states = (struct pf_state *)ps.ps_states; /* Sorry, was annoying me */
+	*states = (struct pf_state *)ps.ps_states;
 	return(ps.ps_len / sizeof(struct pf_state));
 }

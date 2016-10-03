@@ -40,7 +40,6 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 
-int	s2c_pf_init(void);
 int	s2c_pf_intbl(int, char *);
 int	s2c_pf_block(int, char *, char *);
 int	s2c_pf_tbladd(int, char *);

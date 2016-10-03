@@ -34,7 +34,6 @@
 #ifndef _KEVENT_H
 #define _KEVENT_H
 
-int	s2c_kevent_init();
 int	s2c_kevent_set(int, int);
 int	s2c_kevent_open(char *);
 int 	s2c_kevent_read_l(int, char *, size_t);

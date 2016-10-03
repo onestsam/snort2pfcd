@@ -44,12 +44,6 @@
 #include "parser.h"
 #include "kevent.h"
 
-int 
-s2c_kevent_init()
-{
-	return(kqueue());
-}
-
 int
 s2c_kevent_set(int fd, int kq)
 {

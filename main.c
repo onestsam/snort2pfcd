@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
@@ -60,7 +61,7 @@ int
 main(int argc, char **argv)
 {	
 	int fd, dev, kq, ch, t = 0;
-	int priority = 2;
+	int priority = 1;
 	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist";
 	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
 	char *alertfile = "/var/log/snort/alert";
@@ -115,16 +116,26 @@ main(int argc, char **argv)
 				alertfile = optarg;
 				break;
 			case 'l':
-				memcpy(&logfile, &optarg, sizeof(logfile));
+				memcpy(&logfile, optarg, sizeof(logfile));
 				break;
 			case 'e':
 				extif = optarg;
 				break;
 			case 't':
-				t = atoi(optarg);
+				if(isdigit(*optarg)){
+					t = atoi(optarg);
+				} else {
+					fprintf(stderr, " Argument for -t must be a number.");
+					usage();
+				}
 				break;
 			case 'p':
-				priority = atoi(optarg);
+				if(isdigit(*optarg)){
+					priority = atoi(optarg);
+				} else {
+					fprintf(stderr, " Argument for -p must be a number.");
+					usage();
+				}
 				break;
 			case 'h':
 			case '?':
@@ -157,8 +168,7 @@ main(int argc, char **argv)
 	signal(SIGTERM, sigterm);
 	signal(SIGINT,  sigint);
 	
-	/* kqueue init */	
-	kq = s2c_kevent_init();
+	kq = kqueue();
 	if (kq == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "kqueue init error - exit");
 		exit(EXIT_FAILURE);
@@ -175,34 +185,28 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* pf init */	
-	dev = s2c_pf_init();
+	dev = open(PFDEVICE, O_RDWR);
 	if (dev == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to open /dev/pf device - exit");
 		exit(EXIT_FAILURE);
 	}
 
-	/* wlist init */	
 	if (s2c_parse_load_wl(wfile, extif, &whead) == -1)
 		syslog(LOG_ERR | LOG_DAEMON, "unable to load whitelist file - warning");
 
-	/* initrule mode */
 	if (s2c_pf_ruleadd(dev, dyn_tablename) == 1) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
 		exit(EXIT_FAILURE);
 	}
 
-	/* initrule mode */
         if (s2c_pf_ruleadd(dev, static_tablename) == 1) {
                 syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
                 exit(EXIT_FAILURE);
         }
 
-	/* blist load */
 	if (s2c_parse_load_bl(dev, static_tablename, bfile, &whead) == -1)
 		syslog(LOG_ERR | LOG_DAEMON, "unable to load blacklist file - warning");
 
-	/* incorporate expiretable as threaded async process */
 	expt_data->t = t;
 	expt_data->dev = dev;
 	memcpy(expt_data->tablename, dyn_tablename, PF_TABLE_NAME_SIZE);

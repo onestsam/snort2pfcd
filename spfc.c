@@ -50,7 +50,6 @@
 #include "spfc.h"
 #include "ioctl_helpers.h"
 
-/* incorporate expiretable */
 long
 lmax(long a,long b) {
         return (a > b)?a:b;
@@ -59,12 +58,6 @@ lmax(long a,long b) {
 long
 lmin(long a,long b) {
         return (a < b)?a:b;
-}
-
-int
-s2c_pf_init(void)
-{
-	return(open(PFDEVICE, O_RDWR));
 }
 
 void
@@ -349,8 +342,6 @@ s2c_pf_intbl(int dev, char *tablename)
 	io.pfrio_buffer = table_aux;
 	io.pfrio_esize  = sizeof(struct pfr_table);
 	io.pfrio_size   = 0;
-	
-	/* we want to know num tables are in pf */
 	
 	if(ioctl(dev, DIOCRGETTABLES, &io)) { 
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
