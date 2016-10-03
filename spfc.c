@@ -149,7 +149,7 @@ s2c_spawn_expt_thread(void *data)
 	} else if(pthread_attr_setdetachstate(expt_attr, PTHREAD_CREATE_DETACHED)) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to set expiretable thread attributes - warning");
 
-	} else if(pthread_create(expt_thr, expt_attr, *s2c_pf_expiretable, expt_data))
+	} else if(pthread_create(expt_thr, expt_attr, s2c_pf_expiretable, expt_data))
 		syslog(LOG_ERR | LOG_DAEMON, "unable to launch expiretable thread - warning");
 
 
