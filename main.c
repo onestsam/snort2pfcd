@@ -52,6 +52,7 @@
 #include "kevent.h"
 #include "version.h"
 
+int optnum(char *, char *);
 void usage();
 void sighup();
 void sigterm();
@@ -59,15 +60,17 @@ void sigint();
 
 int
 main(int argc, char **argv)
-{	
+{
+	extern char *optarg;
+	extern int optind;
 	int fd, dev, kq, ch, t = 0;
 	int priority = 1;
 	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist";
 	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
 	char *alertfile = "/var/log/snort/alert";
 	char *extif = "all";
-	char pidfile[32];
-	char logfile[32];
+	char pidfile[64];
+	char logfile[64];
 	char dyn_tablename[32];
 	char static_tablename[32];
 	struct wlist_head whead;
@@ -77,8 +80,8 @@ main(int argc, char **argv)
 
 	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
 
-	bzero(pidfile, 32);
-	bzero(logfile, 32);
+	bzero(pidfile, 64);
+	bzero(logfile, 64);
 	bzero(dyn_tablename, 32);
 	bzero(static_tablename, 32);
 	memset(&whead, 0x00, sizeof(struct wlist_head));
@@ -96,15 +99,15 @@ main(int argc, char **argv)
 
 	fprintf(stdout, "%s version %s\n", __progname, VERSION);
 	
-	memcpy(pidfile, "/var/run/", 32);
-	strlcat(pidfile,  __progname, 32);
-	strlcat(pidfile, ".pid", 32);
+	memcpy(pidfile, "/var/run/", 64);
+	strlcat(pidfile,  __progname, 64);
+	strlcat(pidfile, ".pid", 64);
 
-	memcpy(logfile, "/var/log/", 32);
-	strlcat(logfile,  __progname, 32);
-	strlcat(logfile, ".log", 32);
+	memcpy(logfile, "/var/log/", 64);
+	strlcat(logfile,  __progname, 64);
+	strlcat(logfile, ".log", 64);
 
-	while ((ch = getopt(argc, argv, "hw:a:b:e:t:p:l:")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:b:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
 				wfile = optarg;
@@ -116,29 +119,23 @@ main(int argc, char **argv)
 				alertfile = optarg;
 				break;
 			case 'l':
-				memcpy(&logfile, optarg, sizeof(logfile));
+				memcpy(logfile, optarg, 64);
 				break;
 			case 'e':
 				extif = optarg;
 				break;
 			case 't':
-				if(isdigit(*optarg)){
-					t = atoi(optarg);
-				} else {
-					fprintf(stderr, " Argument for -t must be a number.");
-					usage();
-				}
+				t = optnum("t", optarg);
+				if(t == -1) usage();
 				break;
 			case 'p':
-				if(isdigit(*optarg)){
-					priority = atoi(optarg);
-				} else {
-					fprintf(stderr, " Argument for -p must be a number.");
-					usage();
-				}
+				priority = optnum("p", optarg);
+				if(priority == -1) usage();
 				break;
 			case 'h':
+				usage();
 			case '?':
+				usage();
 			default:
 				usage();
 		}
@@ -215,6 +212,18 @@ main(int argc, char **argv)
 	s2c_kevent_loop(fd, dev, priority, kq, logfile, dyn_tablename, whead);
 
 	return(0);
+}
+
+int
+optnum(char *opt, char *targ)
+{
+	char* endp = NULL;
+	long l = -1;
+
+	if (!targ || ((l=strtol(targ, &endp, 0)),(endp && *endp))) 
+		fprintf(stderr, "Argument for -%s must be a number.\n", opt);
+
+	return (int)l;
 }
 
 void 

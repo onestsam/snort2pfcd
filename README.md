@@ -1,2 +1,2 @@
 # snort2pfcd
-v0.9
+v1.0

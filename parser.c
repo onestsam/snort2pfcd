@@ -247,7 +247,7 @@ s2c_parse_load_wl_file(char *wlist_file, struct ipwlist *ipw1)
 	return(0);
 }
 
-int
+void
 s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 {
 	struct ipwlist *ipw2 = NULL;
@@ -284,7 +284,7 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 
 	freeifaddrs(ifaddr);
 
-	return(0);
+	return;
 }
 
 int
@@ -310,7 +310,7 @@ s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *w
 	bfile = fopen(namefile, "r");
 
 	if (bfile == NULL)
-		return(1);
+		return(-1);
 
 	flockfile(bfile);
 
@@ -359,21 +359,22 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 		exit(EXIT_FAILURE);
 	}
 
-	/* Start off by whitelisting lo0 */
 	ipw1->waddr = cidr_from_str("127.0.0.0/8");
 
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipw1, elem);
 
 	if(strcmp(extif, "all") == 0) {
-		if(s2c_parse_load_wl_ifaces(ipw1))
-			return(-1);
-	} else {
+		s2c_parse_load_wl_ifaces(ipw1);
 
+	} else {
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		ifr.ifr_addr.sa_family = AF_INET;
 		strncpy(ifr.ifr_name, extif, IFNAMSIZ-1);
-		ioctl(fd, SIOCGIFADDR, &ifr);
+		if(ioctl(fd, SIOCGIFADDR, &ifr) == -1){
+			syslog(LOG_DAEMON | LOG_ERR, "Error accessing %s - exit", extif);
+			exit(EXIT_FAILURE);
+		}
 		close(fd);
 
 		ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
