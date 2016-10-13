@@ -52,8 +52,9 @@
 #include <ifaddrs.h>
 #include <pthread.h>
 
-#include "parser.h"
+#include "defdata.h"
 #include "spfc.h"
+#include "parser.h"
 
 int
 s2c_parse_and_block_blisted(char *ret, struct blist_head *blist)
@@ -65,7 +66,7 @@ s2c_parse_and_block_blisted(char *ret, struct blist_head *blist)
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error A01 - exit");
 		exit(EXIT_FAILURE);
 	}
-	memcpy(ipb->baddr, ret, WLMAX);
+	memcpy(ipb->baddr, ret, LISTMAX);
 
 	if(blist->lh_first == NULL){
 		LIST_INIT(blist);
@@ -86,7 +87,7 @@ s2c_parse_and_block_blisted(char *ret, struct blist_head *blist)
 }
 
 int
-s2c_parse_line(char buf[WLMAX] , FILE* wfile)
+s2c_parse_line(char buf[LISTMAX] , FILE* wfile)
 {
 	static char     next_ch = ' ';
         int             i = 0;
@@ -96,10 +97,10 @@ s2c_parse_line(char buf[WLMAX] , FILE* wfile)
 	}                                
 	do {
 		next_ch = fgetc(wfile);
-		if (i < WLMAX)
+		if (i < LISTMAX)
 	        	buf[i++] = next_ch;
 	} while (!feof(wfile) && !isspace(next_ch));
-	if (i >= WLMAX) {
+	if (i >= LISTMAX) {
 		return (-1);
 	}		                 
 	
@@ -110,10 +111,10 @@ s2c_parse_line(char buf[WLMAX] , FILE* wfile)
 int
 s2c_parse_priority(int priority, char *cad)
 {
-	char prio[WLMAX];
+	char prio[LISTMAX];
 	char *p;
 
-	bzero(prio, WLMAX);
+	bzero(prio, LISTMAX);
 
 	p = strstr(cad, "Priority:");
 	if(p) memcpy(prio, p, 12);
@@ -126,7 +127,7 @@ s2c_parse_priority(int priority, char *cad)
 }
 
 int
-s2c_parse_ip(char *cad, char ret[WLMAX])
+s2c_parse_ip(char *cad, char ret[LISTMAX])
 {
 	int len;
 	unsigned int enc=1;
@@ -139,7 +140,7 @@ s2c_parse_ip(char *cad, char ret[WLMAX])
                 exit(EXIT_FAILURE);	
 	}
 
-	bzero(ret, WLMAX);
+	bzero(ret, LISTMAX);
 	
 	resultado = (regmatch_t*)malloc(sizeof(regmatch_t));
 	if(resultado == NULL) {
@@ -174,12 +175,12 @@ s2c_parse_ip(char *cad, char ret[WLMAX])
 void
 s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tablename, struct wlist_head *wh, struct blist_head *bh)
 {
-	char ret[WLMAX];
+	char ret[LISTMAX];
 	thread_log_t *log_data;
 
 	log_data = (thread_log_t *)malloc(sizeof(thread_log_t));
 
-	bzero(ret, WLMAX);
+	bzero(ret, LISTMAX);
 	memset(log_data, 0x00, sizeof(thread_log_t));
 
 	if(!s2c_parse_priority(priority, line))
@@ -194,9 +195,9 @@ s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tabl
 
 	/* Maintain out own blist and log once */
 	if(!s2c_parse_and_block_blisted(ret, bh)){
-		strlcpy(log_data->logfile, logfile, WLMAX);
-		strlcpy(log_data->logip, ret, WLMAX);
-		s2c_spawn_log_thread(log_data);
+		strlcpy(log_data->logfile, logfile, LISTMAX);
+		strlcpy(log_data->logip, ret, LISTMAX);
+		s2c_spawn_thread(s2c_pf_block_log, log_data);
 	}
 
 	s2c_pf_block(dev, tablename, ret);
@@ -207,13 +208,13 @@ s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tabl
 int
 s2c_parse_load_wl_file(char *wlist_file, struct ipwlist *ipw1)
 {
-	char cad[WLMAX];
-	char ret[WLMAX];
+	char cad[LISTMAX];
+	char ret[LISTMAX];
 	struct ipwlist *ipw2 = NULL;
 	FILE *wfile = NULL;
 
-	bzero(cad, WLMAX);
-	bzero(ret, WLMAX);
+	bzero(cad, LISTMAX);
+	bzero(ret, LISTMAX);
 
 	wfile = fopen(wlist_file, "r");
 
@@ -290,20 +291,25 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 int
 s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *wh)
 {
-	char cad[WLMAX];
-	char ret[WLMAX];
+	char cad[LISTMAX];
+	char ret[LISTMAX];
 	struct stat info;
 	struct ifreq ifr;
 	FILE *bfile = NULL;
 
-	bzero(cad, WLMAX);
-	bzero(ret, WLMAX);
+	bzero(cad, LISTMAX);
+	bzero(ret, LISTMAX);
 	memset(&info, 0x00, sizeof(struct stat));
 	memset(&ifr, 0x00, sizeof(struct ifreq));
 	lstat(namefile, &info);
 
 	if (info.st_mode & S_IFDIR) {
 		syslog(LOG_ERR | LOG_DAEMON, "bfile is a directory: %s - exit", namefile);
+		exit(EXIT_FAILURE);
+	}
+
+	if (s2c_pf_ruleadd(dev, tablename) == 1) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
 		exit(EXIT_FAILURE);
 	}
 
@@ -317,8 +323,11 @@ s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *w
 	while(s2c_parse_line(cad, bfile))
 		if (s2c_parse_ip(cad, ret)){
 			if (!LIST_EMPTY(wh)){
-				if (!s2c_parse_search_wl(ret, wh))
+				if (!s2c_parse_search_wl(ret, wh)){
 					s2c_pf_block(dev, tablename, ret);
+				} else {
+					syslog(LOG_ERR | LOG_DAEMON, "Blacklist entry %s is whitelisted - warning", ret);
+				}
 			} else {
 				s2c_pf_block(dev, tablename, ret);
 			}

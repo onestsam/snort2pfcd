@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd September 19, 2016
+.Dd October 12, 2016
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -40,6 +40,7 @@
 .Op Fl e Ar External Interface
 .Op Fl w Ar WhiteListFile
 .Op Fl b Ar BlackListFile
+.Op Fl B
 .Op Fl l Ar LogFile
 .Op Fl a Ar AlertFile
 .Op Fl t Ar Seconds (to block an ip address)
@@ -86,14 +87,17 @@ external interface e.g. eth0 or "all" to whitelist all interfaces, default is to
 whitelist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
 .It Fl b Ar BlackListFile
 blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
+.It Fl B 
+If set, will prevent loading of any blacklist file
 .It Fl l Ar LogFile
 log file, default is /var/log/snort2pfcd.log.
 .It Fl a Ar AlertFile
 snort alert file, default is /var/log/snort/alert.
-.It Fl p Ar Priority level to block ip in snort logs, default is 1. Lower priority includes higher priority, 
-for example, -p 3 includes priorities 3, 2 and 1. 
-.It Fl t Ar Seconds (to block an ip address)
-default is 60*60*3 or 3 hours.
+.It Fl p Ar Priority 
+Priority level to block ip addresses in snort logs, default is 1. 
+Lower priority includes higher priority, for example, -p 3 includes priorities 3, 2 and 1. 
+.It Fl t Ar Seconds 
+Seconds to block an ip address, default is 60*60*3 or 3 hours.
 .It Fl h
 Show help.
 .El

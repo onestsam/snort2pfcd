@@ -30,16 +30,43 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef _DEFDATA_H_
+#define _DEFDATA_H_
 
-#ifndef _KEVENT_H
-#define _KEVENT_H
+#include <libcidr.h>
+#include <net/if.h>
+#include <net/pfvar.h>
 
-int	s2c_kevent_set(int, int);
-int	s2c_kevent_open(char *);
-int 	s2c_kevent_read_l(int, char *, size_t);
-int 	s2c_kevent_read_f(int, int, int, char *, struct wlist_head *, struct blist_head *, char *, char *, size_t, int);
-void 	s2c_kevent_loop(int, int, int, int, char *, char *, struct wlist_head *);
+#define PFDEVICE "/dev/pf"
+#define LISTMAX   1024
+#define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
 
-#endif /* _KEVENT_H */
+struct ipwlist {
+	CIDR *waddr;
+	LIST_ENTRY(ipwlist) elem;
+};
 
+struct ipblist {
+	char baddr[LISTMAX];
+	LIST_ENTRY(ipblist) elem;
+};
+
+typedef struct thread_expt_t {
+	int dev;
+	int t;
+	char tablename[PF_TABLE_NAME_SIZE];
+} thread_expt_t;
+
+typedef struct thread_log_t {
+	char logip[LISTMAX];
+	char logfile[LISTMAX];
+} thread_log_t;
+
+
+LIST_HEAD(wlist_head, ipwlist);
+LIST_HEAD(blist_head, ipblist);
+
+extern char *__progname;
+
+#endif /* _DEFDATA_H */
 

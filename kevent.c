@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 
+#include "defdata.h"
 #include "spfc.h"
 #include "parser.h"
 #include "kevent.h"
@@ -69,7 +70,7 @@ s2c_kevent_open(char *file)
 
 
 void
-s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head whead)
+s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head *whead)
 {
 	struct kevent ke;
 	struct blist_head bhead;
@@ -86,7 +87,7 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 			exit(EXIT_FAILURE);
 		}
 		if (ke.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(fd, dev, priority, logfile, &whead, &bhead, buf, tablename, BUFSIZ, ke.data) == -1)
+			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, &bhead, buf, tablename, BUFSIZ, ke.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "warning, kevent read error.");
 	}
 }

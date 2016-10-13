@@ -34,33 +34,7 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-#include <sys/queue.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <libcidr.h>
-
-#include "spfc.h"
-
-#define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
-
-struct ipwlist {
-	CIDR *waddr;
-	LIST_ENTRY(ipwlist) elem;
-};
-
-struct ipblist {
-	char baddr[WLMAX];
-	LIST_ENTRY(ipblist) elem;
-};
-
-LIST_HEAD(wlist_head, ipwlist);
-LIST_HEAD(blist_head, ipblist);
+#include "defdata.h"
 
 int	s2c_parse_ip(char *, char *);
 int	s2c_parse_priority(int, char *);

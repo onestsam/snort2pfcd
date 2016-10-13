@@ -29,17 +29,18 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#ifndef _TOOLS_H
+#define _TOOLS_H
 
+void	usage();
+void	sighup();
+void	sigterm();
+void	sigint();
+void	daemonize();
+long	lmax(long ,long);
+long    lmin(long ,long);
+int	optnum(char *, char *);
 
-#ifndef _KEVENT_H
-#define _KEVENT_H
-
-int	s2c_kevent_set(int, int);
-int	s2c_kevent_open(char *);
-int 	s2c_kevent_read_l(int, char *, size_t);
-int 	s2c_kevent_read_f(int, int, int, char *, struct wlist_head *, struct blist_head *, char *, char *, size_t, int);
-void 	s2c_kevent_loop(int, int, int, int, char *, char *, struct wlist_head *);
-
-#endif /* _KEVENT_H */
+#endif /* _TOOLS_H */
 
 

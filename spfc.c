@@ -35,8 +35,6 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <fcntl.h>
-#include <net/if.h>
-#include <net/pfvar.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
@@ -47,18 +45,11 @@
 #include <netdb.h>
 #include <pthread.h>
 
+#include "defdata.h"
+#include "tools.h"
 #include "spfc.h"
 #include "ioctl_helpers.h"
 
-long
-lmax(long a,long b) {
-        return (a > b)?a:b;
-}
-
-long
-lmin(long a,long b) {
-        return (a < b)?a:b;
-}
 
 void
 *s2c_pf_expiretable(void *arg)
@@ -130,61 +121,28 @@ void
 }
 
 void
-s2c_spawn_expt_thread(void *data)
+s2c_spawn_thread(void *(*func) (void *), void *data)
 {
-	pthread_t *expt_thr;
-	pthread_attr_t *expt_attr;
-	thread_expt_t *expt_data;
+	pthread_t *thr;
+	pthread_attr_t *attr;
+ 
+	thr = (pthread_t *)malloc(sizeof(pthread_t));
+	attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
+ 
+	memset(thr, 0x00, sizeof(pthread_t));
+	memset(attr, 0x00, sizeof(pthread_attr_t));
+ 
+	if(pthread_attr_init(attr)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init detached thread attributes - warning");
+ 
+	} else if(pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to set detached thread attributes - warning");
+ 
+	} else if(pthread_create(thr, attr, func, data))
+		syslog(LOG_ERR | LOG_DAEMON, "unable to launch detached thread - warning");
 
-	expt_thr = (pthread_t *)malloc(sizeof(pthread_t));
-	expt_attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
-	expt_data = (thread_expt_t *)data;
-
-	memset(expt_thr, 0x00, sizeof(pthread_t));
-	memset(expt_attr, 0x00, sizeof(pthread_attr_t));
-
-	if(pthread_attr_init(expt_attr)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to init expiretable thread attributes - warning");
-
-	} else if(pthread_attr_setdetachstate(expt_attr, PTHREAD_CREATE_DETACHED)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to set expiretable thread attributes - warning");
-
-	} else if(pthread_create(expt_thr, expt_attr, s2c_pf_expiretable, expt_data))
-		syslog(LOG_ERR | LOG_DAEMON, "unable to launch expiretable thread - warning");
-
-
-	free(expt_attr);
-	free(expt_thr);
-	return;
-}
-
-
-void
-s2c_spawn_log_thread(void *data)
-{
-	pthread_t *log_thr;
-	pthread_attr_t *log_attr;
-	thread_log_t *log_data;
-
-	log_thr = (pthread_t *)malloc(sizeof(pthread_t));
-	log_attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
-	log_data = (thread_log_t *)data;
-
-	memset(log_thr, 0x00, sizeof(pthread_t));
-	memset(log_attr, 0x00, sizeof(pthread_attr_t));
-
-	if(pthread_attr_init(log_attr)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to init log thread attributes - warning");
-
-	} else if(pthread_attr_setdetachstate(log_attr, PTHREAD_CREATE_DETACHED)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to set log thread attributes - warning");
-
-	} else if(pthread_create(log_thr, log_attr, s2c_pf_block_log, log_data))
-		syslog(LOG_ERR | LOG_DAEMON, "unable to launch log thread - warning");
-
-
-	free(log_attr);
-	free(log_thr);
+	free(attr);
+	free(thr);
 	return;
 }
 
@@ -224,9 +182,9 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 void
 *s2c_pf_block_log(void *arg)
 {
-	char message[WLMAX];
-	char local_logip[WLMAX];
-	char local_logfile[WLMAX];
+	char message[LISTMAX];
+	char local_logip[LISTMAX];
+	char local_logfile[LISTMAX];
 	char hbuf[NI_MAXHOST];
 	long timebuf = 0;
 	FILE *lfile = NULL;
@@ -234,14 +192,14 @@ void
 	struct sockaddr_in *sin;
 	struct thread_log_t *data = (struct thread_log_t *)arg;
 
-	bzero(message, WLMAX);
+	bzero(message, LISTMAX);
 	bzero(hbuf, NI_MAXHOST);
-	bzero(local_logip, WLMAX);
-	bzero(local_logfile, WLMAX);
+	bzero(local_logip, LISTMAX);
+	bzero(local_logfile, LISTMAX);
 	memset(&sa,  0x00, sizeof(struct sockaddr_in));
 
-	memcpy(local_logip, data->logip, WLMAX);
-	memcpy(local_logfile, data->logfile, WLMAX);
+	memcpy(local_logip, data->logip, LISTMAX);
+	memcpy(local_logfile, data->logfile, LISTMAX);
 
 	timebuf = time(NULL);
 
