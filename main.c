@@ -60,9 +60,9 @@ main(int argc, char **argv)
 	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
 	char *alertfile = "/var/log/snort/alert";
 	char *extif = "all";
-	char logfile[64];
-	char dyn_tablename[32];
-	char static_tablename[32];
+	char logfile[LOGMAX];
+	char dyn_tablename[TBLMAX];
+	char static_tablename[TBLMAX];
 	struct wlist_head *whead;
 	thread_expt_t *expt_data;
 
@@ -74,21 +74,21 @@ main(int argc, char **argv)
 	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
 	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
 
-	bzero(logfile, 64);
-	bzero(dyn_tablename, 32);
-	bzero(static_tablename, 32);
+	bzero(logfile, LOGMAX);
+	bzero(dyn_tablename, TBLMAX);
+	bzero(static_tablename, TBLMAX);
 	memset(whead, 0x00, sizeof(struct wlist_head));
 	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
-	strlcpy(dyn_tablename, __progname, 32);
-	strlcpy(static_tablename, __progname, 32);
-	strlcat(static_tablename, "_static", 32);
+	strlcpy(dyn_tablename, __progname, TBLMAX);
+	strlcpy(static_tablename, __progname, TBLMAX);
+	strlcat(static_tablename, "_static", TBLMAX);
 
 	fprintf(stdout, "%s version %s\n", __progname, VERSION);
 	
-	memcpy(logfile, "/var/log/", 64);
-	strlcat(logfile,  __progname, 64);
-	strlcat(logfile, ".log", 64);
+	memcpy(logfile, "/var/log/", LOGMAX);
+	strlcat(logfile,  __progname, LOGMAX);
+	strlcat(logfile, ".log", LOGMAX);
 
 	while ((ch = getopt(argc, argv, "w:p:Bb:a:l:e:t:h")) != -1)
 		switch(ch) {
@@ -170,6 +170,7 @@ main(int argc, char **argv)
 	memcpy(expt_data->tablename, dyn_tablename, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
+	s2c_mutexes_init();
 	s2c_kevent_loop(fd, dev, priority, kq, logfile, dyn_tablename, whead);
 
 	return(0);

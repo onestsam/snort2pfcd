@@ -93,7 +93,7 @@ void
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) {
 				syslog(LOG_DAEMON | LOG_ERR, "malloc error B01 - exit");
-				exit(EXIT_FAILURE);
+				s2c_exit_fail();
 				}
 
 			del_addrs_count = 0;
@@ -149,54 +149,89 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 int 
 s2c_pf_block(int dev, char *tablename, char *ip) 
 { 
-	struct pfioc_table io; 
-    	struct pfr_table table; 
-      	struct pfr_addr addr; 
-      	struct in_addr net_addr;
-      
-        memset(&io,    0x00, sizeof(struct pfioc_table)); 
-        memset(&table, 0x00, sizeof(struct pfr_table)); 
-        memset(&addr,  0x00, sizeof(struct pfr_addr));
-	memset(&net_addr,  0x00, sizeof(struct in_addr));
+	struct pfioc_table *io;
+	struct pfr_table *table;
+	struct pfr_addr *addr;
+	struct in_addr *net_addr;
 
-        memcpy(table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
-        inet_aton(ip, (struct in_addr *)&net_addr);
-        memcpy(&addr.pfra_ip4addr.s_addr, &net_addr, sizeof(struct in_addr));
-        
-        addr.pfra_af  = AF_INET; 
-        addr.pfra_net = 32; 
-        
-        io.pfrio_table  = table; 
-        io.pfrio_buffer = &addr; 
-        io.pfrio_esize  = sizeof(struct pfr_addr); 
-        io.pfrio_size   = 1; 
-        
-        if (ioctl(dev, DIOCRADDADDRS, &io)) {
+	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
+	table = (struct pfr_table *)malloc(sizeof(struct pfr_table));
+	addr = (struct pfr_addr *)malloc(sizeof(struct pfr_addr));
+	net_addr = (struct in_addr *)malloc(sizeof(struct in_addr));
+
+	memset(io,    0x00, sizeof(struct pfioc_table)); 
+	memset(table, 0x00, sizeof(struct pfr_table)); 
+	memset(addr,  0x00, sizeof(struct pfr_addr));
+	memset(net_addr,  0x00, sizeof(struct in_addr));
+
+	memcpy(table->pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	inet_aton(ip, (struct in_addr *)net_addr);
+	memcpy(&addr->pfra_ip4addr.s_addr, net_addr, sizeof(struct in_addr));
+
+	addr->pfra_af  = AF_INET;
+	addr->pfra_net = 32; 
+
+	io->pfrio_table  = *table; 
+	io->pfrio_buffer = addr; 
+	io->pfrio_esize  = sizeof(struct pfr_addr); 
+	io->pfrio_size   = 1; 
+
+	if (ioctl(dev, DIOCRADDADDRS, io)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDADDRS - ioctl error - exit");
-		exit(EXIT_FAILURE);
-        }
+		s2c_exit_fail();
+	}
+
+	free(io);
+	free(table);
+	free(addr);
+	free(net_addr);
 
 	return(0);
 }
 
 void
+s2c_pf_block_log_check()
+{
+	int threadcheck = 0;
+
+	pthread_mutex_lock(&thr_mutex);
+	threadcheck = s2c_threads;
+	pthread_mutex_unlock(&thr_mutex);
+
+	while(!(threadcheck < THRMAX)){
+		sleep(10);
+		pthread_mutex_lock(&thr_mutex);
+		threadcheck = s2c_threads;
+		pthread_mutex_unlock(&thr_mutex);  
+	}
+
+	return;
+}
+
+void
 *s2c_pf_block_log(void *arg)
 {
-	char message[LISTMAX];
-	char local_logip[LISTMAX];
-	char local_logfile[LISTMAX];
-	char hbuf[NI_MAXHOST];
+	char *message;
+	char *local_logip;
+	char *local_logfile;
+	char *hbuf;
 	long timebuf = 0;
+	int gni_error = 0;
 	FILE *lfile = NULL;
 	struct sockaddr sa;
 	struct sockaddr_in *sin;
 	struct thread_log_t *data = (struct thread_log_t *)arg;
 
+	message = (char *)malloc(sizeof(char)*LISTMAX);
+	local_logip = (char *)malloc(sizeof(char)*LISTMAX);
+	local_logfile = (char *)malloc(sizeof(char)*LISTMAX);
+	hbuf = (char *)malloc(sizeof(char)*NI_MAXHOST);
+
 	bzero(message, LISTMAX);
 	bzero(hbuf, NI_MAXHOST);
 	bzero(local_logip, LISTMAX);
 	bzero(local_logfile, LISTMAX);
-	memset(&sa,  0x00, sizeof(struct sockaddr_in));
+	memset(&sa, 0x00, sizeof(struct sockaddr_in));
 
 	memcpy(local_logip, data->logip, LISTMAX);
 	memcpy(local_logfile, data->logfile, LISTMAX);
@@ -206,9 +241,14 @@ void
 	sa.sa_family = AF_INET;
 	sin = (struct sockaddr_in *) &sa;
 
-	if(inet_pton(AF_INET, local_logip, &((struct sockaddr_in *)&sa)->sin_addr)){
-		if (getnameinfo(&sa, sizeof(sa), hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD) == EAI_NONAME)
-			strlcpy(hbuf, "Unresolvable", 13);
+	if(inet_pton(AF_INET, local_logip, &((struct sockaddr_in *)&sa)->sin_addr)) {
+
+		pthread_mutex_lock(&dns_mutex);
+		gni_error = getnameinfo(&sa, sizeof(sa), hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
+		pthread_mutex_unlock(&dns_mutex);
+
+		if (gni_error != 0)
+			strlcpy(hbuf, gai_strerror(gni_error), NI_MAXHOST);
 	}
 
 	sprintf(message, "%s (%s) not whitelisted, added to block table %s", local_logip, hbuf, asctime(localtime(&timebuf)));
@@ -219,71 +259,92 @@ void
 	funlockfile(lfile);
 	fclose(lfile);
 
-	free(data);
+	free(arg);
+	free(hbuf);
+	free(message);
+	free(local_logip);
+	free(local_logfile);
+
+	pthread_mutex_lock(&thr_mutex);
+	s2c_threads--;
+	pthread_mutex_unlock(&thr_mutex);
+
 	pthread_exit(NULL);
 }
 
 int 
 s2c_pf_tbladd(int dev, char * tablename) 
 {
-	struct pfioc_table io;
-	struct pfr_table table;
+	struct pfioc_table *io;
+	struct pfr_table *table;
 
-	memset(&io,    0x00, sizeof(struct pfioc_table));
-	memset(&table, 0x00, sizeof(struct pfr_table));
+	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
+	table = (struct pfr_table *)malloc(sizeof(struct pfr_table));
 
-	memcpy(table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	table.pfrt_flags = PFR_TFLAG_PERSIST;
+	memset(io,    0x00, sizeof(struct pfioc_table));
+	memset(table, 0x00, sizeof(struct pfr_table));
 
-	io.pfrio_buffer = &table; 
-	io.pfrio_esize  = sizeof(struct pfr_table); 
-	io.pfrio_size   = 1; 
+	memcpy(table->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	table->pfrt_flags = PFR_TFLAG_PERSIST;
 
-	if (ioctl(dev, DIOCRADDTABLES, &io)) { 
+	io->pfrio_buffer = table; 
+	io->pfrio_esize  = sizeof(struct pfr_table); 
+	io->pfrio_size   = 1; 
+
+	if (ioctl(dev, DIOCRADDTABLES, io)) { 
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDTABLES - ioctl error - exit");
 		return(1);
 	}
+
+	free(io);
+	free(table);
 	return(0); 
 }
 
 int
 s2c_pf_ruleadd(int dev, char *tablename)
 {
-	struct pfioc_rule     io_rule;
-	struct pfioc_pooladdr io_paddr;
+	struct pfioc_rule *io_rule;
+	struct pfioc_pooladdr *io_paddr;
 
-	memset(&io_rule,  0x00, sizeof(struct pfioc_rule));
-	memset(&io_paddr, 0x00, sizeof(struct pfioc_pooladdr));
+	io_rule = (struct pfioc_rule *)malloc(sizeof(struct pfioc_rule));
+	io_paddr = (struct pfioc_pooladdr *)malloc(sizeof(struct pfioc_pooladdr));
+
+	memset(io_rule,  0x00, sizeof(struct pfioc_rule));
+	memset(io_paddr, 0x00, sizeof(struct pfioc_pooladdr));
 
 	if(!s2c_pf_intbl(dev, tablename))
 		if(s2c_pf_tbladd(dev, tablename))
 			return(1);
 
-	io_rule.rule.direction = PF_IN;
-	io_rule.rule.action = PF_DROP;
-	io_rule.rule.src.addr.type = PF_ADDR_TABLE;
-	io_rule.rule.rule_flag = PFRULE_RETURN;
-	memcpy(io_rule.rule.src.addr.v.tblname, tablename, sizeof(io_rule.rule.src.addr.v.tblname));
+	io_rule->rule.direction = PF_IN;
+	io_rule->rule.action = PF_DROP;
+	io_rule->rule.src.addr.type = PF_ADDR_TABLE;
+	io_rule->rule.rule_flag = PFRULE_RETURN;
+	memcpy(io_rule->rule.src.addr.v.tblname, tablename, sizeof(io_rule->rule.src.addr.v.tblname));
 
-	io_rule.action = PF_CHANGE_GET_TICKET;
+	io_rule->action = PF_CHANGE_GET_TICKET;
 
-	if (ioctl(dev, DIOCCHANGERULE, &io_rule)) {
+	if (ioctl(dev, DIOCCHANGERULE, io_rule)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}	
 
-	if (ioctl(dev, DIOCBEGINADDRS, &io_paddr)) {
+	if (ioctl(dev, DIOCBEGINADDRS, io_paddr)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCBEGINADDRS - ioctl error - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
-	io_rule.pool_ticket = io_paddr.ticket;
-	io_rule.action = PF_CHANGE_ADD_TAIL;
+	io_rule->pool_ticket = io_paddr->ticket;
+	io_rule->action = PF_CHANGE_ADD_TAIL;
 
-	if (ioctl(dev, DIOCCHANGERULE, &io_rule)) {
+	if (ioctl(dev, DIOCCHANGERULE, io_rule)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
+
+	free(io_rule);
+	free(io_paddr);
 
 	return(0);
 }
@@ -292,41 +353,46 @@ int
 s2c_pf_intbl(int dev, char *tablename)
 {
 	int i;
-	struct pfioc_table io;
+	struct pfioc_table *io;
 	struct pfr_table *table_aux = NULL;
+
+	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
 	
-	memset(&io, 0x00, sizeof(struct pfioc_table));
+	memset(io, 0x00, sizeof(struct pfioc_table));
 	
-	io.pfrio_buffer = table_aux;
-	io.pfrio_esize  = sizeof(struct pfr_table);
-	io.pfrio_size   = 0;
+	io->pfrio_buffer = table_aux;
+	io->pfrio_esize  = sizeof(struct pfr_table);
+	io->pfrio_size   = 0;
 	
-	if(ioctl(dev, DIOCRGETTABLES, &io)) { 
+	if(ioctl(dev, DIOCRGETTABLES, io)) { 
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 	
-	table_aux = (struct pfr_table*)malloc(sizeof(struct pfr_table)*io.pfrio_size);
+	table_aux = (struct pfr_table *)malloc(sizeof(struct pfr_table)*io->pfrio_size);
 	if(table_aux == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B02 - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
-	io.pfrio_buffer = table_aux;
-	io.pfrio_esize = sizeof(struct pfr_table);
+	io->pfrio_buffer = table_aux;
+	io->pfrio_esize = sizeof(struct pfr_table);
 
-	if(ioctl(dev, DIOCRGETTABLES, &io)) {
+	if(ioctl(dev, DIOCRGETTABLES, io)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
-	for(i=0; i< io.pfrio_size; i++) {
+	for(i=0; i< io->pfrio_size; i++) {
 		if (!strcmp(table_aux[i].pfrt_name, tablename)){
 			free(table_aux);
+			free(io);
 			return(1);
 		}
 	}
 
 	free(table_aux);
+	free(io);
+
 	return(0);
 }

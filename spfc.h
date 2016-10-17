@@ -39,6 +39,7 @@ int	s2c_pf_block(int, char *, char *);
 int	s2c_pf_tbladd(int, char *);
 int	s2c_pf_ruleadd(int, char *);
 void	*s2c_pf_block_log(void *);
+void	s2c_pf_block_log_check();
 void    *s2c_pf_expiretable(void *);
 void	s2c_spawn_thread(void *(*) (void *), void *);
 

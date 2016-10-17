@@ -41,6 +41,7 @@
 #include <syslog.h>
 
 #include "defdata.h"
+#include "tools.h"
 #include "spfc.h"
 #include "parser.h"
 #include "kevent.h"
@@ -74,7 +75,9 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 {
 	struct kevent ke;
 	struct blist_head bhead;
-	char buf[BUFSIZ];
+	char *buf;
+
+	buf = (char *)malloc(sizeof(char)*BUFSIZ);
 
 	memset(&bhead, 0x00, sizeof(struct blist_head));
 
@@ -84,12 +87,13 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 
 		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
 			syslog(LOG_ERR | LOG_DAEMON, "kevent request error - exit");
-			exit(EXIT_FAILURE);
+			s2c_exit_fail();
 		}
 		if (ke.filter == EVFILT_READ)
 			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, &bhead, buf, tablename, BUFSIZ, ke.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "warning, kevent read error.");
 	}
+	free(buf);
 }
 
 int

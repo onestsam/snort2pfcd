@@ -37,8 +37,11 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 
+#define LISTMAX		1024
+#define LOGMAX		64
+#define TBLMAX		32
+#define THRMAX		100
 #define PFDEVICE "/dev/pf"
-#define LISTMAX   1024
 #define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
 
 struct ipwlist {
@@ -67,6 +70,9 @@ LIST_HEAD(wlist_head, ipwlist);
 LIST_HEAD(blist_head, ipblist);
 
 extern char *__progname;
+int s2c_threads;
+pthread_mutex_t dns_mutex;
+pthread_mutex_t thr_mutex;
 
 #endif /* _DEFDATA_H */
 

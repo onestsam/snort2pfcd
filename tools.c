@@ -32,6 +32,8 @@
 
 #include <sys/types.h>
 #include <sys/param.h>
+#include <sys/stat.h>
+
 #include <libutil.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,9 +42,29 @@
 #include <errno.h>
 #include <signal.h>
 #include <syslog.h>
+#include <pthread.h>
 
 #include "defdata.h"
 #include "tools.h"
+
+void
+checkfile(char *namefile)
+{
+	struct stat *info;
+
+	info = (struct stat *)malloc(sizeof(struct stat));
+
+	memset(info, 0x00, sizeof(struct stat));
+	lstat(namefile, info);
+
+	if (info->st_mode & S_IFDIR) {
+		syslog(LOG_ERR | LOG_DAEMON, "file error: file is a directory: %s - exit", namefile);
+		s2c_exit_fail();
+	}
+
+	free(info);
+	return;
+}
 
 void
 daemonize()
@@ -51,14 +73,14 @@ daemonize()
 	pid_t otherpid;
 	char *pidfile;
 
-	pidfile = (char *)malloc(sizeof(char)*64);
+	pidfile = (char *)malloc(sizeof(char)*LOGMAX);
 
-	bzero(pidfile, 64);
+	bzero(pidfile, LOGMAX);
 	memset(&otherpid, 0x00, sizeof(pid_t));
 
-	memcpy(pidfile, "/var/run/", 64);
-	strlcat(pidfile,  __progname, 64);
-	strlcat(pidfile, ".pid", 64);
+	memcpy(pidfile, "/var/run/", LOGMAX);
+	strlcat(pidfile,  __progname, LOGMAX);
+	strlcat(pidfile, ".pid", LOGMAX);
 
 	pfh = pidfile_open(pidfile, 0600, &otherpid);
 	if (pfh == NULL) {
@@ -70,7 +92,7 @@ daemonize()
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "Cannot daemonize");
 		pidfile_remove(pfh);
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	} else {
 		openlog(__progname, LOG_CONS | LOG_PID, LOG_DAEMON);
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s started, pid: %d", __progname, getpid());
@@ -84,6 +106,32 @@ daemonize()
 	signal(SIGINT,  sigint);
 
 	return;
+}
+
+void
+s2c_mutexes_init()
+{
+	s2c_threads = 0;
+	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
+
+	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init mutex - exit");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pthread_mutex_init(&thr_mutex, NULL) != 0) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to init mutex - exit");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void
+s2c_exit_fail()
+{
+	pthread_mutex_destroy(&dns_mutex);
+	pthread_mutex_destroy(&thr_mutex);
+	exit(EXIT_FAILURE);
 }
 
 int
@@ -101,8 +149,8 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "usage: %s [-h] [-e extif] [-w wfile] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime]\n", __progname);
-	fprintf(stderr, "wfile, bfile, logfile, alertfile: path to file, expiretime in seconds.");
+	fprintf(stderr, "usage: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime]\n", __progname);
+	fprintf(stderr, "see man %s for more details.", __progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -110,6 +158,8 @@ void
 sighup()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "SIGHUP received - exiting");
+	pthread_mutex_destroy(&dns_mutex);
+	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
 }
 
@@ -117,6 +167,8 @@ void
 sigterm()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "SIGTERM received - exiting");
+	pthread_mutex_destroy(&dns_mutex);
+	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
 }
 
@@ -124,6 +176,8 @@ void
 sigint()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "SIGINT received - exiting");
+	pthread_mutex_destroy(&dns_mutex);
+	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
 }
 
