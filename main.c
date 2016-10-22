@@ -72,7 +72,18 @@ main(int argc, char **argv)
 	}
 
 	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
+
+	if(whead == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E01 - exit");
+		s2c_exit_fail();
+	}
+
 	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
+
+	if(expt_data == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E02 - exit");
+		s2c_exit_fail();
+	}
 
 	bzero(logfile, LOGMAX);
 	bzero(dyn_tablename, TBLMAX);

@@ -54,6 +54,11 @@ checkfile(char *namefile)
 
 	info = (struct stat *)malloc(sizeof(struct stat));
 
+	if(info == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error D01 - exit");
+		s2c_exit_fail();
+	}
+
 	memset(info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
@@ -74,6 +79,11 @@ daemonize()
 	char *pidfile;
 
 	pidfile = (char *)malloc(sizeof(char)*LOGMAX);
+
+	if(pidfile == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error D02 - exit");
+		s2c_exit_fail();
+	}
 
 	bzero(pidfile, LOGMAX);
 	memset(&otherpid, 0x00, sizeof(pid_t));

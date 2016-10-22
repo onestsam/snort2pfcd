@@ -123,69 +123,72 @@ void
 void
 s2c_spawn_thread(void *(*func) (void *), void *data)
 {
-	pthread_t *thr;
-	pthread_attr_t *attr;
+	typedef struct twisted_t {
+		pthread_t thr;
+		pthread_attr_t attr;
+	} twisted_t;
+
+	struct twisted_t *yarn;
  
-	thr = (pthread_t *)malloc(sizeof(pthread_t));
-	attr = (pthread_attr_t *)malloc(sizeof(pthread_attr_t));
+	yarn = (twisted_t *)malloc(sizeof(twisted_t));
+
+	if(yarn == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B02 - exit");
+		s2c_exit_fail(); 
+	}
  
-	memset(thr, 0x00, sizeof(pthread_t));
-	memset(attr, 0x00, sizeof(pthread_attr_t));
- 
-	if(pthread_attr_init(attr)) {
+	if(pthread_attr_init(&yarn->attr)) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to init detached thread attributes - warning");
  
-	} else if(pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED)) {
+	} else if(pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to set detached thread attributes - warning");
  
-	} else if(pthread_create(thr, attr, func, data))
+	} else if(pthread_create(&yarn->thr, &yarn->attr, func, data))
 		syslog(LOG_ERR | LOG_DAEMON, "unable to launch detached thread - warning");
 
-	free(attr);
-	free(thr);
+	free(yarn);
 	return;
 }
 
 int 
 s2c_pf_block(int dev, char *tablename, char *ip) 
 { 
-	struct pfioc_table *io;
-	struct pfr_table *table;
-	struct pfr_addr *addr;
-	struct in_addr *net_addr;
+	typedef struct pfbl_t {
+		struct pfioc_table io;
+		struct pfr_table table;
+		struct pfr_addr addr;
+		struct in_addr net_addr;
+	} pfbl_t;
 
-	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
-	table = (struct pfr_table *)malloc(sizeof(struct pfr_table));
-	addr = (struct pfr_addr *)malloc(sizeof(struct pfr_addr));
-	net_addr = (struct in_addr *)malloc(sizeof(struct in_addr));
+	struct pfbl_t *pfbl;
 
-	memset(io,    0x00, sizeof(struct pfioc_table)); 
-	memset(table, 0x00, sizeof(struct pfr_table)); 
-	memset(addr,  0x00, sizeof(struct pfr_addr));
-	memset(net_addr,  0x00, sizeof(struct in_addr));
+	pfbl = (struct pfbl_t *)malloc(sizeof(struct pfbl_t));
 
-	memcpy(table->pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
-	inet_aton(ip, (struct in_addr *)net_addr);
-	memcpy(&addr->pfra_ip4addr.s_addr, net_addr, sizeof(struct in_addr));
+	if(pfbl == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B03 - exit");
+		s2c_exit_fail(); 
+	}
 
-	addr->pfra_af  = AF_INET;
-	addr->pfra_net = 32; 
+	memset(pfbl, 0x00, sizeof(struct pfbl_t));
 
-	io->pfrio_table  = *table; 
-	io->pfrio_buffer = addr; 
-	io->pfrio_esize  = sizeof(struct pfr_addr); 
-	io->pfrio_size   = 1; 
+	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	inet_aton(ip, (struct in_addr *)&pfbl->net_addr);
+	memcpy(&pfbl->addr.pfra_ip4addr.s_addr, &pfbl->net_addr, sizeof(struct in_addr));
 
-	if (ioctl(dev, DIOCRADDADDRS, io)) {
+	pfbl->addr.pfra_af  = AF_INET;
+	pfbl->addr.pfra_net = 32; 
+
+	pfbl->io.pfrio_table  = pfbl->table; 
+	pfbl->io.pfrio_buffer = &pfbl->addr; 
+	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
+	pfbl->io.pfrio_size   = 1; 
+
+	if (ioctl(dev, DIOCRADDADDRS, &pfbl->io)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDADDRS - ioctl error - exit");
 		s2c_exit_fail();
 	}
 
-	free(io);
-	free(table);
-	free(addr);
-	free(net_addr);
-
+	free(pfbl);
 	return(0);
 }
 
@@ -211,59 +214,58 @@ s2c_pf_block_log_check()
 void
 *s2c_pf_block_log(void *arg)
 {
-	char *message;
-	char *local_logip;
-	char *local_logfile;
-	char *hbuf;
+	typedef struct pfbl_log_t {
+		char message[LISTMAX];
+		char local_logip[LISTMAX];
+		char local_logfile[LISTMAX];
+		char hbuf[NI_MAXHOST];
+		struct sockaddr sa;
+	} pfbl_log_t;
+
 	long timebuf = 0;
 	int gni_error = 0;
 	FILE *lfile = NULL;
-	struct sockaddr sa;
 	struct sockaddr_in *sin;
+	struct pfbl_log_t *pfbl_log;
 	struct thread_log_t *data = (struct thread_log_t *)arg;
 
-	message = (char *)malloc(sizeof(char)*LISTMAX);
-	local_logip = (char *)malloc(sizeof(char)*LISTMAX);
-	local_logfile = (char *)malloc(sizeof(char)*LISTMAX);
-	hbuf = (char *)malloc(sizeof(char)*NI_MAXHOST);
+	pfbl_log = (struct pfbl_log_t *)malloc(sizeof(struct pfbl_log_t));
 
-	bzero(message, LISTMAX);
-	bzero(hbuf, NI_MAXHOST);
-	bzero(local_logip, LISTMAX);
-	bzero(local_logfile, LISTMAX);
-	memset(&sa, 0x00, sizeof(struct sockaddr_in));
+	if(pfbl_log == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B04 - exit");
+		s2c_exit_fail(); 
+	}
 
-	memcpy(local_logip, data->logip, LISTMAX);
-	memcpy(local_logfile, data->logfile, LISTMAX);
+	memset(pfbl_log, 0x00, sizeof(struct pfbl_log_t));
+
+	memcpy(pfbl_log->local_logip, data->logip, LISTMAX);
+	memcpy(pfbl_log->local_logfile, data->logfile, LISTMAX);
 
 	timebuf = time(NULL);
 
-	sa.sa_family = AF_INET;
-	sin = (struct sockaddr_in *) &sa;
+	pfbl_log->sa.sa_family = AF_INET;
+	sin = (struct sockaddr_in *) &pfbl_log->sa;
 
-	if(inet_pton(AF_INET, local_logip, &((struct sockaddr_in *)&sa)->sin_addr)) {
+	if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
 		pthread_mutex_lock(&dns_mutex);
-		gni_error = getnameinfo(&sa, sizeof(sa), hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
+		gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
 		pthread_mutex_unlock(&dns_mutex);
 
 		if (gni_error != 0)
-			strlcpy(hbuf, gai_strerror(gni_error), NI_MAXHOST);
+			strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 	}
 
-	sprintf(message, "%s (%s) not whitelisted, added to block table %s", local_logip, hbuf, asctime(localtime(&timebuf)));
+	sprintf(pfbl_log->message, "%s (%s) not whitelisted, added to block table %s", pfbl_log->local_logip, pfbl_log->hbuf, asctime(localtime(&timebuf)));
 
-	lfile = fopen(local_logfile, "a");
+	lfile = fopen(pfbl_log->local_logfile, "a");
 	flockfile(lfile);
-	fputs(message, lfile);
+	fputs(pfbl_log->message, lfile);
 	funlockfile(lfile);
 	fclose(lfile);
 
+	free(pfbl_log);
 	free(arg);
-	free(hbuf);
-	free(message);
-	free(local_logip);
-	free(local_logfile);
 
 	pthread_mutex_lock(&thr_mutex);
 	s2c_threads--;
@@ -275,124 +277,135 @@ void
 int 
 s2c_pf_tbladd(int dev, char * tablename) 
 {
-	struct pfioc_table *io;
-	struct pfr_table *table;
+	typedef struct pftbl_t {
+		struct pfioc_table io;
+		struct pfr_table table;
+	} pftbl_t;
 
-	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
-	table = (struct pfr_table *)malloc(sizeof(struct pfr_table));
+	struct pftbl_t *pftbl;
 
-	memset(io,    0x00, sizeof(struct pfioc_table));
-	memset(table, 0x00, sizeof(struct pfr_table));
+	pftbl = (struct pftbl_t *)malloc(sizeof(struct pftbl_t));
 
-	memcpy(table->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	table->pfrt_flags = PFR_TFLAG_PERSIST;
+	if(pftbl == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B05 - exit");
+		s2c_exit_fail(); 
+	}
 
-	io->pfrio_buffer = table; 
-	io->pfrio_esize  = sizeof(struct pfr_table); 
-	io->pfrio_size   = 1; 
+	memset(pftbl, 0x00, sizeof(struct pftbl_t));
 
-	if (ioctl(dev, DIOCRADDTABLES, io)) { 
+	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
+
+	pftbl->io.pfrio_buffer = &pftbl->table; 
+	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
+	pftbl->io.pfrio_size   = 1; 
+
+	if (ioctl(dev, DIOCRADDTABLES, &pftbl->io)) { 
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDTABLES - ioctl error - exit");
 		return(1);
 	}
 
-	free(io);
-	free(table);
+	free(pftbl);
 	return(0); 
 }
 
 int
 s2c_pf_ruleadd(int dev, char *tablename)
 {
-	struct pfioc_rule *io_rule;
-	struct pfioc_pooladdr *io_paddr;
+	typedef struct pfrla_t {
+		struct pfioc_rule io_rule;
+		struct pfioc_pooladdr io_paddr;
+	} pfrla_t;
 
-	io_rule = (struct pfioc_rule *)malloc(sizeof(struct pfioc_rule));
-	io_paddr = (struct pfioc_pooladdr *)malloc(sizeof(struct pfioc_pooladdr));
-
-	memset(io_rule,  0x00, sizeof(struct pfioc_rule));
-	memset(io_paddr, 0x00, sizeof(struct pfioc_pooladdr));
+	struct pfrla_t *pfrla;
 
 	if(!s2c_pf_intbl(dev, tablename))
 		if(s2c_pf_tbladd(dev, tablename))
 			return(1);
 
-	io_rule->rule.direction = PF_IN;
-	io_rule->rule.action = PF_DROP;
-	io_rule->rule.src.addr.type = PF_ADDR_TABLE;
-	io_rule->rule.rule_flag = PFRULE_RETURN;
-	memcpy(io_rule->rule.src.addr.v.tblname, tablename, sizeof(io_rule->rule.src.addr.v.tblname));
+	pfrla = (struct pfrla_t *)malloc(sizeof(struct pfrla_t));
 
-	io_rule->action = PF_CHANGE_GET_TICKET;
+	if(pfrla == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B06 - exit");
+		s2c_exit_fail();
+	}
 
-	if (ioctl(dev, DIOCCHANGERULE, io_rule)) {
+	memset(pfrla, 0x00, sizeof(struct pfrla_t));
+
+	pfrla->io_rule.rule.direction = PF_IN;
+	pfrla->io_rule.rule.action = PF_DROP;
+	pfrla->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
+	pfrla->io_rule.rule.rule_flag = PFRULE_RETURN;
+	memcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
+
+	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
+
+	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
 		s2c_exit_fail();
 	}	
 
-	if (ioctl(dev, DIOCBEGINADDRS, io_paddr)) {
+	if (ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCBEGINADDRS - ioctl error - exit");
 		s2c_exit_fail();
 	}
 
-	io_rule->pool_ticket = io_paddr->ticket;
-	io_rule->action = PF_CHANGE_ADD_TAIL;
+	pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
+	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
 
-	if (ioctl(dev, DIOCCHANGERULE, io_rule)) {
+	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
 		s2c_exit_fail();
 	}
 
-	free(io_rule);
-	free(io_paddr);
-
+	free(pfrla);
 	return(0);
 }
 
 int 
 s2c_pf_intbl(int dev, char *tablename)
 {
+	typedef struct pfintbl_t {
+		struct pfioc_table io;
+		struct pfr_table table_aux;
+	} pfintbl_t;
+
 	int i;
-	struct pfioc_table *io;
-	struct pfr_table *table_aux = NULL;
+	struct pfintbl_t *pfintbl;
 
-	io = (struct pfioc_table *)malloc(sizeof(struct pfioc_table));
+	pfintbl = (struct pfintbl_t *)malloc(sizeof(struct pfintbl_t));
+
+	if(pfintbl == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error B07 - exit");
+		s2c_exit_fail();
+	}
+
+	memset(pfintbl, 0x00, sizeof(struct pfintbl_t));
+
+	pfintbl->io.pfrio_buffer = &pfintbl->table_aux;
+	pfintbl->io.pfrio_esize  = sizeof(struct pfr_table);
+	pfintbl->io.pfrio_size   = 0;
 	
-	memset(io, 0x00, sizeof(struct pfioc_table));
-	
-	io->pfrio_buffer = table_aux;
-	io->pfrio_esize  = sizeof(struct pfr_table);
-	io->pfrio_size   = 0;
-	
-	if(ioctl(dev, DIOCRGETTABLES, io)) { 
+	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) { 
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
 		s2c_exit_fail();
 	}
 	
-	table_aux = (struct pfr_table *)malloc(sizeof(struct pfr_table)*io->pfrio_size);
-	if(table_aux == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B02 - exit");
-		s2c_exit_fail();
-	}
+	pfintbl->io.pfrio_buffer = &pfintbl->table_aux;
+	pfintbl->io.pfrio_esize = sizeof(struct pfr_table);
 
-	io->pfrio_buffer = table_aux;
-	io->pfrio_esize = sizeof(struct pfr_table);
-
-	if(ioctl(dev, DIOCRGETTABLES, io)) {
+	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) {
 		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
 		s2c_exit_fail();
 	}
 
-	for(i=0; i< io->pfrio_size; i++) {
-		if (!strcmp(table_aux[i].pfrt_name, tablename)){
-			free(table_aux);
-			free(io);
+	for(i=0; i< pfintbl->io.pfrio_size; i++) {
+		if (!strcmp((&pfintbl->table_aux)[i].pfrt_name, tablename)){
+			free(pfintbl);
 			return(1);
 		}
 	}
 
-	free(table_aux);
-	free(io);
-
+	free(pfintbl);
 	return(0);
 }

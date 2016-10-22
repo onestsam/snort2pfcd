@@ -79,6 +79,11 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 
 	buf = (char *)malloc(sizeof(char)*BUFSIZ);
 
+	if(buf == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error C01 - exit");
+		s2c_exit_fail();
+	}
+
 	memset(&bhead, 0x00, sizeof(struct blist_head));
 
 	while (1) {
