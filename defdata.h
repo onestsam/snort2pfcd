@@ -54,13 +54,13 @@ struct ipblist {
 	LIST_ENTRY(ipblist) elem;
 };
 
-typedef struct thread_expt_t {
+typedef struct _thread_expt_t {
 	int dev;
 	int t;
 	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
-typedef struct thread_log_t {
+typedef struct _thread_log_t {
 	char logip[LISTMAX];
 	char logfile[LISTMAX];
 } thread_log_t;

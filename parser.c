@@ -436,15 +436,21 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipw1, elem);
 
+	ifr = (struct ifreq *)malloc(sizeof(struct ifreq));
+
+	if(ifr == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A17 - exit");
+		s2c_exit_fail();
+	}
+
 	if(strcmp(extif, "all") == 0) {
 		s2c_parse_load_wl_ifaces(ipw1);
 
 	} else {
-		ifr = (struct ifreq *)malloc(sizeof(struct ifreq));
 		memset(ifr, 0x00, sizeof(struct ifreq));
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		ifr->ifr_addr.sa_family = AF_INET;
-		strncpy(ifr->ifr_name, extif, IFNAMSIZ-1);
+		strlcpy(ifr->ifr_name, extif, IFNAMSIZ);
 		if(ioctl(fd, SIOCGIFADDR, ifr) == -1){
 			syslog(LOG_DAEMON | LOG_ERR, "Error accessing %s - exit", extif);
 			s2c_exit_fail();
@@ -454,14 +460,14 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 		ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 
 		if(ipw2 == NULL) {
-			syslog(LOG_DAEMON | LOG_ERR, "malloc error A17 - exit");
+			syslog(LOG_DAEMON | LOG_ERR, "malloc error A18 - exit");
 			s2c_exit_fail();
 		}
 
 		ipw2->waddr = cidr_alloc();
 
 		if(ipw2->waddr == NULL) {
-                	syslog(LOG_DAEMON | LOG_ERR, "malloc error A18 - exit");
+                	syslog(LOG_DAEMON | LOG_ERR, "malloc error A19 - exit");
 			s2c_exit_fail();
 		}
 
@@ -491,7 +497,7 @@ s2c_parse_search_wl(char *ip, struct wlist_head *wl)
 	CIDR *ipcidr = cidr_alloc();
 
 	if(ipcidr == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A19 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A20 - exit");
 		s2c_exit_fail();
 	}
 

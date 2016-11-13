@@ -58,7 +58,7 @@ void
 	struct pfr_table target;
 	struct pfr_addr *del_addrs_list;
 	int astats_count, del_addrs_count, del_addrs_result;
-	struct thread_expt_t *data = (struct thread_expt_t *)arg;
+	thread_expt_t *data = (thread_expt_t *)arg;
 
 	unsigned long age = 60*60*3;
 	long min_timestamp, oldest_entry;
@@ -123,12 +123,12 @@ void
 void
 s2c_spawn_thread(void *(*func) (void *), void *data)
 {
-	typedef struct twisted_t {
+	typedef struct _twisted_t {
 		pthread_t thr;
 		pthread_attr_t attr;
 	} twisted_t;
 
-	struct twisted_t *yarn;
+	twisted_t *yarn;
  
 	yarn = (twisted_t *)malloc(sizeof(twisted_t));
 
@@ -153,23 +153,23 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 int 
 s2c_pf_block(int dev, char *tablename, char *ip) 
 { 
-	typedef struct pfbl_t {
+	typedef struct _pfbl_t {
 		struct pfioc_table io;
 		struct pfr_table table;
 		struct pfr_addr addr;
 		struct in_addr net_addr;
 	} pfbl_t;
 
-	struct pfbl_t *pfbl;
+	pfbl_t *pfbl;
 
-	pfbl = (struct pfbl_t *)malloc(sizeof(struct pfbl_t));
+	pfbl = (pfbl_t *)malloc(sizeof(pfbl_t));
 
 	if(pfbl == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B03 - exit");
 		s2c_exit_fail(); 
 	}
 
-	memset(pfbl, 0x00, sizeof(struct pfbl_t));
+	memset(pfbl, 0x00, sizeof(pfbl_t));
 
 	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pfbl->net_addr);
@@ -214,7 +214,7 @@ s2c_pf_block_log_check()
 void
 *s2c_pf_block_log(void *arg)
 {
-	typedef struct pfbl_log_t {
+	typedef struct _pfbl_log_t {
 		char message[LISTMAX];
 		char local_logip[LISTMAX];
 		char local_logfile[LISTMAX];
@@ -226,17 +226,17 @@ void
 	int gni_error = 0;
 	FILE *lfile = NULL;
 	struct sockaddr_in *sin;
-	struct pfbl_log_t *pfbl_log;
-	struct thread_log_t *data = (struct thread_log_t *)arg;
+	pfbl_log_t *pfbl_log;
+	thread_log_t *data = (thread_log_t *)arg;
 
-	pfbl_log = (struct pfbl_log_t *)malloc(sizeof(struct pfbl_log_t));
+	pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t));
 
 	if(pfbl_log == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B04 - exit");
 		s2c_exit_fail(); 
 	}
 
-	memset(pfbl_log, 0x00, sizeof(struct pfbl_log_t));
+	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
 	memcpy(pfbl_log->local_logip, data->logip, LISTMAX);
 	memcpy(pfbl_log->local_logfile, data->logfile, LISTMAX);
@@ -277,21 +277,21 @@ void
 int 
 s2c_pf_tbladd(int dev, char * tablename) 
 {
-	typedef struct pftbl_t {
+	typedef struct _pftbl_t {
 		struct pfioc_table io;
 		struct pfr_table table;
 	} pftbl_t;
 
-	struct pftbl_t *pftbl;
+	pftbl_t *pftbl;
 
-	pftbl = (struct pftbl_t *)malloc(sizeof(struct pftbl_t));
+	pftbl = (pftbl_t *)malloc(sizeof(pftbl_t));
 
 	if(pftbl == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B05 - exit");
 		s2c_exit_fail(); 
 	}
 
-	memset(pftbl, 0x00, sizeof(struct pftbl_t));
+	memset(pftbl, 0x00, sizeof(pftbl_t));
 
 	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
@@ -312,25 +312,25 @@ s2c_pf_tbladd(int dev, char * tablename)
 int
 s2c_pf_ruleadd(int dev, char *tablename)
 {
-	typedef struct pfrla_t {
+	typedef struct _pfrla_t {
 		struct pfioc_rule io_rule;
 		struct pfioc_pooladdr io_paddr;
 	} pfrla_t;
 
-	struct pfrla_t *pfrla;
+	pfrla_t *pfrla;
 
 	if(!s2c_pf_intbl(dev, tablename))
 		if(s2c_pf_tbladd(dev, tablename))
 			return(1);
 
-	pfrla = (struct pfrla_t *)malloc(sizeof(struct pfrla_t));
+	pfrla = (pfrla_t *)malloc(sizeof(pfrla_t));
 
 	if(pfrla == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B06 - exit");
 		s2c_exit_fail();
 	}
 
-	memset(pfrla, 0x00, sizeof(struct pfrla_t));
+	memset(pfrla, 0x00, sizeof(pfrla_t));
 
 	pfrla->io_rule.rule.direction = PF_IN;
 	pfrla->io_rule.rule.action = PF_DROP;
@@ -365,22 +365,22 @@ s2c_pf_ruleadd(int dev, char *tablename)
 int 
 s2c_pf_intbl(int dev, char *tablename)
 {
-	typedef struct pfintbl_t {
+	typedef struct _pfintbl_t {
 		struct pfioc_table io;
 		struct pfr_table table_aux;
 	} pfintbl_t;
 
 	int i;
-	struct pfintbl_t *pfintbl;
+	pfintbl_t *pfintbl;
 
-	pfintbl = (struct pfintbl_t *)malloc(sizeof(struct pfintbl_t));
+	pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t));
 
 	if(pfintbl == NULL){
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B07 - exit");
 		s2c_exit_fail();
 	}
 
-	memset(pfintbl, 0x00, sizeof(struct pfintbl_t));
+	memset(pfintbl, 0x00, sizeof(pfintbl_t));
 
 	pfintbl->io.pfrio_buffer = &pfintbl->table_aux;
 	pfintbl->io.pfrio_esize  = sizeof(struct pfr_table);
