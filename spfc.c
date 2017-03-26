@@ -48,6 +48,7 @@
 #include "defdata.h"
 #include "tools.h"
 #include "spfc.h"
+#include "parser.h"
 #include "ioctl_helpers.h"
 
 
@@ -57,25 +58,23 @@ void
 	struct pfr_astats *astats;
 	struct pfr_table target;
 	struct pfr_addr *del_addrs_list;
-	int astats_count, del_addrs_count, del_addrs_result;
+	int astats_count = 0, del_addrs_count = 0, del_addrs_result = 0;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
-	unsigned long age = 60*60*3;
-	long min_timestamp, oldest_entry;
-	int local_dev, i = 0;
+	unsigned long age = EXPTIME;
+	long min_timestamp = 0, oldest_entry = 0;
+	int local_dev = 0, i = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 
-	if(data->t) age = (unsigned long)data->t;
+	if(data->t) age = data->t;
 	local_dev = data->dev;
-
-	/* already been strlcpy'd */
-	memcpy(target.pfrt_name, data->tablename, PF_TABLE_NAME_SIZE);
 
 	while (1) {
 		memset(&target, 0x00, sizeof(struct pfr_table));
+		memcpy(target.pfrt_name, data->tablename, PF_TABLE_NAME_SIZE);
 		min_timestamp = (long)time(NULL) - age;
 		oldest_entry = time(NULL);
-		astats_count = radix_get_astats(local_dev, &astats, &target,0);
+		astats_count = radix_get_astats(local_dev, &astats, &target, 0);
 
 		if (astats_count > 0) {
 
@@ -85,10 +84,8 @@ void
 			for (i = 0; i < astats_count; i++) {
 				if (astats[i].pfras_tzero <= min_timestamp) {
 					del_addrs_count++;
-				}
-				else {
+				} else 
 					oldest_entry = lmin(oldest_entry, astats[i].pfras_tzero);
-				}
 			}
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) {
@@ -136,6 +133,8 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 		syslog(LOG_DAEMON | LOG_ERR, "malloc error B02 - exit");
 		s2c_exit_fail(); 
 	}
+
+	memset(yarn, 0x00, sizeof(twisted_t));
  
 	if(pthread_attr_init(&yarn->attr)) {
 		syslog(LOG_ERR | LOG_DAEMON, "unable to init detached thread attributes - warning");
@@ -151,7 +150,7 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 }
 
 int 
-s2c_pf_block(int dev, char *tablename, char *ip) 
+s2c_pf_block(int dev, char *tablename, char *ip, struct blist_head *bh) 
 { 
 	typedef struct _pfbl_t {
 		struct pfioc_table io;
@@ -183,9 +182,13 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
 	pfbl->io.pfrio_size   = 1; 
 
-	if (ioctl(dev, DIOCRADDADDRS, &pfbl->io)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDADDRS - ioctl error - exit");
-		s2c_exit_fail();
+	while (ioctl(dev, DIOCRADDADDRS, &pfbl->io)) {
+		while (s2c_pf_ruleadd(dev, tablename)) {
+			syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - DIOCRADDADDRS - ioctl error - warning");
+			sleep(1);
+		}
+		s2c_parse_and_block_blisted_clear(bh);
+		sleep(1);
 	}
 
 	free(pfbl);
@@ -275,7 +278,7 @@ void
 }
 
 int 
-s2c_pf_tbladd(int dev, char * tablename) 
+s2c_pf_tbladd(int dev, char *tablename) 
 {
 	typedef struct _pftbl_t {
 		struct pfioc_table io;
@@ -405,7 +408,6 @@ s2c_pf_intbl(int dev, char *tablename)
 			return(1);
 		}
 	}
-
 	free(pfintbl);
 	return(0);
 }

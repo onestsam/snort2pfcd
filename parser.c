@@ -61,50 +61,99 @@ s2c_parse_and_block_blisted(char *ret, struct blist_head *blist)
 {
 	struct ipblist *aux2, *ipb = NULL;
 
-	ipb = (struct ipblist*)malloc(sizeof(struct ipblist));
-
-	if(ipb == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A01 - exit");
-		s2c_exit_fail();
-	}
-
-	memcpy(ipb->baddr, ret, LISTMAX);
-
 	if(blist->lh_first == NULL){
+
+		ipb = (struct ipblist*)malloc(sizeof(struct ipblist));
+
+		if(ipb == NULL) {
+			syslog(LOG_DAEMON | LOG_ERR, "malloc error A01 - exit");
+			s2c_exit_fail();
+		}
+
+		memset(ipb, 0x00, sizeof(struct ipblist));
+		memcpy(ipb->baddr, ret, LISTMAX);
+		ipb->t = time(NULL);
+
 		LIST_INIT(blist);
 		LIST_INSERT_HEAD(blist, ipb, elem);
+		return(0);
 	} else {
 		for(aux2=blist->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
 			if(!strcmp(aux2->baddr, ret)){
 				free(ipb);
 				return(1);
 			} else if(!aux2->elem.le_next) {
+
+				ipb = (struct ipblist*)malloc(sizeof(struct ipblist));
+
+				if(ipb == NULL) {
+					syslog(LOG_DAEMON | LOG_ERR, "malloc error A02 - exit");
+					s2c_exit_fail();
+				}
+
+				memset(ipb, 0x00, sizeof(struct ipblist));
+				memcpy(ipb->baddr, ret, LISTMAX);
+				ipb->t = time(NULL);
+
 				LIST_INSERT_AFTER(aux2, ipb, elem);
 				return(0);
 			}
 		}
-	}	
+	}
 
-	return(0);
+	return(0);	
+}
+
+void
+s2c_parse_and_block_blisted_clear(struct blist_head *bl)
+{
+	struct ipblist *n1, *n2 = NULL;
+
+ 	n1 = LIST_FIRST(bl);
+
+	while (n1 != NULL) {
+		n2 = LIST_NEXT(n1, elem);
+		free(n1);
+		n1 = n2;
+	}
+
+	LIST_INIT(bl);
+
+	return;
+}
+
+void
+s2c_parse_and_block_blisted_del(unsigned long t, struct blist_head *bl)
+{
+	struct ipblist *aux2;
+
+	for(aux2=bl->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
+		if((aux2->t + EXPTIME) >= t) {
+			LIST_REMOVE(aux2, elem);
+			free(aux2);
+		}
+	}
+
+	return;
 }
 
 int
 s2c_parse_line(char *buf, FILE* wfile)
 {
 	static char next_ch = ' ';
-        int i = 0;
-        
+	int i = 0;
+
 	if (feof(wfile)) {
-	        return (0);
+		return (0);
 	}                                
 	do {
 		next_ch = fgetc(wfile);
 		if (i < LISTMAX)
-	        	buf[i++] = next_ch;
+			buf[i++] = next_ch;
 	} while (!feof(wfile) && !isspace(next_ch));
 	if (i >= LISTMAX) {
 		return (-1);
-	}		                 
+	}
 
 	buf[i] = '\0';
 	return(1);
@@ -119,7 +168,7 @@ s2c_parse_priority(int priority, char *cad)
 	prio = (char *)malloc(sizeof(char)*LISTMAX);
 
 	if(prio == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A02 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A03 - exit");
 		s2c_exit_fail();
 	}
 
@@ -149,21 +198,26 @@ s2c_parse_ip(char *cad, char *ret)
 	expr = (regex_t*)malloc(sizeof(regex_t));
 
 	if(expr == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A03 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A04 - exit");
 		s2c_exit_fail();	
+	}
+
+	memset(expr, 0x00, sizeof(regex_t));
+
+	if (regcomp(expr, REG_ADDR, REG_EXTENDED) !=0) {
+		syslog(LOG_ERR | LOG_DAEMON, "error compiling regex expr - exit");
+		s2c_exit_fail();
 	}
 
 	resultado = (regmatch_t*)malloc(sizeof(regmatch_t));
 
 	if(resultado == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A04 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A05 - exit");
 		s2c_exit_fail();
 		}
+
+	memset(resultado, 0x00, sizeof(regmatch_t));
 	
-	if (regcomp(expr, REG_ADDR, REG_EXTENDED) !=0) {
-		syslog(LOG_ERR | LOG_DAEMON, "error compiling regex expr - exit");
-		s2c_exit_fail();
-	}
 	if (regexec(expr, cad, 1, resultado, 0) !=0) 
 		enc=0;
 	
@@ -190,12 +244,8 @@ s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tabl
 	char *ret;
 	thread_log_t *log_data;
 
-	log_data = (thread_log_t *)malloc(sizeof(thread_log_t));
-
-	if(log_data == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A05 - exit");
-		s2c_exit_fail();
-	}
+	if(!s2c_parse_priority(priority, line)) 
+		return;
 
 	ret = (char *)malloc(sizeof(char)*LISTMAX);
 
@@ -205,12 +255,6 @@ s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tabl
 	}
 
 	bzero(ret, LISTMAX);
-	memset(log_data, 0x00, sizeof(thread_log_t));
-
-	if(!s2c_parse_priority(priority, line)) {
-		free(ret);
-		return;
-	}
 
 	if (!s2c_parse_ip(line, ret)) {
 		free(ret);
@@ -224,16 +268,27 @@ s2c_parse_and_block(int dev, int priority, char *logfile, char *line, char *tabl
 	}
 
 	if(!s2c_parse_and_block_blisted(ret, bh)) {
+		log_data = (thread_log_t *)malloc(sizeof(thread_log_t));
+
+		if(log_data == NULL) {
+			syslog(LOG_DAEMON | LOG_ERR, "malloc error A07 - exit");
+			s2c_exit_fail();
+		}
+
+		memset(log_data, 0x00, sizeof(thread_log_t));
+
 		s2c_pf_block_log_check();
+
 		pthread_mutex_lock(&thr_mutex);
 		s2c_threads++;
 		pthread_mutex_unlock(&thr_mutex);
+
 		strlcpy(log_data->logfile, logfile, LISTMAX);
 		strlcpy(log_data->logip, ret, LISTMAX);
 		s2c_spawn_thread(s2c_pf_block_log, log_data);
+	
+		s2c_pf_block(dev, tablename, ret, bh);
 	}
-
-	s2c_pf_block(dev, tablename, ret);
 
 	free(ret);
 	return;
@@ -247,46 +302,44 @@ s2c_parse_load_wl_file(char *wlist_file, struct ipwlist *ipw1)
 	struct ipwlist *ipw2 = NULL;
 	FILE *wfile = NULL;
 
+	wfile = fopen(wlist_file, "r");
+
+	if (wfile == NULL) {
+		return(1);
+	}
+
+	flockfile(wfile);
+
 	cad = (char *)malloc(sizeof(char)*LISTMAX);
 
 	if(cad == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A07 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A08- - exit");
 		s2c_exit_fail();
 	}
 
 	ret = (char *)malloc(sizeof(char)*LISTMAX);
 
 	if(ret == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A08 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A09 - exit");
 		s2c_exit_fail();
 	}
 
 	bzero(cad, LISTMAX);
 	bzero(ret, LISTMAX);
 
-	wfile = fopen(wlist_file, "r");
-
-	if (wfile == NULL) {
-		free(cad);
-		free(ret);
-		return(1);
-	}
-
-	flockfile(wfile);
-
 	while(s2c_parse_line(cad, wfile)) {
 		if (s2c_parse_ip(cad, ret)) {
 			ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 
 			if(ipw2 == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "malloc error A09 - exit");
+				syslog(LOG_DAEMON | LOG_ERR, "malloc error A10 - exit");
 				s2c_exit_fail();
 			}
 
 			ipw2->waddr = cidr_alloc();
 
 			if(ipw2->waddr == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "malloc error A10 - exit");
+				syslog(LOG_DAEMON | LOG_ERR, "malloc error A11 - exit");
 				s2c_exit_fail();
 			}
 
@@ -324,14 +377,16 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 			ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 
 			if(ipw2 == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "malloc error A11 - exit");
+				syslog(LOG_DAEMON | LOG_ERR, "malloc error A12 - exit");
 				s2c_exit_fail();
 			}
+
+			memset(ipw2, 0x00, sizeof(struct ipwlist));
 
 			ipw2->waddr = cidr_alloc();
 
 			if(ipw2->waddr == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "malloc error A12 - exit");
+				syslog(LOG_DAEMON | LOG_ERR, "malloc error A13 - exit");
 				s2c_exit_fail();
 			}
 
@@ -347,56 +402,47 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 }
 
 int
-s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *wh)
+s2c_parse_load_bl(int dev, char *tablename, char *namefile, struct wlist_head *wh, struct blist_head *bh)
 {
 	char *cad;
 	char *ret;
 	FILE *bfile = NULL;
 
+	checkfile(namefile);
+
+	bfile = fopen(namefile, "r");
+
+	if (bfile == NULL) return(-1);
+
+	flockfile(bfile);
+
 	cad = (char *)malloc(sizeof(char)*LISTMAX);
 
 	if(cad == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A13 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A14 - exit");
 		s2c_exit_fail();
 	}
 
 	ret = (char *)malloc(sizeof(char)*LISTMAX);
 
 	if(ret == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A14 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A15 - exit");
 		s2c_exit_fail();
 	}
 
 	bzero(cad, LISTMAX);
 	bzero(ret, LISTMAX);
 
-	checkfile(namefile);
-
-	if (s2c_pf_ruleadd(dev, tablename) == 1) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
-		s2c_exit_fail();
-	}
-
-	bfile = fopen(namefile, "r");
-
-	if (bfile == NULL) {
-		free(cad);
-		free(ret);
-		return(-1);
-	}
-
-	flockfile(bfile);
-
 	while(s2c_parse_line(cad, bfile))
 		if (s2c_parse_ip(cad, ret)){
 			if (!LIST_EMPTY(wh)){
 				if (!s2c_parse_search_wl(ret, wh)){
-					s2c_pf_block(dev, tablename, ret);
+					s2c_pf_block(dev, tablename, ret, bh);
 				} else {
 					syslog(LOG_ERR | LOG_DAEMON, "Blacklist entry %s is whitelisted - warning", ret);
 				}
 			} else {
-				s2c_pf_block(dev, tablename, ret);
+				s2c_pf_block(dev, tablename, ret, bh);
 			}
 		}
 
@@ -414,20 +460,20 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 	struct ipwlist *ipw1, *ipw2 = NULL;
 	struct ifreq *ifr;
 	int fd;
-	
-	checkfile(namefile);
 
 	ipw1 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 
 	if(ipw1 == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A15 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A16 - exit");
 		s2c_exit_fail();
 	}
+
+	memset(ipw1, 0x00, sizeof(struct ipwlist));
 
 	ipw1->waddr = cidr_alloc();
 
 	if(ipw1->waddr == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A16 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A17 - exit");
 		s2c_exit_fail();
 	}
 
@@ -439,7 +485,7 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 	ifr = (struct ifreq *)malloc(sizeof(struct ifreq));
 
 	if(ifr == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A17 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A18 - exit");
 		s2c_exit_fail();
 	}
 
@@ -460,14 +506,14 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 		ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist));
 
 		if(ipw2 == NULL) {
-			syslog(LOG_DAEMON | LOG_ERR, "malloc error A18 - exit");
+			syslog(LOG_DAEMON | LOG_ERR, "malloc error A19 - exit");
 			s2c_exit_fail();
 		}
 
 		ipw2->waddr = cidr_alloc();
 
 		if(ipw2->waddr == NULL) {
-                	syslog(LOG_DAEMON | LOG_ERR, "malloc error A19 - exit");
+			syslog(LOG_DAEMON | LOG_ERR, "malloc error A20 - exit");
 			s2c_exit_fail();
 		}
 
@@ -480,6 +526,8 @@ s2c_parse_load_wl(char *namefile, char *extif, struct wlist_head *head)
 		free(ifr);
 		return(-1);
 	}
+
+	checkfile(namefile);
 
 	if(s2c_parse_load_wl_file(namefile, ipw1)) {
 		free(ifr);
@@ -497,7 +545,7 @@ s2c_parse_search_wl(char *ip, struct wlist_head *wl)
 	CIDR *ipcidr = cidr_alloc();
 
 	if(ipcidr == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error A20 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error A21 - exit");
 		s2c_exit_fail();
 	}
 

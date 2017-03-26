@@ -50,8 +50,10 @@ int
 s2c_kevent_set(int fd, int kq)
 {
 	struct kevent kev;
+
 	memset(&kev, 0x00, sizeof(struct kevent));
 	EV_SET(&kev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+
 	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1)
 		return(-1);
 
@@ -62,20 +64,24 @@ int
 s2c_kevent_open(char *file)
 {
 	int fd = open(file, O_RDONLY);
+
 	if (fd == -1)
 		return(-1);
+
 	if (lseek(fd, 0, SEEK_END) == -1)
 		return(-1);
+
 	return(fd);
 }
 
 
 void
-s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head *whead)
+s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
 {
 	struct kevent ke;
-	struct blist_head bhead;
 	char *buf;
+	int i = 0;
+	unsigned long ti = 0;
 
 	buf = (char *)malloc(sizeof(char)*BUFSIZ);
 
@@ -84,19 +90,26 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 		s2c_exit_fail();
 	}
 
-	memset(&bhead, 0x00, sizeof(struct blist_head));
+	if (t) ti = t; else ti = EXPTIME;
 
 	while (1) {
 		memset(&ke, 0x00, sizeof(struct kevent));
 		bzero(buf, BUFSIZ);
 
+		i++;
+		if (i == 100) {
+			i = 0;
+			s2c_parse_and_block_blisted_del(ti, bhead);
+		}
+
 		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
 			syslog(LOG_ERR | LOG_DAEMON, "kevent request error - exit");
 			s2c_exit_fail();
 		}
+
 		if (ke.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, &bhead, buf, tablename, BUFSIZ, ke.data) == -1)
-				syslog(LOG_ERR | LOG_DAEMON, "warning, kevent read error.");
+			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, bhead, buf, tablename, BUFSIZ, ke.data) == -1)
+				syslog(LOG_ERR | LOG_DAEMON, "kevent read error - warning");
 	}
 	free(buf);
 }
@@ -104,12 +117,15 @@ s2c_kevent_loop(int fd, int dev, int priority, int kq, char *logfile, char *tabl
 int
 s2c_kevent_read_l(int fd, char *buf, size_t len)
 {
-	int i, b_r = 0;
+	int i = 0, b_r = 0;
 
 	for (i = 0; i < len; i++) {
+
 		b_r = read(fd, &buf[i], sizeof(char));
+
 		if (b_r == -1 || b_r == 0) 
 			return(b_r);
+
 		if (buf[i] == '\n')
 			break;
 	}

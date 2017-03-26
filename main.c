@@ -54,16 +54,21 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int fd, dev, kq, ch, B, t = 0;
+	int fd = 0, dev = 0, kq = 0, ch = 0, B = 0;
+	unsigned long t = 0;
+	long timebuf = 0;
+	FILE *lfile = NULL;
 	int priority = 1;
 	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist";
 	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
 	char *alertfile = "/var/log/snort/alert";
 	char *extif = "all";
+	char *initmess = NULL;
 	char logfile[LOGMAX];
 	char dyn_tablename[TBLMAX];
 	char static_tablename[TBLMAX];
 	struct wlist_head *whead;
+	struct blist_head *bhead;
 	thread_expt_t *expt_data;
 
 	if (getuid() != 0) {
@@ -71,25 +76,9 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
-
-	if(whead == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E01 - exit");
-		s2c_exit_fail();
-	}
-
-	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
-
-	if(expt_data == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E02 - exit");
-		s2c_exit_fail();
-	}
-
 	bzero(logfile, LOGMAX);
 	bzero(dyn_tablename, TBLMAX);
 	bzero(static_tablename, TBLMAX);
-	memset(whead, 0x00, sizeof(struct wlist_head));
-	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
 	strlcpy(dyn_tablename, __progname, TBLMAX);
 	strlcpy(static_tablename, __progname, TBLMAX);
@@ -165,16 +154,42 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
+
+	if(whead == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E01 - exit");
+		s2c_exit_fail();
+	}
+
+	bhead = (struct blist_head *)malloc(sizeof(struct blist_head));
+
+	if(bhead == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E02 - exit");
+		s2c_exit_fail();
+	}
+
+	memset(whead, 0x00, sizeof(struct wlist_head));
+	memset(bhead, 0x00, sizeof(struct blist_head));
+
 	if (s2c_parse_load_wl(wfile, extif, whead) == -1)
 		syslog(LOG_ERR | LOG_DAEMON, "unable to load whitelist file - warning");
 
-	if (s2c_pf_ruleadd(dev, dyn_tablename) == 1) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - exit");
-		exit(EXIT_FAILURE);
+	while (s2c_pf_ruleadd(dev, dyn_tablename)) {
+		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - warning");
+		sleep(1);
 	}
 
-	if (!B) if (s2c_parse_load_bl(dev, static_tablename, bfile, whead) == -1)
+	if (!B) if (s2c_parse_load_bl(dev, static_tablename, bfile, whead, bhead) == -1)
 		syslog(LOG_ERR | LOG_DAEMON, "unable to load blacklist file - warning");
+
+	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
+
+	if(expt_data == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E03 - exit");
+		s2c_exit_fail();
+	}
+
+	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
 	expt_data->t = t;
 	expt_data->dev = dev;
@@ -182,7 +197,27 @@ main(int argc, char **argv)
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	s2c_mutexes_init();
-	s2c_kevent_loop(fd, dev, priority, kq, logfile, dyn_tablename, whead);
+
+	initmess = (char *)malloc(sizeof(char)*LISTMAX);
+
+	if(initmess == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "malloc error E04 - exit");
+		s2c_exit_fail();
+	}
+
+	bzero(initmess, LISTMAX);
+	timebuf = time(NULL);
+
+	sprintf(initmess, "<======= %s started %s", __progname, asctime(localtime(&timebuf)));
+
+	lfile = fopen(logfile, "a");
+	flockfile(lfile);
+	fputs(initmess, lfile);
+	funlockfile(lfile);
+	fclose(lfile);
+	free(initmess);
+
+	s2c_kevent_loop(t, fd, dev, priority, kq, logfile, dyn_tablename, whead, bhead);
 
 	return(0);
 }

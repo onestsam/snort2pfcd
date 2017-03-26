@@ -41,6 +41,7 @@
 #define LOGMAX		64
 #define TBLMAX		32
 #define THRMAX		100
+#define EXPTIME		60*60
 #define PFDEVICE "/dev/pf"
 #define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
 
@@ -51,12 +52,13 @@ struct ipwlist {
 
 struct ipblist {
 	char baddr[LISTMAX];
+	unsigned long t;
 	LIST_ENTRY(ipblist) elem;
 };
 
 typedef struct _thread_expt_t {
 	int dev;
-	int t;
+	unsigned long t;
 	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
