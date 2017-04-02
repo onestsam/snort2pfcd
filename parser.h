@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -42,8 +42,8 @@ int s2c_parse_line(char *, FILE *);
 void s2c_parse_and_block_blisted_clear(struct blist_head *);
 void s2c_parse_and_block_blisted_del(unsigned long, struct blist_head *);
 void s2c_parse_and_block(int, int, char *, char *, char *, struct wlist_head *, struct blist_head *);
-int s2c_parse_load_bl(int, char *, char *, struct wlist_head *, struct blist_head *);
-int s2c_parse_load_wl(char *, char *, struct wlist_head *);
+int s2c_parse_load_bl(int, char *, struct wlist_head *, struct blist_head *);
+void s2c_parse_load_wl(struct wlist_head *);
 int s2c_parse_load_wl_file(char *, struct ipwlist *);
 void s2c_parse_load_wl_ifaces(struct ipwlist *);
 int s2c_parse_search_wl(char *, struct wlist_head *);

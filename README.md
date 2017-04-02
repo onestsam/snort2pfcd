@@ -1,5 +1,5 @@
 # snort2pfcd
-v1.3
+v1.4
 
 Analyzes snort alert output and blocks ip addresses using pf for a specified
 period of time. Expiration of entries use Henrik Gustafsson's expiretable

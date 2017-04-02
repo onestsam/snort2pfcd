@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -37,12 +37,10 @@
 #include "defdata.h"
 
 int s2c_pf_intbl(int, char *);
-int s2c_pf_block(int, char *, char *, struct blist_head *);
+int s2c_pf_block(int, char *, char *, struct wlist_head *, struct blist_head *);
 int s2c_pf_tbladd(int, char *);
 int s2c_pf_ruleadd(int, char *);
 void *s2c_pf_block_log(void *);
-void s2c_pf_block_log_check();
 void *s2c_pf_expiretable(void *);
-void s2c_spawn_thread(void *(*) (void *), void *);
 
 #endif /* _SPFC_H */

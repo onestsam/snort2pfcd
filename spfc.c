@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -58,6 +58,7 @@ void
 	struct pfr_astats *astats;
 	struct pfr_table target;
 	struct pfr_addr *del_addrs_list;
+	char local_tablename[TBLNAMEMAX];
 	int astats_count = 0, del_addrs_count = 0, del_addrs_result = 0;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
@@ -66,12 +67,15 @@ void
 	int local_dev = 0, i = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 
+	bzero(local_tablename, TBLNAMEMAX);
+	memcpy(local_tablename, data->tablename, TBLNAMEMAX);
+
 	if(data->t) age = data->t;
 	local_dev = data->dev;
 
 	while (1) {
 		memset(&target, 0x00, sizeof(struct pfr_table));
-		memcpy(target.pfrt_name, data->tablename, PF_TABLE_NAME_SIZE);
+		memcpy(target.pfrt_name, local_tablename, TBLNAMEMAX);
 		min_timestamp = (long)time(NULL) - age;
 		oldest_entry = time(NULL);
 		astats_count = radix_get_astats(local_dev, &astats, &target, 0);
@@ -89,7 +93,7 @@ void
 			}
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "malloc error B01 - exit");
+				syslog(LOG_DAEMON | LOG_ERR, "%s B01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 				s2c_exit_fail();
 				}
 
@@ -117,60 +121,29 @@ void
 	}
 }
 
-void
-s2c_spawn_thread(void *(*func) (void *), void *data)
-{
-	typedef struct _twisted_t {
-		pthread_t thr;
-		pthread_attr_t attr;
-	} twisted_t;
-
-	twisted_t *yarn;
- 
-	yarn = (twisted_t *)malloc(sizeof(twisted_t));
-
-	if(yarn == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B02 - exit");
-		s2c_exit_fail(); 
-	}
-
-	memset(yarn, 0x00, sizeof(twisted_t));
- 
-	if(pthread_attr_init(&yarn->attr)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to init detached thread attributes - warning");
- 
-	} else if(pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to set detached thread attributes - warning");
- 
-	} else if(pthread_create(&yarn->thr, &yarn->attr, func, data))
-		syslog(LOG_ERR | LOG_DAEMON, "unable to launch detached thread - warning");
-
-	free(yarn);
-	return;
-}
-
 int 
-s2c_pf_block(int dev, char *tablename, char *ip, struct blist_head *bh) 
+s2c_pf_block(int dev, char *tablename, char *ip, struct wlist_head *wh, struct blist_head *bh) 
 { 
 	typedef struct _pfbl_t {
 		struct pfioc_table io;
 		struct pfr_table table;
 		struct pfr_addr addr;
 		struct in_addr net_addr;
+		char static_tablename[TBLNAMEMAX];
 	} pfbl_t;
 
 	pfbl_t *pfbl;
 
 	pfbl = (pfbl_t *)malloc(sizeof(pfbl_t));
 
-	if(pfbl == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B03 - exit");
+	if(pfbl == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s B02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail(); 
 	}
 
 	memset(pfbl, 0x00, sizeof(pfbl_t));
 
-	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	memcpy(pfbl->table.pfrt_name, tablename, TBLNAMEMAX); 
 	inet_aton(ip, (struct in_addr *)&pfbl->net_addr);
 	memcpy(&pfbl->addr.pfra_ip4addr.s_addr, &pfbl->net_addr, sizeof(struct in_addr));
 
@@ -184,10 +157,18 @@ s2c_pf_block(int dev, char *tablename, char *ip, struct blist_head *bh)
 
 	while (ioctl(dev, DIOCRADDADDRS, &pfbl->io)) {
 		while (s2c_pf_ruleadd(dev, tablename)) {
-			syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - DIOCRADDADDRS - ioctl error - warning");
+			syslog(LOG_ERR | LOG_DAEMON, "%s ruletable - DIOCRADDADDRS - %s - %s", LANG_NO_OPEN, LANG_IOCTL_ERROR, LANG_WARN);
 			sleep(1);
 		}
+
+		syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_BL_RESET, LANG_WARN);
 		s2c_parse_and_block_blisted_clear(bh);
+
+		strlcpy(pfbl->static_tablename, __progname, TBLNAMEMAX);
+		strlcat(pfbl->static_tablename, "_static", TBLNAMEMAX);
+
+		if (s2c_parse_load_bl(dev, pfbl->static_tablename, wh, bh))
+			syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
 		sleep(1);
 	}
 
@@ -195,32 +176,14 @@ s2c_pf_block(int dev, char *tablename, char *ip, struct blist_head *bh)
 	return(0);
 }
 
-void
-s2c_pf_block_log_check()
-{
-	int threadcheck = 0;
-
-	pthread_mutex_lock(&thr_mutex);
-	threadcheck = s2c_threads;
-	pthread_mutex_unlock(&thr_mutex);
-
-	while(!(threadcheck < THRMAX)){
-		sleep(10);
-		pthread_mutex_lock(&thr_mutex);
-		threadcheck = s2c_threads;
-		pthread_mutex_unlock(&thr_mutex);  
-	}
-
-	return;
-}
 
 void
 *s2c_pf_block_log(void *arg)
 {
 	typedef struct _pfbl_log_t {
-		char message[LISTMAX];
-		char local_logip[LISTMAX];
-		char local_logfile[LISTMAX];
+		char message[BUFMAX];
+		char local_logip[BUFMAX];
+		char local_logfile[BUFMAX];
 		char hbuf[NI_MAXHOST];
 		struct sockaddr sa;
 	} pfbl_log_t;
@@ -235,14 +198,14 @@ void
 	pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t));
 
 	if(pfbl_log == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B04 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s B03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail(); 
 	}
 
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
-	memcpy(pfbl_log->local_logip, data->logip, LISTMAX);
-	memcpy(pfbl_log->local_logfile, data->logfile, LISTMAX);
+	memcpy(pfbl_log->local_logip, data->logip, BUFMAX);
+	memcpy(pfbl_log->local_logfile, data->logfile, BUFMAX);
 
 	timebuf = time(NULL);
 
@@ -259,7 +222,7 @@ void
 			strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 	}
 
-	sprintf(pfbl_log->message, "%s (%s) not whitelisted, added to block table %s", pfbl_log->local_logip, pfbl_log->hbuf, asctime(localtime(&timebuf)));
+	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 
 	lfile = fopen(pfbl_log->local_logfile, "a");
 	flockfile(lfile);
@@ -290,13 +253,13 @@ s2c_pf_tbladd(int dev, char *tablename)
 	pftbl = (pftbl_t *)malloc(sizeof(pftbl_t));
 
 	if(pftbl == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B05 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s B04 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail(); 
 	}
 
 	memset(pftbl, 0x00, sizeof(pftbl_t));
 
-	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	memcpy(pftbl->table.pfrt_name, tablename, TBLNAMEMAX);
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
 	pftbl->io.pfrio_buffer = &pftbl->table; 
@@ -304,7 +267,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 	pftbl->io.pfrio_size   = 1; 
 
 	if (ioctl(dev, DIOCRADDTABLES, &pftbl->io)) { 
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDTABLES - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		return(1);
 	}
 
@@ -329,7 +292,7 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	pfrla = (pfrla_t *)malloc(sizeof(pfrla_t));
 
 	if(pfrla == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B06 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s B05 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -344,12 +307,12 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 
 	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}	
 
 	if (ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCBEGINADDRS - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCBEGINADDRS - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -357,7 +320,7 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
 
 	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -379,7 +342,7 @@ s2c_pf_intbl(int dev, char *tablename)
 	pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t));
 
 	if(pfintbl == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error B07 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s B06 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -390,7 +353,7 @@ s2c_pf_intbl(int dev, char *tablename)
 	pfintbl->io.pfrio_size   = 0;
 	
 	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) { 
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 	
@@ -398,7 +361,7 @@ s2c_pf_intbl(int dev, char *tablename)
 	pfintbl->io.pfrio_esize = sizeof(struct pfr_table);
 
 	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - ioctl error - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 

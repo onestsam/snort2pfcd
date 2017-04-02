@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -59,56 +59,104 @@ main(int argc, char **argv)
 	long timebuf = 0;
 	FILE *lfile = NULL;
 	int priority = 1;
-	char *wfile     = "/usr/local/etc/snort/rules/iplists/default.whitelist";
-	char *bfile     = "/usr/local/etc/snort/rules/iplists/default.blacklist";
-	char *alertfile = "/var/log/snort/alert";
-	char *extif = "all";
+	char *alertfile = NULL;
 	char *initmess = NULL;
-	char logfile[LOGMAX];
-	char dyn_tablename[TBLMAX];
-	char static_tablename[TBLMAX];
+	char *logfile = NULL;
+	char *dyn_tablename = NULL;
+	char *static_tablename = NULL;
 	struct wlist_head *whead;
 	struct blist_head *bhead;
 	thread_expt_t *expt_data;
 
+	fprintf(stdout, "%s version %s\n", __progname, VERSION);
+
 	if (getuid() != 0) {
-		fprintf(stderr, "Error: must be root to run %s - exit\n", __progname);
+		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
-	bzero(logfile, LOGMAX);
-	bzero(dyn_tablename, TBLMAX);
-	bzero(static_tablename, TBLMAX);
+	wfile = (char *)malloc(sizeof(char)*BUFMAX);
+	if(wfile == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
 
-	strlcpy(dyn_tablename, __progname, TBLMAX);
-	strlcpy(static_tablename, __progname, TBLMAX);
-	strlcat(static_tablename, "_static", TBLMAX);
+	bfile = (char *)malloc(sizeof(char)*BUFMAX);
+	if(bfile == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
 
-	fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	extif = (char *)malloc(sizeof(char)*BUFMAX);
+	if(extif == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	alertfile = (char *)malloc(sizeof(char)*BUFMAX);
+	if(alertfile == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E04 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	logfile = (char *)malloc(sizeof(char)*BUFMAX);
+	if(logfile == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E05 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	dyn_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
+	if(dyn_tablename == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E06 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	static_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
+	if(static_tablename == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s E07 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	bzero(wfile, BUFMAX);
+	bzero(bfile, BUFMAX);
+	bzero(extif, BUFMAX);
+
+	bzero(logfile, BUFMAX);
+	bzero(alertfile, BUFMAX);
+	bzero(dyn_tablename, TBLNAMEMAX);
+	bzero(static_tablename, TBLNAMEMAX);
+
+	strlcpy(wfile, PATH_WHITELIST, BUFMAX);
+	strlcpy(bfile, PATH_BLACKLIST, BUFMAX);
+	strlcpy(extif, "all", BUFMAX);
+	strlcpy(alertfile, PATH_ALERT, BUFMAX);
+	strlcpy(dyn_tablename, __progname, TBLNAMEMAX);
+	strlcpy(static_tablename, __progname, TBLNAMEMAX);
+	strlcat(static_tablename, "_static", TBLNAMEMAX);
 	
-	memcpy(logfile, "/var/log/", LOGMAX);
-	strlcat(logfile,  __progname, LOGMAX);
-	strlcat(logfile, ".log", LOGMAX);
+	strlcpy(logfile, PATH_LOG, BUFMAX);
+	strlcat(logfile,  __progname, BUFMAX);
+	strlcat(logfile, ".log", BUFMAX);
 
 	while ((ch = getopt(argc, argv, "w:p:Bb:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
-				wfile = optarg;
+				strlcpy(wfile, optarg, BUFMAX);
 				break;
 			case 'b':
-				bfile = optarg;
+				strlcpy(bfile, optarg, BUFMAX);
 				break;
 			case 'B':
 				B = 1;
 				break;
 			case 'a':
-				alertfile = optarg;
+				strlcpy(alertfile, optarg, BUFMAX);
 				break;
 			case 'l':
-				memcpy(logfile, optarg, 64);
+				strlcpy(logfile, optarg, BUFMAX);
 				break;
 			case 'e':
-				extif = optarg;
+				strlcpy(extif, optarg, BUFMAX);
 				break;
 			case 't':
 				t = optnum("t", optarg);
@@ -133,59 +181,60 @@ main(int argc, char **argv)
 
 	dev = open(PFDEVICE, O_RDWR);
 	if (dev == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to open /dev/pf device - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
 	kq = kqueue();
 	if (kq == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "kqueue init error - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
 	fd = s2c_kevent_open(alertfile);
 	if (fd == -1) {  
-		syslog(LOG_ERR | LOG_DAEMON, "unable to open alertfile - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
 		exit(EXIT_FAILURE);
-	}	
+	}
+
+	free(alertfile);
 	
 	if (s2c_kevent_set(fd, kq) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to set kevent structure - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
 	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
 
 	if(whead == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E01 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s E08 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
 	bhead = (struct blist_head *)malloc(sizeof(struct blist_head));
 
 	if(bhead == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E02 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s E09 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
 	memset(whead, 0x00, sizeof(struct wlist_head));
 	memset(bhead, 0x00, sizeof(struct blist_head));
 
-	if (s2c_parse_load_wl(wfile, extif, whead) == -1)
-		syslog(LOG_ERR | LOG_DAEMON, "unable to load whitelist file - warning");
+	s2c_parse_load_wl(whead);
 
 	while (s2c_pf_ruleadd(dev, dyn_tablename)) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to add ruletable - warning");
+		syslog(LOG_ERR | LOG_DAEMON, "%s ruletable - %s", LANG_NO_OPEN, LANG_WARN);
 		sleep(1);
 	}
 
-	if (!B) if (s2c_parse_load_bl(dev, static_tablename, bfile, whead, bhead) == -1)
-		syslog(LOG_ERR | LOG_DAEMON, "unable to load blacklist file - warning");
+	if (!B) if (s2c_parse_load_bl(dev, static_tablename, whead, bhead))
+		syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
 
 	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
 
 	if(expt_data == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E03 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s E10 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -193,22 +242,22 @@ main(int argc, char **argv)
 
 	expt_data->t = t;
 	expt_data->dev = dev;
-	memcpy(expt_data->tablename, dyn_tablename, PF_TABLE_NAME_SIZE);
+	memcpy(expt_data->tablename, dyn_tablename, TBLNAMEMAX);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	s2c_mutexes_init();
 
-	initmess = (char *)malloc(sizeof(char)*LISTMAX);
+	initmess = (char *)malloc(sizeof(char)*BUFMAX);
 
 	if(initmess == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error E04 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s E11 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
-	bzero(initmess, LISTMAX);
+	bzero(initmess, BUFMAX);
 	timebuf = time(NULL);
 
-	sprintf(initmess, "<======= %s started %s", __progname, asctime(localtime(&timebuf)));
+	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
 
 	lfile = fopen(logfile, "a");
 	flockfile(lfile);
@@ -221,4 +270,3 @@ main(int argc, char **argv)
 
 	return(0);
 }
-

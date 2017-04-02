@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -32,16 +32,18 @@
 #ifndef _TOOLS_H
 #define _TOOLS_H
 
-void	usage();
-void	sighup();
-void	sigterm();
-void	sigint();
-void	daemonize();
-void	s2c_exit_fail();
-void	s2c_mutexes_init();
-void	checkfile(char *);
-long	lmax(long ,long);
-long    lmin(long ,long);
+void usage();
+void sighup();
+void sigterm();
+void sigint();
+void daemonize();
+void s2c_exit_fail();
+void s2c_spawn_thread(void *(*) (void *), void *);
+void s2c_mutexes_init();
+void s2c_pf_block_log_check();
+void checkfile(char *);
+long lmax(long ,long);
+long lmin(long ,long);
 int	optnum(char *, char *);
 
 #endif /* _TOOLS_H */

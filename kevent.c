@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -86,7 +86,7 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *lo
 	buf = (char *)malloc(sizeof(char)*BUFSIZ);
 
 	if(buf == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error C01 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s C01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -97,19 +97,19 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *lo
 		bzero(buf, BUFSIZ);
 
 		i++;
-		if (i == 100) {
+		if (i == 50) {
 			i = 0;
 			s2c_parse_and_block_blisted_del(ti, bhead);
 		}
 
 		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
-			syslog(LOG_ERR | LOG_DAEMON, "kevent request error - exit");
+			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 			s2c_exit_fail();
 		}
 
 		if (ke.filter == EVFILT_READ)
 			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, bhead, buf, tablename, BUFSIZ, ke.data) == -1)
-				syslog(LOG_ERR | LOG_DAEMON, "kevent read error - warning");
+				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 	}
 	free(buf);
 }

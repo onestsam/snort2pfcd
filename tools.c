@@ -1,6 +1,6 @@
 /*
  * snort2pfcd
- * Copyright (c) 2016 Samee Shahzada <onestsam@gmail.com>
+ * Copyright (c) 2017 Samee Shahzada <onestsam@gmail.com>
  *
  * Based on snort2c
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
@@ -55,7 +55,7 @@ checkfile(char *namefile)
 	info = (struct stat *)malloc(sizeof(struct stat));
 
 	if(info == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error D01 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s D01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -63,7 +63,7 @@ checkfile(char *namefile)
 	lstat(namefile, info);
 
 	if (info->st_mode & S_IFDIR) {
-		syslog(LOG_ERR | LOG_DAEMON, "file error: file is a directory: %s - exit", namefile);
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -78,34 +78,34 @@ daemonize()
 	pid_t otherpid;
 	char *pidfile;
 
-	pidfile = (char *)malloc(sizeof(char)*LOGMAX);
+	pidfile = (char *)malloc(sizeof(char)*BUFMAX);
 
 	if(pidfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "malloc error D02 - exit");
+		syslog(LOG_DAEMON | LOG_ERR, "%s D02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
-	bzero(pidfile, LOGMAX);
+	bzero(pidfile, BUFMAX);
 	memset(&otherpid, 0x00, sizeof(pid_t));
 
-	memcpy(pidfile, "/var/run/", LOGMAX);
-	strlcat(pidfile,  __progname, LOGMAX);
-	strlcat(pidfile, ".pid", LOGMAX);
+	memcpy(pidfile, PATH_RUN, BUFMAX);
+	strlcat(pidfile,  __progname, BUFMAX);
+	strlcat(pidfile, ".pid", BUFMAX);
 
 	pfh = pidfile_open(pidfile, 0600, &otherpid);
 	if (pfh == NULL) {
 		if (errno == EEXIST)
-			syslog(LOG_ERR | LOG_DAEMON, "Daemon already running, pid: %d.", otherpid);
-		fprintf(stderr, "Cannot open or create pidfile");
+			syslog(LOG_ERR | LOG_DAEMON, "%s, pid: %d.", LANG_DAEMON_RUNNING, otherpid);
+		fprintf(stderr, "%s", LANG_NO_PID);
 	}
 
 	if (daemon(0, 0) == -1) {
-		fprintf(stderr, "Cannot daemonize");
+		fprintf(stderr, "%s", LANG_NO_DAEMON);
 		pidfile_remove(pfh);
 		s2c_exit_fail();
 	} else {
 		openlog(__progname, LOG_CONS | LOG_PID, LOG_DAEMON);
-		syslog(LOG_DAEMON | LOG_NOTICE, "%s started, pid: %d", __progname, getpid());
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", __progname, LANG_START, getpid());
 	}
 
 	pidfile_write(pfh);
@@ -126,14 +126,65 @@ s2c_mutexes_init()
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
 
 	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to init mutex - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
 	if (pthread_mutex_init(&thr_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "unable to init mutex - exit");
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
+}
+
+void
+s2c_spawn_thread(void *(*func) (void *), void *data)
+{
+	typedef struct _twisted_t {
+		pthread_t thr;
+		pthread_attr_t attr;
+	} twisted_t;
+
+	twisted_t *yarn;
+ 
+	yarn = (twisted_t *)malloc(sizeof(twisted_t));
+
+	if(yarn == NULL){
+		syslog(LOG_DAEMON | LOG_ERR, "%s D03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+		s2c_exit_fail(); 
+	}
+
+	memset(yarn, 0x00, sizeof(twisted_t));
+ 
+	if(pthread_attr_init(&yarn->attr)) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INIT_THR, LANG_WARN);
+ 
+	} else if(pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_SET_THR, LANG_WARN);
+ 
+	} else if(pthread_create(&yarn->thr, &yarn->attr, func, data))
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
+
+	free(yarn);
+	return;
+}
+
+void
+s2c_pf_block_log_check()
+{
+	int threadcheck = 0;
+
+	pthread_mutex_lock(&thr_mutex);
+	threadcheck = s2c_threads;
+	pthread_mutex_unlock(&thr_mutex);
+
+	while(!(threadcheck < THRMAX)){
+		sleep(10);
+		pthread_mutex_lock(&thr_mutex);
+		threadcheck = s2c_threads;
+		pthread_mutex_unlock(&thr_mutex);  
+	}
+
+	return;
 }
 
 void
@@ -151,7 +202,7 @@ optnum(char *opt, char *targ)
 	long l = -1;
         
 	if (!targ || ((l=strtol(targ, &endp, 0)),(endp && *endp)))
-		fprintf(stderr, "Argument for -%s must be a number.\n", opt);
+		fprintf(stderr, "%s -%s %s.\n", LANG_ARG, opt, LANG_NUM);
 
 	return (int)l;
 }
@@ -159,15 +210,15 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "usage: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime]\n", __progname);
-	fprintf(stderr, "see man %s for more details.", __progname);
+	fprintf(stderr, "%s: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	exit(EXIT_FAILURE);
 }
 
 void
 sighup()
 {
-	syslog(LOG_ERR | LOG_DAEMON, "SIGHUP received - exiting");
+	syslog(LOG_ERR | LOG_DAEMON, "SIGHUP %s", LANG_RECEXIT);
 	pthread_mutex_destroy(&dns_mutex);
 	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
@@ -176,7 +227,7 @@ sighup()
 void
 sigterm()
 {
-	syslog(LOG_ERR | LOG_DAEMON, "SIGTERM received - exiting");
+	syslog(LOG_ERR | LOG_DAEMON, "SIGTERM %s", LANG_RECEXIT);
 	pthread_mutex_destroy(&dns_mutex);
 	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
@@ -185,7 +236,7 @@ sigterm()
 void
 sigint()
 {
-	syslog(LOG_ERR | LOG_DAEMON, "SIGINT received - exiting");
+	syslog(LOG_ERR | LOG_DAEMON, "SIGINT %s", LANG_RECEXIT);
 	pthread_mutex_destroy(&dns_mutex);
 	pthread_mutex_destroy(&thr_mutex);
 	exit(EXIT_SUCCESS);
