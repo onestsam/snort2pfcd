@@ -78,43 +78,43 @@ main(int argc, char **argv)
 	wfile = (char *)malloc(sizeof(char)*BUFMAX);
 	if(wfile == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	bfile = (char *)malloc(sizeof(char)*BUFMAX);
 	if(bfile == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	extif = (char *)malloc(sizeof(char)*BUFMAX);
 	if(extif == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	alertfile = (char *)malloc(sizeof(char)*BUFMAX);
 	if(alertfile == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E04 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	logfile = (char *)malloc(sizeof(char)*BUFMAX);
 	if(logfile == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E05 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	dyn_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
 	if(dyn_tablename == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E06 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	static_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
 	if(static_tablename == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E07 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	bzero(wfile, BUFMAX);
@@ -208,18 +208,20 @@ main(int argc, char **argv)
 
 	if(whead == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E08 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	bhead = (struct blist_head *)malloc(sizeof(struct blist_head));
 
 	if(bhead == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s E09 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	memset(whead, 0x00, sizeof(struct wlist_head));
 	memset(bhead, 0x00, sizeof(struct blist_head));
+
+	s2c_mutexes_init();
 
 	s2c_parse_load_wl(whead);
 
@@ -244,8 +246,6 @@ main(int argc, char **argv)
 	expt_data->dev = dev;
 	memcpy(expt_data->tablename, dyn_tablename, TBLNAMEMAX);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
-
-	s2c_mutexes_init();
 
 	initmess = (char *)malloc(sizeof(char)*BUFMAX);
 
