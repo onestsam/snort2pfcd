@@ -82,7 +82,7 @@ daemonize()
 
 	if(pidfile == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s D02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	}
 
 	bzero(pidfile, BUFMAX);
@@ -102,7 +102,7 @@ daemonize()
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "%s", LANG_NO_DAEMON);
 		pidfile_remove(pfh);
-		s2c_exit_fail();
+		exit(EXIT_FAILURE);
 	} else {
 		openlog(__progname, LOG_CONS | LOG_PID, LOG_DAEMON);
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", __progname, LANG_START, getpid());
@@ -134,6 +134,8 @@ s2c_mutexes_init()
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
+
+	return;
 }
 
 void
