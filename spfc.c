@@ -55,17 +55,15 @@
 void
 *s2c_pf_expiretable(void *arg)
 {
-	struct pfr_astats *astats;
+	struct pfr_astats *astats = NULL;
 	struct pfr_table target;
-	struct pfr_addr *del_addrs_list;
+	struct pfr_addr *del_addrs_list = NULL;
 	char local_tablename[TBLNAMEMAX];
-	int astats_count = 0, del_addrs_count = 0, del_addrs_result = 0;
-	thread_expt_t *data = (thread_expt_t *)arg;
-
+	int astats_count = 0, del_addrs_count = 0, del_addrs_result = 0, local_dev = 0, i = 0;
 	unsigned long age = EXPTIME;
 	long min_timestamp = 0, oldest_entry = 0;
-	int local_dev = 0, i = 0;
 	int flags = PFR_FLAG_FEEDBACK;
+	thread_expt_t *data = (thread_expt_t *)arg;
 
 	bzero(local_tablename, TBLNAMEMAX);
 	memcpy(local_tablename, data->tablename, TBLNAMEMAX);
@@ -86,36 +84,27 @@ void
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++) {
-				if (astats[i].pfras_tzero <= min_timestamp) {
-					del_addrs_count++;
-				} else 
-					oldest_entry = lmin(oldest_entry, astats[i].pfras_tzero);
+				if (astats[i].pfras_tzero <= min_timestamp) del_addrs_count++;
+				else oldest_entry = lmin(oldest_entry, astats[i].pfras_tzero);
 			}
 
-			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) {
-				syslog(LOG_DAEMON | LOG_ERR, "%s B01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-				s2c_exit_fail();
-				}
+			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2c_malloc_err();
 
 			del_addrs_count = 0;
 
-			for (i = 0; i < astats_count; i++) {
+			for (i = 0; i < astats_count; i++)
 				if (astats[i].pfras_tzero <= min_timestamp) {
 					del_addrs_list[del_addrs_count] = astats[i].pfras_a;
 					del_addrs_list[del_addrs_count].pfra_fback = 0;
 					del_addrs_count++;
 				}
-			}
 
 			if (del_addrs_count > 0) {
 				del_addrs_result = radix_del_addrs(local_dev, &target, del_addrs_list, del_addrs_count, flags);
 				free(del_addrs_list);
 			}
 			free(astats);
-		}
-		else if (astats_count == 0) {
-			free(astats);
-		}
+		}	else if (astats_count == 0) free(astats);
 
 		sleep(60);
 	}
@@ -132,14 +121,9 @@ s2c_pf_block(int dev, char *tablename, char *ip, struct wlist_head *wh, struct b
 		char static_tablename[TBLNAMEMAX];
 	} pfbl_t;
 
-	pfbl_t *pfbl;
+	pfbl_t *pfbl = NULL;
 
-	pfbl = (pfbl_t *)malloc(sizeof(pfbl_t));
-
-	if(pfbl == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s B02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail(); 
-	}
+	if((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2c_malloc_err();
 
 	memset(pfbl, 0x00, sizeof(pfbl_t));
 
@@ -191,16 +175,11 @@ void
 	long timebuf = 0;
 	int gni_error = 0;
 	FILE *lfile = NULL;
-	struct sockaddr_in *sin;
-	pfbl_log_t *pfbl_log;
+	struct sockaddr_in *sin = NULL;
+	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;
 
-	pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t));
-
-	if(pfbl_log == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "%s B03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail(); 
-	}
+	if((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
 
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
@@ -218,8 +197,7 @@ void
 		gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
 		pthread_mutex_unlock(&dns_mutex);
 
-		if (gni_error != 0)
-			strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+		if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 	}
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
@@ -234,7 +212,7 @@ void
 	free(arg);
 
 	pthread_mutex_lock(&thr_mutex);
-	s2c_threads--;
+	if (s2c_threads > 1) s2c_threads--;
 	pthread_mutex_unlock(&thr_mutex);
 
 	pthread_exit(NULL);
@@ -248,14 +226,9 @@ s2c_pf_tbladd(int dev, char *tablename)
 		struct pfr_table table;
 	} pftbl_t;
 
-	pftbl_t *pftbl;
+	pftbl_t *pftbl = NULL;
 
-	pftbl = (pftbl_t *)malloc(sizeof(pftbl_t));
-
-	if(pftbl == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "%s B04 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail(); 
-	}
+	if((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
 
 	memset(pftbl, 0x00, sizeof(pftbl_t));
 
@@ -283,18 +256,13 @@ s2c_pf_ruleadd(int dev, char *tablename)
 		struct pfioc_pooladdr io_paddr;
 	} pfrla_t;
 
-	pfrla_t *pfrla;
+	pfrla_t *pfrla = NULL;
 
 	if(!s2c_pf_intbl(dev, tablename))
 		if(s2c_pf_tbladd(dev, tablename))
 			return(1);
 
-	pfrla = (pfrla_t *)malloc(sizeof(pfrla_t));
-
-	if(pfrla == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "%s B05 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) s2c_malloc_err();
 
 	memset(pfrla, 0x00, sizeof(pfrla_t));
 
@@ -336,15 +304,10 @@ s2c_pf_intbl(int dev, char *tablename)
 		struct pfr_table table_aux;
 	} pfintbl_t;
 
-	int i;
-	pfintbl_t *pfintbl;
+	int i = 0;
+	pfintbl_t *pfintbl = NULL;
 
-	pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t));
-
-	if(pfintbl == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "%s B06 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if((pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t))) == NULL) s2c_malloc_err();
 
 	memset(pfintbl, 0x00, sizeof(pfintbl_t));
 

@@ -54,19 +54,19 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int fd = 0, dev = 0, kq = 0, ch = 0, B = 0;
+	int fd = 0, dev = 0, kq = 0, ch = 0, B = 0, priority = 1;
 	unsigned long t = 0;
 	long timebuf = 0;
 	FILE *lfile = NULL;
-	int priority = 1;
-	char *alertfile = NULL;
-	char *initmess = NULL;
-	char *logfile = NULL;
-	char *dyn_tablename = NULL;
-	char *static_tablename = NULL;
-	struct wlist_head *whead;
-	struct blist_head *bhead;
-	thread_expt_t *expt_data;
+	char *alertfile = NULL, *initmess = NULL, *logfile = NULL, *dyn_tablename = NULL, *static_tablename = NULL;
+	struct wlist_head *whead = NULL;
+	struct blist_head *bhead = NULL;
+	thread_expt_t *expt_data = NULL;
+
+	s2c_threads = 0;
+	wfile = NULL;
+	bfile = NULL;
+	extif = NULL;
 
 	fprintf(stdout, "%s version %s\n", __progname, VERSION);
 
@@ -75,47 +75,13 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	wfile = (char *)malloc(sizeof(char)*BUFMAX);
-	if(wfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	bfile = (char *)malloc(sizeof(char)*BUFMAX);
-	if(bfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	extif = (char *)malloc(sizeof(char)*BUFMAX);
-	if(extif == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	alertfile = (char *)malloc(sizeof(char)*BUFMAX);
-	if(alertfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E04 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	logfile = (char *)malloc(sizeof(char)*BUFMAX);
-	if(logfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E05 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	dyn_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
-	if(dyn_tablename == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E06 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	static_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX);
-	if(static_tablename == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E07 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
+	if((wfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	if((bfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	if((extif = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	if((alertfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	if((logfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	if((dyn_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX)) == NULL) s2c_malloc_err();
+	if((static_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX)) == NULL) s2c_malloc_err();
 
 	bzero(wfile, BUFMAX);
 	bzero(bfile, BUFMAX);
@@ -178,21 +144,22 @@ main(int argc, char **argv)
 	argv += optind;
 
 	daemonize();
+	checkfile(bfile);
+	checkfile(wfile);
+	checkfile(alertfile);
+	checkfile(logfile);
 
-	dev = open(PFDEVICE, O_RDWR);
-	if (dev == -1) {
+	if ((dev = open(PFDEVICE, O_RDWR)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
-	kq = kqueue();
-	if (kq == -1) {
+	if ((kq = kqueue()) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
-	fd = s2c_kevent_open(alertfile);
-	if (fd == -1) {  
+	if ((fd = s2c_kevent_open(alertfile)) == -1) {  
 		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
@@ -204,19 +171,8 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	whead = (struct wlist_head *)malloc(sizeof(struct wlist_head));
-
-	if(whead == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E08 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	bhead = (struct blist_head *)malloc(sizeof(struct blist_head));
-
-	if(bhead == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E09 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
+	if((whead = (struct wlist_head *)malloc(sizeof(struct wlist_head))) == NULL) s2c_malloc_err();
+	if((bhead = (struct blist_head *)malloc(sizeof(struct blist_head))) == NULL) s2c_malloc_err();
 
 	memset(whead, 0x00, sizeof(struct wlist_head));
 	memset(bhead, 0x00, sizeof(struct blist_head));
@@ -233,12 +189,7 @@ main(int argc, char **argv)
 	if (!B) if (s2c_parse_load_bl(dev, static_tablename, whead, bhead))
 		syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
 
-	expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t));
-
-	if(expt_data == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E10 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
 
 	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
@@ -247,12 +198,7 @@ main(int argc, char **argv)
 	memcpy(expt_data->tablename, dyn_tablename, TBLNAMEMAX);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
-	initmess = (char *)malloc(sizeof(char)*BUFMAX);
-
-	if(initmess == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s E11 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if((initmess = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
 
 	bzero(initmess, BUFMAX);
 	timebuf = time(NULL);

@@ -69,7 +69,7 @@
 #define LANG_IFADDR_ERROR "ifaddr error"
 #define LANG_MUTEX_ERROR "unable to init mutex"
 #define LANG_NO_OPEN "unable to open"
-#define LANG_RECEXIT "received - exiting"
+#define LANG_RECEXIT "Exit signal received - exiting"
 #define LANG_DAEMON_RUNNING "Daemon already running"
 #define LANG_NO_PID "Cannot open or create pidfile"
 #define LANG_INIT_THR "unable to init detached thread attributes"

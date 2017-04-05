@@ -33,7 +33,6 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-
 #include <libutil.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,14 +49,9 @@
 void
 checkfile(char *namefile)
 {
-	struct stat *info;
+	struct stat *info = NULL;
 
-	info = (struct stat *)malloc(sizeof(struct stat));
-
-	if(info == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s D01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2c_malloc_err();
 
 	memset(info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
@@ -74,16 +68,11 @@ checkfile(char *namefile)
 void
 daemonize()
 {
-	struct pidfh *pfh;
+	struct pidfh *pfh = NULL;
 	pid_t otherpid;
-	char *pidfile;
+	char *pidfile = NULL;
 
-	pidfile = (char *)malloc(sizeof(char)*BUFMAX);
-
-	if(pidfile == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s D02 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
+	if((pidfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
 
 	bzero(pidfile, BUFMAX);
 	memset(&otherpid, 0x00, sizeof(pid_t));
@@ -91,9 +80,8 @@ daemonize()
 	memcpy(pidfile, PATH_RUN, BUFMAX);
 	strlcat(pidfile,  __progname, BUFMAX);
 	strlcat(pidfile, ".pid", BUFMAX);
-
-	pfh = pidfile_open(pidfile, 0600, &otherpid);
-	if (pfh == NULL) {
+	
+	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL) {
 		if (errno == EEXIST)
 			syslog(LOG_ERR | LOG_DAEMON, "%s, pid: %d.", LANG_DAEMON_RUNNING, otherpid);
 		fprintf(stderr, "%s", LANG_NO_PID);
@@ -112,8 +100,8 @@ daemonize()
 	free(pidfile);
 
 	signal(SIGHUP,  sighup);
-	signal(SIGTERM, sigterm);
-	signal(SIGINT,  sigint);
+	signal(SIGTERM, sighup);
+	signal(SIGINT,  sighup);
 
 	return;
 }
@@ -121,7 +109,7 @@ daemonize()
 void
 s2c_mutexes_init()
 {
-	s2c_threads = 0;
+	s2c_threads = 1;
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
 
@@ -146,14 +134,9 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 		pthread_attr_t attr;
 	} twisted_t;
 
-	twisted_t *yarn;
+	twisted_t *yarn = NULL;
  
-	yarn = (twisted_t *)malloc(sizeof(twisted_t));
-
-	if(yarn == NULL){
-		syslog(LOG_DAEMON | LOG_ERR, "%s D03 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail(); 
-	}
+	if((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) s2c_malloc_err();
 
 	memset(yarn, 0x00, sizeof(twisted_t));
  
@@ -190,10 +173,20 @@ s2c_pf_block_log_check()
 }
 
 void
+s2c_malloc_err()
+{
+	syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+	s2c_exit_fail();
+}
+
+void
 s2c_exit_fail()
 {
-	pthread_mutex_destroy(&dns_mutex);
-	pthread_mutex_destroy(&thr_mutex);
+	if(s2c_threads > 0) {
+		pthread_mutex_destroy(&dns_mutex);
+		pthread_mutex_destroy(&thr_mutex);
+	}
+
 	exit(EXIT_FAILURE);
 }
 
@@ -220,27 +213,11 @@ usage()
 void
 sighup()
 {
-	syslog(LOG_ERR | LOG_DAEMON, "SIGHUP %s", LANG_RECEXIT);
-	pthread_mutex_destroy(&dns_mutex);
-	pthread_mutex_destroy(&thr_mutex);
-	exit(EXIT_SUCCESS);
-}
-
-void
-sigterm()
-{
-	syslog(LOG_ERR | LOG_DAEMON, "SIGTERM %s", LANG_RECEXIT);
-	pthread_mutex_destroy(&dns_mutex);
-	pthread_mutex_destroy(&thr_mutex);
-	exit(EXIT_SUCCESS);
-}
-
-void
-sigint()
-{
-	syslog(LOG_ERR | LOG_DAEMON, "SIGINT %s", LANG_RECEXIT);
-	pthread_mutex_destroy(&dns_mutex);
-	pthread_mutex_destroy(&thr_mutex);
+	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
+	if(s2c_threads > 0) {
+		pthread_mutex_destroy(&dns_mutex);
+		pthread_mutex_destroy(&thr_mutex);
+	}
 	exit(EXIT_SUCCESS);
 }
 

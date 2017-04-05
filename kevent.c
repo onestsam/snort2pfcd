@@ -54,8 +54,7 @@ s2c_kevent_set(int fd, int kq)
 	memset(&kev, 0x00, sizeof(struct kevent));
 	EV_SET(&kev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1)
-		return(-1);
+	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1) return(-1);
 
 	return(0);
 }
@@ -65,11 +64,8 @@ s2c_kevent_open(char *file)
 {
 	int fd = open(file, O_RDONLY);
 
-	if (fd == -1)
-		return(-1);
-
-	if (lseek(fd, 0, SEEK_END) == -1)
-		return(-1);
+	if (fd == -1) return(-1);
+	if (lseek(fd, 0, SEEK_END) == -1) return(-1);
 
 	return(fd);
 }
@@ -79,17 +75,11 @@ void
 s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
 {
 	struct kevent ke;
-	char *buf;
+	char *buf = NULL;
 	int i = 0;
 	unsigned long ti = 0;
 
-	buf = (char *)malloc(sizeof(char)*BUFSIZ);
-
-	if(buf == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s C01 - %s", LANG_MALLOC_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
+	if((buf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
 	if (t) ti = t; else ti = EXPTIME;
 
 	while (1) {
@@ -122,12 +112,9 @@ s2c_kevent_read_l(int fd, char *buf, size_t len)
 	for (i = 0; i < len; i++) {
 
 		b_r = read(fd, &buf[i], sizeof(char));
-
-		if (b_r == -1 || b_r == 0) 
-			return(b_r);
-
-		if (buf[i] == '\n')
-			break;
+		
+		if (b_r == -1 || b_r == 0) return(b_r);
+		if (buf[i] == '\n') break;
 	}
 
 	return(i);
@@ -136,12 +123,10 @@ s2c_kevent_read_l(int fd, char *buf, size_t len)
 int
 s2c_kevent_read_f(int fd, int dev, int priority, char *logfile, struct wlist_head *whead, struct blist_head *bhead, char *buf, char *tablename, size_t len, int nbytes)
 {
-	int i, total = 0;
+	int i = 0, total = 0;
 
 	do  {
-		i = s2c_kevent_read_l(fd, buf, len);
-		if (i == -1)
-			return(-1);
+		if ((i = s2c_kevent_read_l(fd, buf, len)) == -1) return(-1);
 
 		s2c_parse_and_block(dev, priority, logfile, buf, tablename, whead, bhead);
 		total += i;
@@ -151,5 +136,4 @@ s2c_kevent_read_f(int fd, int dev, int priority, char *logfile, struct wlist_hea
 	} while (i > 0 && total < nbytes);
 
 	return(total);
-
 }

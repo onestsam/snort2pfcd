@@ -34,10 +34,9 @@
 
 void usage();
 void sighup();
-void sigterm();
-void sigint();
 void daemonize();
 void s2c_exit_fail();
+void s2c_malloc_err();
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutexes_init();
 void s2c_pf_block_log_check();
