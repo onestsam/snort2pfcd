@@ -47,7 +47,7 @@
 #include "tools.h"
 
 void
-checkfile(char *namefile)
+s2c_check_file(char *namefile)
 {
 	struct stat *info = NULL;
 
@@ -66,7 +66,22 @@ checkfile(char *namefile)
 }
 
 void
-daemonize()
+s2c_write_file(char *namefile, char *message)
+{
+	FILE *lfile = NULL;
+
+	if((lfile = fopen(namefile, "a")) == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
+		s2c_exit_fail();
+	}
+	flockfile(lfile);
+	fputs(message, lfile);
+	funlockfile(lfile);
+	fclose(lfile);
+}
+
+void
+s2c_daemonize()
 {
 	struct pidfh *pfh = NULL;
 	pid_t otherpid;
@@ -176,6 +191,13 @@ void
 s2c_malloc_err()
 {
 	syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+	s2c_exit_fail();
+}
+
+void
+s2c_ioctl_err(char *ioctl_err_flag)
+{
+	syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_err_flag, LANG_IOCTL_ERROR, LANG_EXIT);
 	s2c_exit_fail();
 }
 

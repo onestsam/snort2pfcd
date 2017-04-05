@@ -174,7 +174,6 @@ void
 
 	long timebuf = 0;
 	int gni_error = 0;
-	FILE *lfile = NULL;
 	struct sockaddr_in *sin = NULL;
 	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;
@@ -201,12 +200,7 @@ void
 	}
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
-
-	lfile = fopen(pfbl_log->local_logfile, "a");
-	flockfile(lfile);
-	fputs(pfbl_log->message, lfile);
-	funlockfile(lfile);
-	fclose(lfile);
+	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
 
 	free(pfbl_log);
 	free(arg);
@@ -274,23 +268,13 @@ s2c_pf_ruleadd(int dev, char *tablename)
 
 	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 
-	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}	
-
-	if (ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCBEGINADDRS - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) s2c_ioctl_err("DIOCCHANGERULE");
+	if (ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) s2c_ioctl_err("DIOCBEGINADDRS");
 
 	pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
 	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
 
-	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCCHANGERULE - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) s2c_ioctl_err("DIOCCHANGERULE");
 
 	free(pfrla);
 	return(0);
@@ -315,18 +299,12 @@ s2c_pf_intbl(int dev, char *tablename)
 	pfintbl->io.pfrio_esize  = sizeof(struct pfr_table);
 	pfintbl->io.pfrio_size   = 0;
 	
-	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) { 
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) s2c_ioctl_err("DIOCRGETTABLES");
 	
 	pfintbl->io.pfrio_buffer = &pfintbl->table_aux;
 	pfintbl->io.pfrio_esize = sizeof(struct pfr_table);
 
-	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) {
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRGETTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) s2c_ioctl_err("DIOCRGETTABLES");
 
 	for(i=0; i< pfintbl->io.pfrio_size; i++) {
 		if (!strcmp((&pfintbl->table_aux)[i].pfrt_name, tablename)){

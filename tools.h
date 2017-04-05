@@ -34,13 +34,16 @@
 
 void usage();
 void sighup();
-void daemonize();
+void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
+void s2c_ioctl_err(char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutexes_init();
 void s2c_pf_block_log_check();
-void checkfile(char *);
+void s2c_check_file(char *);
+void s2c_write_file(char *, char *);
+
 long lmax(long ,long);
 long lmin(long ,long);
 int	optnum(char *, char *);

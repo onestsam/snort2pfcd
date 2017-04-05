@@ -57,7 +57,6 @@ main(int argc, char **argv)
 	int fd = 0, dev = 0, kq = 0, ch = 0, B = 0, priority = 1;
 	unsigned long t = 0;
 	long timebuf = 0;
-	FILE *lfile = NULL;
 	char *alertfile = NULL, *initmess = NULL, *logfile = NULL, *dyn_tablename = NULL, *static_tablename = NULL;
 	struct wlist_head *whead = NULL;
 	struct blist_head *bhead = NULL;
@@ -143,11 +142,11 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	daemonize();
-	checkfile(bfile);
-	checkfile(wfile);
-	checkfile(alertfile);
-	checkfile(logfile);
+	s2c_daemonize();
+	s2c_check_file(bfile);
+	s2c_check_file(wfile);
+	s2c_check_file(alertfile);
+	s2c_check_file(logfile);
 
 	if ((dev = open(PFDEVICE, O_RDWR)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
@@ -204,13 +203,7 @@ main(int argc, char **argv)
 	timebuf = time(NULL);
 
 	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
-
-	lfile = fopen(logfile, "a");
-	flockfile(lfile);
-	fputs(initmess, lfile);
-	funlockfile(lfile);
-	fclose(lfile);
-	free(initmess);
+	s2c_write_file(logfile, initmess);
 
 	s2c_kevent_loop(t, fd, dev, priority, kq, logfile, dyn_tablename, whead, bhead);
 
