@@ -37,8 +37,6 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 
-#define TBLNAMEMAX	PF_TABLE_NAME_SIZE
-#define BUFMAX		128
 #define THRMAX		100
 #define EXPTIME		60*60
 #define PFDEVICE "/dev/pf"
@@ -53,37 +51,36 @@
 #define PATH_BLACKLIST "/usr/local/etc/snort/rules/iplists/default.blacklist"
 
 /* Language */
-#define LANG_EXIT "exit"
+#define LANG_EXIT "exiting"
 #define LANG_WARN "warning"
 #define LANG_START "started"
 #define LANG_USE "usage"
 #define LANG_MAN "see man"
-#define LANG_ARG "Argument for"
+#define LANG_ARG "argument for"
 #define LANG_NUM "must be a number"
-#define LANG_BENT "Blacklist entry"
+#define LANG_BENT "blacklist entry"
 #define LANG_WL "is whitelisted"
 #define LANG_DETAILS "for more details"
-#define LANG_NO_DAEMON "Cannot daemonize"
+#define LANG_NO_DAEMON "cannot daemonize"
 #define LANG_MALLOC_ERROR "malloc error"
-#define LANG_IOCTL_ERROR "ioctl error"
+#define LANG_IOCTL_WAIT "error: attempting to establish connection with pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
 #define LANG_MUTEX_ERROR "unable to init mutex"
 #define LANG_NO_OPEN "unable to open"
-#define LANG_RECEXIT "Exit signal received - exiting"
-#define LANG_DAEMON_RUNNING "Daemon already running"
-#define LANG_NO_PID "Cannot open or create pidfile"
+#define LANG_RECEXIT "exit signal received - exiting"
+#define LANG_DAEMON_RUNNING "daemon already running"
+#define LANG_NO_PID "cannot open or create pidfile"
 #define LANG_INIT_THR "unable to init detached thread attributes"
 #define LANG_SET_THR "unable to set detached thread attributes"
 #define LANG_LAUNCH_THR "unable to launch detached thread attributes"
 #define LANG_NOT_WHITELISTED "not whitelisted, added to block table"
-#define LANG_ERR_ROOT "Error: must be root to run"
-#define LANG_BL_RESET "pf reset detected, reloading static entries and clearing dynamic entries"
+#define LANG_ERR_ROOT "error: must be root to run"
 #define LANG_ERR_REGEX "error compiling regex expr"
 #define LANG_KQ_ERROR "kqueue init error"
 #define LANG_KE_REQ_ERROR "kevent request error"
 #define LANG_KE_READ_ERROR "kevent read error"
 #define LANG_KE_ERROR "unable to set kevent structure"
-#define LANG_FILE_ERROR "file error: file is a directory:"
+#define LANG_FILE_ERROR "file error: file is a directory"
 
 
 struct ipwlist {
@@ -92,7 +89,7 @@ struct ipwlist {
 };
 
 struct ipblist {
-	char baddr[BUFMAX];
+	char baddr[BUFSIZ];
 	unsigned long t;
 	LIST_ENTRY(ipblist) elem;
 };
@@ -100,12 +97,11 @@ struct ipblist {
 typedef struct _thread_expt_t {
 	int dev;
 	unsigned long t;
-	char tablename[TBLNAMEMAX];
 } thread_expt_t;
 
 typedef struct _thread_log_t {
-	char logip[BUFMAX];
-	char logfile[BUFMAX];
+	char logip[BUFSIZ];
+	char logfile[BUFSIZ];
 } thread_log_t;
 
 LIST_HEAD(wlist_head, ipwlist);
@@ -113,6 +109,7 @@ LIST_HEAD(blist_head, ipblist);
 
 extern char *__progname;
 int s2c_threads;
+int pf_reset;
 char *wfile;
 char *bfile;
 char *extif;

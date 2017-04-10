@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <libutil.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,14 +45,18 @@
 #include <pthread.h>
 
 #include "defdata.h"
+#include "spfc.h"
+#include "parser.h"
 #include "tools.h"
+#include "version.h"
+
 
 void
 s2c_check_file(char *namefile)
 {
 	struct stat *info = NULL;
 
-	if((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2c_malloc_err();
+	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2c_malloc_err();
 
 	memset(info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
@@ -70,10 +75,11 @@ s2c_write_file(char *namefile, char *message)
 {
 	FILE *lfile = NULL;
 
-	if((lfile = fopen(namefile, "a")) == NULL) {
+	if ((lfile = fopen(namefile, "a")) == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
 		s2c_exit_fail();
 	}
+
 	flockfile(lfile);
 	fputs(message, lfile);
 	funlockfile(lfile);
@@ -87,14 +93,23 @@ s2c_daemonize()
 	pid_t otherpid;
 	char *pidfile = NULL;
 
-	if((pidfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
+	s2c_threads = 0;
 
-	bzero(pidfile, BUFMAX);
+	fprintf(stdout, "%s version %s\n", __progname, VERSION);
+
+	if (getuid() != 0) {
+		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
+
+	if ((pidfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+
+	bzero(pidfile, BUFSIZ);
 	memset(&otherpid, 0x00, sizeof(pid_t));
 
-	memcpy(pidfile, PATH_RUN, BUFMAX);
-	strlcat(pidfile,  __progname, BUFMAX);
-	strlcat(pidfile, ".pid", BUFMAX);
+	memcpy(pidfile, PATH_RUN, BUFSIZ);
+	strlcat(pidfile,  __progname, BUFSIZ);
+	strlcat(pidfile, ".pid", BUFSIZ);
 	
 	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL) {
 		if (errno == EEXIST)
@@ -114,10 +129,45 @@ s2c_daemonize()
 	pidfile_write(pfh);
 	free(pidfile);
 
-	signal(SIGHUP,  sighup);
-	signal(SIGTERM, sighup);
-	signal(SIGINT,  sighup);
+	signal(SIGHUP,  sighandle);
+	signal(SIGTERM, sighandle);
+	signal(SIGINT,  sighandle);
 
+	return;
+}
+
+void
+s2c_log_init(char *logfile)
+{
+	long timebuf = 0;
+	char *initmess = NULL;
+
+	if ((initmess = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+
+	bzero(initmess, BUFSIZ);
+	timebuf = time(NULL);
+
+	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
+	s2c_write_file(logfile, initmess);
+
+	free(initmess);
+	return;
+}
+
+void
+s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
+{
+	char *cadbuf = NULL, *retbuf = NULL;
+
+	if ((cadbuf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((retbuf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+
+	s2c_parse_load_wl(cadbuf, retbuf, whead);
+	s2c_pf_ruleadd(dev, tablename);
+	if (!B) s2c_parse_load_bl_static(dev, cadbuf, retbuf, tablename, whead, bhead);
+
+	free(cadbuf);
+	free(retbuf);
 	return;
 }
 
@@ -142,6 +192,45 @@ s2c_mutexes_init()
 }
 
 void
+s2c_spawn_expiretable(int dev, int t)
+{
+	thread_expt_t *expt_data = NULL;
+
+	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
+
+	memset(expt_data, 0x00, sizeof(thread_expt_t));
+
+	expt_data->t = t;
+	expt_data->dev = dev;
+	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
+
+	return;
+}
+
+void
+s2c_spawn_block_log(char *logip, char *logfile)
+{
+
+	thread_log_t *log_data = NULL;
+
+	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) s2c_malloc_err();
+
+	memset(log_data, 0x00, sizeof(thread_log_t));
+
+	s2c_pf_block_log_check();
+
+	pthread_mutex_lock(&thr_mutex);
+	s2c_threads++;
+	pthread_mutex_unlock(&thr_mutex);
+
+	strlcpy(log_data->logfile, logfile, BUFSIZ);
+	strlcpy(log_data->logip, logip, BUFSIZ);
+	s2c_spawn_thread(s2c_pf_block_log, log_data);
+
+	return;
+}
+
+void
 s2c_spawn_thread(void *(*func) (void *), void *data)
 {
 	typedef struct _twisted_t {
@@ -151,17 +240,17 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 
 	twisted_t *yarn = NULL;
  
-	if((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) s2c_malloc_err();
+	if ((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) s2c_malloc_err();
 
 	memset(yarn, 0x00, sizeof(twisted_t));
  
-	if(pthread_attr_init(&yarn->attr)) {
+	if (pthread_attr_init(&yarn->attr)) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INIT_THR, LANG_WARN);
  
-	} else if(pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
+	} else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_SET_THR, LANG_WARN);
  
-	} else if(pthread_create(&yarn->thr, &yarn->attr, func, data))
+	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data))
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
 
 	free(yarn);
@@ -177,7 +266,7 @@ s2c_pf_block_log_check()
 	threadcheck = s2c_threads;
 	pthread_mutex_unlock(&thr_mutex);
 
-	while(!(threadcheck < THRMAX)){
+	while (!(threadcheck < THRMAX)){
 		sleep(10);
 		pthread_mutex_lock(&thr_mutex);
 		threadcheck = s2c_threads;
@@ -195,16 +284,16 @@ s2c_malloc_err()
 }
 
 void
-s2c_ioctl_err(char *ioctl_err_flag)
+s2c_ioctl_wait(char *ioctl_wait_flag)
 {
-	syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_err_flag, LANG_IOCTL_ERROR, LANG_EXIT);
-	s2c_exit_fail();
+	syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
+	sleep(1);
 }
 
 void
 s2c_exit_fail()
 {
-	if(s2c_threads > 0) {
+	if (s2c_threads > 0) {
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
 	}
@@ -233,10 +322,10 @@ usage()
 }
 
 void
-sighup()
+sighandle()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
-	if(s2c_threads > 0) {
+	if (s2c_threads > 0) {
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
 	}

@@ -47,81 +47,62 @@
 #include "parser.h"
 #include "kevent.h"
 #include "tools.h"
-#include "version.h"
+
 
 int
 main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int fd = 0, dev = 0, kq = 0, ch = 0, B = 0, priority = 1;
+	int fd = 0, dev = 0, ch = 0, B = 0, priority = 1;
 	unsigned long t = 0;
-	long timebuf = 0;
-	char *alertfile = NULL, *initmess = NULL, *logfile = NULL, *dyn_tablename = NULL, *static_tablename = NULL;
+	char *alertfile = NULL, *tablename = NULL, *logfile = NULL;
 	struct wlist_head *whead = NULL;
 	struct blist_head *bhead = NULL;
-	thread_expt_t *expt_data = NULL;
 
-	s2c_threads = 0;
-	wfile = NULL;
-	bfile = NULL;
-	extif = NULL;
+	if ((wfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((bfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((extif = (char *)malloc(sizeof(char)*IFNAMSIZ)) == NULL) s2c_malloc_err();
+	if ((alertfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((logfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2c_malloc_err();
 
-	fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	bzero(wfile, BUFSIZ);
+	bzero(bfile, BUFSIZ);
+	bzero(extif, IFNAMSIZ);
+	bzero(logfile, BUFSIZ);
+	bzero(alertfile, BUFSIZ);
+	bzero(tablename, PF_TABLE_NAME_SIZE);
 
-	if (getuid() != 0) {
-		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	if((wfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-	if((bfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-	if((extif = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-	if((alertfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-	if((logfile = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-	if((dyn_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX)) == NULL) s2c_malloc_err();
-	if((static_tablename = (char *)malloc(sizeof(char)*TBLNAMEMAX)) == NULL) s2c_malloc_err();
-
-	bzero(wfile, BUFMAX);
-	bzero(bfile, BUFMAX);
-	bzero(extif, BUFMAX);
-
-	bzero(logfile, BUFMAX);
-	bzero(alertfile, BUFMAX);
-	bzero(dyn_tablename, TBLNAMEMAX);
-	bzero(static_tablename, TBLNAMEMAX);
-
-	strlcpy(wfile, PATH_WHITELIST, BUFMAX);
-	strlcpy(bfile, PATH_BLACKLIST, BUFMAX);
-	strlcpy(extif, "all", BUFMAX);
-	strlcpy(alertfile, PATH_ALERT, BUFMAX);
-	strlcpy(dyn_tablename, __progname, TBLNAMEMAX);
-	strlcpy(static_tablename, __progname, TBLNAMEMAX);
-	strlcat(static_tablename, "_static", TBLNAMEMAX);
+	strlcpy(wfile, PATH_WHITELIST, BUFSIZ);
+	strlcpy(bfile, PATH_BLACKLIST, BUFSIZ);
+	strlcpy(extif, "all", IFNAMSIZ);
+	strlcpy(alertfile, PATH_ALERT, BUFSIZ);
+	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
 	
-	strlcpy(logfile, PATH_LOG, BUFMAX);
-	strlcat(logfile,  __progname, BUFMAX);
-	strlcat(logfile, ".log", BUFMAX);
+	strlcpy(logfile, PATH_LOG, BUFSIZ);
+	strlcat(logfile,  __progname, BUFSIZ);
+	strlcat(logfile, ".log", BUFSIZ);
 
 	while ((ch = getopt(argc, argv, "w:p:Bb:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
-				strlcpy(wfile, optarg, BUFMAX);
+				strlcpy(wfile, optarg, BUFSIZ);
 				break;
 			case 'b':
-				strlcpy(bfile, optarg, BUFMAX);
+				strlcpy(bfile, optarg, BUFSIZ);
 				break;
 			case 'B':
 				B = 1;
 				break;
 			case 'a':
-				strlcpy(alertfile, optarg, BUFMAX);
+				strlcpy(alertfile, optarg, BUFSIZ);
 				break;
 			case 'l':
-				strlcpy(logfile, optarg, BUFMAX);
+				strlcpy(logfile, optarg, BUFSIZ);
 				break;
 			case 'e':
-				strlcpy(extif, optarg, BUFMAX);
+				strlcpy(extif, optarg, IFNAMSIZ);
 				break;
 			case 't':
 				t = optnum("t", optarg);
@@ -153,59 +134,34 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if ((kq = kqueue()) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
 	if ((fd = s2c_kevent_open(alertfile)) == -1) {  
 		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
 
 	free(alertfile);
-	
-	if (s2c_kevent_set(fd, kq) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
-	if((whead = (struct wlist_head *)malloc(sizeof(struct wlist_head))) == NULL) s2c_malloc_err();
-	if((bhead = (struct blist_head *)malloc(sizeof(struct blist_head))) == NULL) s2c_malloc_err();
-
-	memset(whead, 0x00, sizeof(struct wlist_head));
-	memset(bhead, 0x00, sizeof(struct blist_head));
-
 	s2c_mutexes_init();
+	s2c_log_init(logfile);
+	s2c_spawn_expiretable(dev, t);
 
-	s2c_parse_load_wl(whead);
+	while (1) {
+		pf_reset = 0;
 
-	while (s2c_pf_ruleadd(dev, dyn_tablename)) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s ruletable - %s", LANG_NO_OPEN, LANG_WARN);
-		sleep(1);
+		if ((whead = (struct wlist_head *)malloc(sizeof(struct wlist_head))) == NULL) s2c_malloc_err();
+		if ((bhead = (struct blist_head *)malloc(sizeof(struct blist_head))) == NULL) s2c_malloc_err();
+
+		memset(whead, 0x00, sizeof(struct wlist_head));
+		memset(bhead, 0x00, sizeof(struct blist_head));
+
+		s2c_db_init(dev, B, tablename, whead, bhead);
+		s2c_kevent_loop(t, fd, dev, priority, logfile, tablename, whead, bhead);
+
+		s2c_parse_and_block_wl_clear(whead);
+		s2c_parse_and_block_bl_clear(bhead);
+		
+		free(whead);
+		free(bhead);
 	}
-
-	if (!B) if (s2c_parse_load_bl(dev, static_tablename, whead, bhead))
-		syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
-
-	if((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
-
-	memset(expt_data, 0x00, sizeof(thread_expt_t));
-
-	expt_data->t = t;
-	expt_data->dev = dev;
-	memcpy(expt_data->tablename, dyn_tablename, TBLNAMEMAX);
-	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
-
-	if((initmess = (char *)malloc(sizeof(char)*BUFMAX)) == NULL) s2c_malloc_err();
-
-	bzero(initmess, BUFMAX);
-	timebuf = time(NULL);
-
-	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
-	s2c_write_file(logfile, initmess);
-
-	s2c_kevent_loop(t, fd, dev, priority, kq, logfile, dyn_tablename, whead, bhead);
-
+	
 	return(0);
 }

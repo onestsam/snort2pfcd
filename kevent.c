@@ -46,18 +46,6 @@
 #include "parser.h"
 #include "kevent.h"
 
-int
-s2c_kevent_set(int fd, int kq)
-{
-	struct kevent kev;
-
-	memset(&kev, 0x00, sizeof(struct kevent));
-	EV_SET(&kev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-
-	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1) return(-1);
-
-	return(0);
-}
 
 int
 s2c_kevent_open(char *file)
@@ -70,26 +58,40 @@ s2c_kevent_open(char *file)
 	return(fd);
 }
 
-
 void
-s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
+s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
 {
-	struct kevent ke;
+	struct kevent ke, kev;
 	char *buf = NULL;
-	int i = 0;
+	int i = 0, kq = 0;
 	unsigned long ti = 0;
 
-	if((buf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((buf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
 	if (t) ti = t; else ti = EXPTIME;
 
-	while (1) {
+	if ((kq = kqueue()) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
+
+	memset(&kev, 0x00, sizeof(struct kevent));
+	EV_SET(&kev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+
+	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
+
+
+	while (pf_reset != -1) {
 		memset(&ke, 0x00, sizeof(struct kevent));
 		bzero(buf, BUFSIZ);
+		pf_reset = 0;
 
 		i++;
 		if (i == 50) {
 			i = 0;
-			s2c_parse_and_block_blisted_del(ti, bhead);
+			s2c_parse_and_block_bl_del(ti, bhead);
 		}
 
 		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
@@ -98,7 +100,7 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int kq, char *lo
 		}
 
 		if (ke.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(fd, dev, priority, logfile, whead, bhead, buf, tablename, BUFSIZ, ke.data) == -1)
+			if (s2c_kevent_read_f(fd, dev, priority, logfile, tablename, whead, bhead, buf, BUFSIZ, ke.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 	}
 	free(buf);
@@ -116,21 +118,18 @@ s2c_kevent_read_l(int fd, char *buf, size_t len)
 		if (b_r == -1 || b_r == 0) return(b_r);
 		if (buf[i] == '\n') break;
 	}
-
 	return(i);
 }
 
 int
-s2c_kevent_read_f(int fd, int dev, int priority, char *logfile, struct wlist_head *whead, struct blist_head *bhead, char *buf, char *tablename, size_t len, int nbytes)
+s2c_kevent_read_f(int fd, int dev, int priority, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead, char *buf, size_t len, int nbytes)
 {
 	int i = 0, total = 0;
 
 	do  {
 		if ((i = s2c_kevent_read_l(fd, buf, len)) == -1) return(-1);
-
-		s2c_parse_and_block(dev, priority, logfile, buf, tablename, whead, bhead);
+		s2c_parse_and_block(dev, priority, logfile, tablename, buf, whead, bhead);
 		total += i;
-
 		memset(buf, 0x00, len);
 
 	} while (i > 0 && total < nbytes);

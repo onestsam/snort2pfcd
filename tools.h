@@ -33,13 +33,17 @@
 #define _TOOLS_H
 
 void usage();
-void sighup();
+void sighandle();
 void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
-void s2c_ioctl_err(char *);
+void s2c_ioctl_wait(char *);
+void s2c_spawn_expiretable(int, int);
+void s2c_spawn_block_log(char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutexes_init();
+void s2c_log_init(char *);
+void s2c_db_init(int, int, char *, struct wlist_head *, struct blist_head *);
 void s2c_pf_block_log_check();
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);

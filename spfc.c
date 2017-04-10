@@ -56,31 +56,31 @@ void
 *s2c_pf_expiretable(void *arg)
 {
 	struct pfr_astats *astats = NULL;
-	struct pfr_table target;
+	struct pfr_table *target = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
-	char local_tablename[TBLNAMEMAX];
-	int astats_count = 0, del_addrs_count = 0, del_addrs_result = 0, local_dev = 0, i = 0;
+	int astats_count = 0, del_addrs_count = 0, local_dev = 0, i = 0;
 	unsigned long age = EXPTIME;
 	long min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
-	bzero(local_tablename, TBLNAMEMAX);
-	memcpy(local_tablename, data->tablename, TBLNAMEMAX);
 
-	if(data->t) age = data->t;
+	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) s2c_malloc_err();
+	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) s2c_malloc_err();
+
+	if (data->t) age = data->t;
 	local_dev = data->dev;
 
 	while (1) {
-		memset(&target, 0x00, sizeof(struct pfr_table));
-		memcpy(target.pfrt_name, local_tablename, TBLNAMEMAX);
+		memset(target, 0x00, sizeof(struct pfr_table));
+		memset(astats, 0x00, sizeof(struct pfr_astats));
+		memcpy(target->pfrt_name, __progname, PF_TABLE_NAME_SIZE);
 		min_timestamp = (long)time(NULL) - age;
 		oldest_entry = time(NULL);
-		astats_count = radix_get_astats(local_dev, &astats, &target, 0);
+		astats_count = radix_get_astats(local_dev, &astats, target, 0);
 
 		if (astats_count > 0) {
 
-			del_addrs_list = NULL;
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++) {
@@ -88,7 +88,8 @@ void
 				else oldest_entry = lmin(oldest_entry, astats[i].pfras_tzero);
 			}
 
-			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2c_malloc_err();
+			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2c_malloc_err();	
+			memset(del_addrs_list, 0x00, sizeof(struct pfr_addr));
 
 			del_addrs_count = 0;
 
@@ -99,35 +100,36 @@ void
 					del_addrs_count++;
 				}
 
-			if (del_addrs_count > 0) {
-				del_addrs_result = radix_del_addrs(local_dev, &target, del_addrs_list, del_addrs_count, flags);
-				free(del_addrs_list);
-			}
-			free(astats);
-		}	else if (astats_count == 0) free(astats);
+			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
+		}
 
+		free(del_addrs_list);
 		sleep(60);
 	}
+
+	free(target);
+	free(astats);
+	free(arg);
+	pthread_exit(NULL);
 }
 
-int 
-s2c_pf_block(int dev, char *tablename, char *ip, struct wlist_head *wh, struct blist_head *bh) 
+void
+s2c_pf_block(int dev, char *tablename, char *ip, struct wlist_head *whead, struct blist_head *bhead) 
 { 
 	typedef struct _pfbl_t {
 		struct pfioc_table io;
 		struct pfr_table table;
 		struct pfr_addr addr;
 		struct in_addr net_addr;
-		char static_tablename[TBLNAMEMAX];
 	} pfbl_t;
 
 	pfbl_t *pfbl = NULL;
 
-	if((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2c_malloc_err();
+	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2c_malloc_err();
 
 	memset(pfbl, 0x00, sizeof(pfbl_t));
-
-	memcpy(pfbl->table.pfrt_name, tablename, TBLNAMEMAX); 
+	
+	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pfbl->net_addr);
 	memcpy(&pfbl->addr.pfra_ip4addr.s_addr, &pfbl->net_addr, sizeof(struct in_addr));
 
@@ -137,37 +139,21 @@ s2c_pf_block(int dev, char *tablename, char *ip, struct wlist_head *wh, struct b
 	pfbl->io.pfrio_table  = pfbl->table; 
 	pfbl->io.pfrio_buffer = &pfbl->addr; 
 	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
-	pfbl->io.pfrio_size   = 1; 
+	pfbl->io.pfrio_size   = 1;
 
-	while (ioctl(dev, DIOCRADDADDRS, &pfbl->io)) {
-		while (s2c_pf_ruleadd(dev, tablename)) {
-			syslog(LOG_ERR | LOG_DAEMON, "%s ruletable - DIOCRADDADDRS - %s - %s", LANG_NO_OPEN, LANG_IOCTL_ERROR, LANG_WARN);
-			sleep(1);
-		}
-
-		syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_BL_RESET, LANG_WARN);
-		s2c_parse_and_block_blisted_clear(bh);
-
-		strlcpy(pfbl->static_tablename, __progname, TBLNAMEMAX);
-		strlcat(pfbl->static_tablename, "_static", TBLNAMEMAX);
-
-		if (s2c_parse_load_bl(dev, pfbl->static_tablename, wh, bh))
-			syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
-		sleep(1);
-	}
-
+	if ((pf_reset = ioctl(dev, DIOCRADDADDRS, &pfbl->io)) != 0) s2c_ioctl_wait("DIOCRADDADDRS");
+		
 	free(pfbl);
-	return(0);
+	return;
 }
-
 
 void
 *s2c_pf_block_log(void *arg)
 {
 	typedef struct _pfbl_log_t {
-		char message[BUFMAX];
-		char local_logip[BUFMAX];
-		char local_logfile[BUFMAX];
+		char message[BUFSIZ];
+		char local_logip[BUFSIZ];
+		char local_logfile[BUFSIZ];
 		char hbuf[NI_MAXHOST];
 		struct sockaddr sa;
 	} pfbl_log_t;
@@ -178,12 +164,12 @@ void
 	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;
 
-	if((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
+	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
 
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
-	memcpy(pfbl_log->local_logip, data->logip, BUFMAX);
-	memcpy(pfbl_log->local_logfile, data->logfile, BUFMAX);
+	memcpy(pfbl_log->local_logip, data->logip, BUFSIZ);
+	memcpy(pfbl_log->local_logfile, data->logfile, BUFSIZ);
 
 	timebuf = time(NULL);
 
@@ -212,37 +198,7 @@ void
 	pthread_exit(NULL);
 }
 
-int 
-s2c_pf_tbladd(int dev, char *tablename) 
-{
-	typedef struct _pftbl_t {
-		struct pfioc_table io;
-		struct pfr_table table;
-	} pftbl_t;
-
-	pftbl_t *pftbl = NULL;
-
-	if((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
-
-	memset(pftbl, 0x00, sizeof(pftbl_t));
-
-	memcpy(pftbl->table.pfrt_name, tablename, TBLNAMEMAX);
-	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
-
-	pftbl->io.pfrio_buffer = &pftbl->table; 
-	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
-	pftbl->io.pfrio_size   = 1; 
-
-	if (ioctl(dev, DIOCRADDTABLES, &pftbl->io)) { 
-		syslog(LOG_DAEMON | LOG_ERR, "DIOCRADDTABLES - %s - %s", LANG_IOCTL_ERROR, LANG_EXIT);
-		return(1);
-	}
-
-	free(pftbl);
-	return(0); 
-}
-
-int
+void
 s2c_pf_ruleadd(int dev, char *tablename)
 {
 	typedef struct _pfrla_t {
@@ -252,11 +208,10 @@ s2c_pf_ruleadd(int dev, char *tablename)
 
 	pfrla_t *pfrla = NULL;
 
-	if(!s2c_pf_intbl(dev, tablename))
-		if(s2c_pf_tbladd(dev, tablename))
-			return(1);
+	if (!s2c_pf_intbl(dev, tablename))
+		s2c_pf_tbladd(dev, tablename);
 
-	if((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) s2c_malloc_err();
+	if ((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) s2c_malloc_err();
 
 	memset(pfrla, 0x00, sizeof(pfrla_t));
 
@@ -268,16 +223,44 @@ s2c_pf_ruleadd(int dev, char *tablename)
 
 	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 
-	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) s2c_ioctl_err("DIOCCHANGERULE");
-	if (ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) s2c_ioctl_err("DIOCBEGINADDRS");
+	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
+
+	if ((pf_reset = ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) != 0) s2c_ioctl_wait("DIOCBEGINADDRS");
 
 	pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
 	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
 
-	if (ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule)) s2c_ioctl_err("DIOCCHANGERULE");
+	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
 
 	free(pfrla);
-	return(0);
+	return;
+}
+
+void
+s2c_pf_tbladd(int dev, char *tablename) 
+{
+	typedef struct _pftbl_t {
+		struct pfioc_table io;
+		struct pfr_table table;
+	} pftbl_t;
+
+	pftbl_t *pftbl = NULL;
+
+	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
+
+	memset(pftbl, 0x00, sizeof(pftbl_t));
+
+	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
+
+	pftbl->io.pfrio_buffer = &pftbl->table; 
+	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
+	pftbl->io.pfrio_size   = 1; 
+
+	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRADDTABLES");
+
+	free(pftbl);
+	return; 
 }
 
 int 
@@ -291,7 +274,7 @@ s2c_pf_intbl(int dev, char *tablename)
 	int i = 0;
 	pfintbl_t *pfintbl = NULL;
 
-	if((pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t))) == NULL) s2c_malloc_err();
+	if ((pfintbl = (pfintbl_t *)malloc(sizeof(pfintbl_t))) == NULL) s2c_malloc_err();
 
 	memset(pfintbl, 0x00, sizeof(pfintbl_t));
 
@@ -299,12 +282,12 @@ s2c_pf_intbl(int dev, char *tablename)
 	pfintbl->io.pfrio_esize  = sizeof(struct pfr_table);
 	pfintbl->io.pfrio_size   = 0;
 	
-	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) s2c_ioctl_err("DIOCRGETTABLES");
+	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
 	
 	pfintbl->io.pfrio_buffer = &pfintbl->table_aux;
 	pfintbl->io.pfrio_esize = sizeof(struct pfr_table);
 
-	if(ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) s2c_ioctl_err("DIOCRGETTABLES");
+	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pfintbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
 
 	for(i=0; i< pfintbl->io.pfrio_size; i++) {
 		if (!strcmp((&pfintbl->table_aux)[i].pfrt_name, tablename)){

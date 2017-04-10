@@ -34,11 +34,10 @@
 #ifndef _KEVENT_H
 #define _KEVENT_H
 
-int s2c_kevent_set(int, int);
 int s2c_kevent_open(char *);
 int s2c_kevent_read_l(int, char *, size_t);
-int s2c_kevent_read_f(int, int, int, char *, struct wlist_head *, struct blist_head *, char *, char *, size_t, int);
-void s2c_kevent_loop(unsigned long, int, int, int, int, char *, char *, struct wlist_head *, struct blist_head *);
+int s2c_kevent_read_f(int, int, int, char *, char *, struct wlist_head *, struct blist_head *, char *, size_t, int);
+void s2c_kevent_loop(unsigned long, int, int, int, char *, char *, struct wlist_head *, struct blist_head *);
 
 #endif /* _KEVENT_H */
 

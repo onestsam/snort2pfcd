@@ -39,12 +39,14 @@
 int s2c_parse_ip(char *, char *);
 int s2c_parse_priority(int, char *);
 int s2c_parse_line(char *, FILE *);
-void s2c_parse_and_block_blisted_clear(struct blist_head *);
-void s2c_parse_and_block_blisted_del(unsigned long, struct blist_head *);
+void s2c_parse_and_block_bl_clear(struct blist_head *);
+void s2c_parse_and_block_wl_clear(struct wlist_head *);
+void s2c_parse_and_block_bl_del(unsigned long, struct blist_head *);
 void s2c_parse_and_block(int, int, char *, char *, char *, struct wlist_head *, struct blist_head *);
-int s2c_parse_load_bl(int, char *, struct wlist_head *, struct blist_head *);
-void s2c_parse_load_wl(struct wlist_head *);
-int s2c_parse_load_wl_file(char *, struct ipwlist *);
+void s2c_parse_load_bl_static(int, char *, char *, char*, struct wlist_head *, struct blist_head *);
+int s2c_parse_and_block_bl(char *, struct blist_head *);
+void s2c_parse_load_wl(char *, char *, struct wlist_head *);
+int s2c_parse_load_wl_file(char *, char *, char *, struct ipwlist *);
 void s2c_parse_load_wl_ifaces(struct ipwlist *);
 int s2c_parse_search_wl(char *, struct wlist_head *);
 

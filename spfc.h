@@ -37,9 +37,9 @@
 #include "defdata.h"
 
 int s2c_pf_intbl(int, char *);
-int s2c_pf_block(int, char *, char *, struct wlist_head *, struct blist_head *);
-int s2c_pf_tbladd(int, char *);
-int s2c_pf_ruleadd(int, char *);
+void s2c_pf_block(int, char *, char *, struct wlist_head *, struct blist_head *);
+void s2c_pf_tbladd(int, char *);
+void s2c_pf_ruleadd(int, char *);
 void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);
 
