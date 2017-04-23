@@ -64,33 +64,34 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 	if (blist->lh_first == NULL){
 
 		if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
-
 		memset(ipb, 0x00, sizeof(struct ipblist));
 		memcpy(ipb->baddr, ret, BUFSIZ);
 		ipb->t = time(NULL);
-
+		ipb->repeat_offenses = 0;
 		LIST_INIT(blist);
 		LIST_INSERT_HEAD(blist, ipb, elem);
 		return(0);
 
 	} else {
 		for (aux2=blist->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-			if (!strcmp(aux2->baddr, ret)) return(1);
+			if (!strcmp(aux2->baddr, ret)) {
+				aux2->repeat_offenses++;
+				return(aux2->repeat_offenses);
+			}
 			else if (!aux2->elem.le_next) {
 
 				if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
-
 				memset(ipb, 0x00, sizeof(struct ipblist));
 				memcpy(ipb->baddr, ret, BUFSIZ);
 				ipb->t = time(NULL);
-
+				ipb->repeat_offenses = 0;
 				LIST_INSERT_AFTER(aux2, ipb, elem);
 				return(0);
 			}
 		}
 	}
 
-	return(0);	
+	return(-1);	
 }
 
 void
@@ -118,6 +119,7 @@ s2c_parse_and_block_wl_clear(struct wlist_head *whead)
 
 	while (n1 != NULL) {
 		n2 = LIST_NEXT(n1, elem);
+		cidr_free(n1->waddr);
 		free(n1);
 		n1 = n2;
 	}
@@ -126,16 +128,15 @@ s2c_parse_and_block_wl_clear(struct wlist_head *whead)
 }
 
 void
-s2c_parse_and_block_bl_del(unsigned long t, struct blist_head *bl)
+s2c_parse_and_block_bl_del(unsigned long age, unsigned long this_time, struct blist_head *bl)
 {
 	struct ipblist *aux2 = NULL;
 
-	for (aux2=bl->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-		if ((aux2->t + EXPTIME) <= t) {
+	for (aux2=bl->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next)
+		if ((aux2->t + age) < this_time) {
 			LIST_REMOVE(aux2, elem);
 			free(aux2);
 		}
-	}
 
 	return;
 }
@@ -160,115 +161,87 @@ s2c_parse_line(char *buf, FILE* wfile)
 }
 
 int
-s2c_parse_priority(int priority, char *cad)
+s2c_parse_priority(int priority, lineproc_t *lineproc)
 {
-	char *p = NULL, *prio = NULL;
+	char *p = NULL;
 
-	if ((prio = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	p = strstr(lineproc->cad, "Priority:");
+	if (p) memcpy(lineproc->prio, p, 12);
 
-	bzero(prio, BUFSIZ);
+	if (isdigit(lineproc->prio[10]))
+		if (priority >= (lineproc->prio[10] - 48)) return(1);
 
-	p = strstr(cad, "Priority:");
-	if (p) memcpy(prio, p, 12);
-
-	if (isdigit(prio[10]))
-		if (priority >= (prio[10] - 48)) {
-			free(prio);
-			return(1);
-		}
-
-	free(prio);
 	return(0);
 }
 
 int
-s2c_parse_ip(char *cad, char *ret)
+s2c_parse_ip(lineproc_t *lineproc)
 {
 	int len = 0;
 	unsigned int enc = 1;
-	regex_t *expr = NULL;
-	regmatch_t *resultado = NULL;
 
-	if ((expr = (regex_t*)malloc(sizeof(regex_t))) == NULL) s2c_malloc_err();
-
-	memset(expr, 0x00, sizeof(regex_t));
-
-	if (regcomp(expr, REG_ADDR, REG_EXTENDED) !=0) {
+	if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) !=0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
-	if ((resultado = (regmatch_t*)malloc(sizeof(regmatch_t))) == NULL) s2c_malloc_err();
-
-	memset(resultado, 0x00, sizeof(regmatch_t));
-	
-	if (regexec(expr, cad, 1, resultado, 0) != 0) enc = 0;
+	if (regexec(&lineproc->expr, lineproc->cad, 1, &lineproc->resultado, 0) != 0) enc = 0;
 	
 	if (enc != 0) {
-		len = resultado->rm_eo - resultado->rm_so;
-		memcpy(ret, cad + resultado->rm_so, len);
-		ret[len]='\0';
+		len = lineproc->resultado.rm_eo - lineproc->resultado.rm_so;
+		memcpy(lineproc->ret, lineproc->cad + lineproc->resultado.rm_so, len);
+		lineproc->ret[len]='\0';
 	}
-	
-	free(resultado);
-	regfree(expr);
 
 	if (enc) return(1);
 	else return(0);
 }
 
 void
-s2c_parse_and_block(int dev, int priority, char *logfile, char *tablename, char *line, struct wlist_head *whead, struct blist_head *bhead)
+s2c_parse_and_block(int dev, int priority, int repeat_offenses, char *logfile, char *tablename, lineproc_t *lineproc, struct wlist_head *whead, struct blist_head *bhead)
 {
-	char *ret = NULL;
+	int pb_status = 0;
 
-	if (!s2c_parse_priority(priority, line)) return;
-	if ((ret = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-
-	bzero(ret, BUFSIZ);
-
-	if (!s2c_parse_ip(line, ret)) {
-		free(ret);
-		return;
-	}
+	if (!s2c_parse_priority(priority, lineproc)) return;
+	if (!s2c_parse_ip(lineproc)) return;
 
 	if (!LIST_EMPTY(whead))
-		if (s2c_parse_search_wl(ret, whead)) {
-			free(ret);
-			return;
+		if (s2c_parse_search_wl(lineproc->ret, whead)) return;
+
+	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, bhead)) == repeat_offenses) {
+
+		s2c_spawn_block_log(lineproc->ret, logfile);
+		s2c_pf_block(dev, tablename, lineproc->ret);
 	}
 
-	if (!s2c_parse_and_block_bl(ret, bhead)) {
-
-		s2c_spawn_block_log(ret, logfile);
-		s2c_pf_block(dev, tablename, ret, whead, bhead);
+	if(pb_status == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
+		s2c_exit_fail();
 	}
 
-	free(ret);
 	return;
 }
 
 int
-s2c_parse_load_wl_file(char *cad, char *ret, char *wlist_file, struct ipwlist *ipw1)
+s2c_parse_load_wl_file(lineproc_t *lineproc, char *wlist_file, struct ipwlist *ipw1)
 {
 	struct ipwlist *ipw2 = NULL;
 	FILE *wlfile = NULL;
 
-
 	if ((wlfile = fopen(wlist_file, "r")) == NULL) return(1);
 
 	flockfile(wlfile);
+	memset(lineproc, 0x00, sizeof(lineproc_t));
 
-	bzero(cad, BUFSIZ);
-	bzero(ret, BUFSIZ);
-
-	while (s2c_parse_line(cad, wlfile)) {
-		if (s2c_parse_ip(cad, ret)) {
+	while (s2c_parse_line(lineproc->cad, wlfile)) {
+		if (s2c_parse_ip(lineproc)) {
 
 			if ((ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
-			if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
+			memset(ipw2, 0x00, sizeof(struct ipwlist));
 
-			ipw2->waddr = cidr_from_str(ret);
+			if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
+			ipw2->waddr = cidr_from_str(lineproc->ret);
+
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
 		}
@@ -296,13 +269,13 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 			continue;
 
 		if ((ifa->ifa_addr)->sa_family == AF_INET) {
-			if ((ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 
+			if ((ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 			memset(ipw2, 0x00, sizeof(struct ipwlist));
 
 			if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
-
 			ipw2->waddr = cidr_from_inaddr(&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr);
+
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
 		}
@@ -314,7 +287,7 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 }
 
 void
-s2c_parse_load_bl_static(int dev, char *cad, char *ret, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
+s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, struct wlist_head *whead)
 {
 	FILE *blfile = NULL;
 
@@ -324,22 +297,18 @@ s2c_parse_load_bl_static(int dev, char *cad, char *ret, char *tablename, struct 
 	}
 
 	flockfile(blfile);
-
-	bzero(cad, BUFSIZ);
-	bzero(ret, BUFSIZ);
-	
+	memset(lineproc, 0x00, sizeof(lineproc_t));
 	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
-
 	s2c_pf_ruleadd(dev, tablename);
 
-	while (s2c_parse_line(cad, blfile))
-		if (s2c_parse_ip(cad, ret)) {
+	while (s2c_parse_line(lineproc->cad, blfile))
+		if (s2c_parse_ip(lineproc)) {
 
 			if (!LIST_EMPTY(whead))
-				if (s2c_parse_search_wl(ret, whead))
-					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, ret, LANG_WL, LANG_WARN);
+				if (s2c_parse_search_wl(lineproc->ret, whead))
+					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
 
-		s2c_pf_block(dev, tablename, ret, whead, bhead);
+		s2c_pf_block(dev, tablename, lineproc->ret);
 		}
 
 	funlockfile(blfile);
@@ -352,7 +321,7 @@ s2c_parse_load_bl_static(int dev, char *cad, char *ret, char *tablename, struct 
 }
 
 void
-s2c_parse_load_wl(char *cad, char *ret, struct wlist_head *head)
+s2c_parse_load_wl(lineproc_t *lineproc, struct wlist_head *head)
 {
 	struct ipwlist *ipw1 = NULL, *ipw2 = NULL;
 	struct ifreq *ifr = NULL;
@@ -386,19 +355,21 @@ s2c_parse_load_wl(char *cad, char *ret, struct wlist_head *head)
 		free(ifr);
 
 		if ((ipw2 = (struct ipwlist*)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
-		if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
+		memset(ipw2, 0x00, sizeof(struct ipwlist));
 
+		if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
 		ipw2->waddr = cidr_from_inaddr(&((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr);
+
 		LIST_INSERT_AFTER(ipw1, ipw2, elem);
 		ipw1 = ipw2;
 	}
 
-	if (s2c_parse_load_wl_file(cad, ret, PATH_RESOLV, ipw1)) {
+	if (s2c_parse_load_wl_file(lineproc, PATH_RESOLV, ipw1)) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, PATH_RESOLV, LANG_WARN);
 		return;
 	}
 
-	if (s2c_parse_load_wl_file(cad, ret, wfile, ipw1)) {
+	if (s2c_parse_load_wl_file(lineproc, wfile, ipw1)) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, wfile, LANG_WARN);
 		return;
 	}

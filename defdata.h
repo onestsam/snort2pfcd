@@ -34,10 +34,12 @@
 #define _DEFDATA_H_
 
 #include <libcidr.h>
+#include <regex.h>
 #include <net/if.h>
 #include <net/pfvar.h>
 
 #define THRMAX		100
+#define NMBUFSIZ	128
 #define EXPTIME		60*60
 #define PFDEVICE "/dev/pf"
 #define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
@@ -63,7 +65,9 @@
 #define LANG_DETAILS "for more details"
 #define LANG_NO_DAEMON "cannot daemonize"
 #define LANG_MALLOC_ERROR "malloc error"
-#define LANG_IOCTL_WAIT "error: attempting to establish connection with pf"
+#define LANG_INTDB "unkown internal database error"
+#define LANG_CON_EST "connection with pf established"
+#define LANG_IOCTL_WAIT "error: attempting to re-establish connection with pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
 #define LANG_MUTEX_ERROR "unable to init mutex"
 #define LANG_NO_OPEN "unable to open"
@@ -82,6 +86,8 @@
 #define LANG_KE_ERROR "unable to set kevent structure"
 #define LANG_FILE_ERROR "file error: file is a directory"
 
+LIST_HEAD(wlist_head, ipwlist);
+LIST_HEAD(blist_head, ipblist);
 
 struct ipwlist {
 	CIDR *waddr;
@@ -89,8 +95,9 @@ struct ipwlist {
 };
 
 struct ipblist {
-	char baddr[BUFSIZ];
 	unsigned long t;
+	int repeat_offenses;
+	char baddr[BUFSIZ];
 	LIST_ENTRY(ipblist) elem;
 };
 
@@ -101,11 +108,21 @@ typedef struct _thread_expt_t {
 
 typedef struct _thread_log_t {
 	char logip[BUFSIZ];
-	char logfile[BUFSIZ];
+	char logfile[NMBUFSIZ];
 } thread_log_t;
 
-LIST_HEAD(wlist_head, ipwlist);
-LIST_HEAD(blist_head, ipblist);
+typedef struct _wbhead_t {
+	struct wlist_head whead;
+	struct blist_head bhead;
+} wbhead_t;
+
+typedef struct _lineproc_t {
+	char prio[BUFSIZ];
+	char cad[BUFSIZ];
+	char ret[BUFSIZ];
+	regex_t expr;
+	regmatch_t resultado;
+} lineproc_t;
 
 extern char *__progname;
 int s2c_threads;

@@ -42,6 +42,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <syslog.h>
+#include <libcidr.h>
 #include <pthread.h>
 
 #include "defdata.h"
@@ -102,14 +103,14 @@ s2c_daemonize()
 		exit(EXIT_FAILURE);
 	}
 
-	if ((pidfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((pidfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 
-	bzero(pidfile, BUFSIZ);
 	memset(&otherpid, 0x00, sizeof(pid_t));
+	bzero(pidfile, NMBUFSIZ);
 
-	memcpy(pidfile, PATH_RUN, BUFSIZ);
-	strlcat(pidfile,  __progname, BUFSIZ);
-	strlcat(pidfile, ".pid", BUFSIZ);
+	memcpy(pidfile, PATH_RUN, NMBUFSIZ);
+	strlcat(pidfile,  __progname, NMBUFSIZ);
+	strlcat(pidfile, ".pid", NMBUFSIZ);
 	
 	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL) {
 		if (errno == EEXIST)
@@ -142,6 +143,7 @@ s2c_log_init(char *logfile)
 	long timebuf = 0;
 	char *initmess = NULL;
 
+	s2c_check_file(logfile);
 	if ((initmess = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
 
 	bzero(initmess, BUFSIZ);
@@ -155,19 +157,21 @@ s2c_log_init(char *logfile)
 }
 
 void
-s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
+s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead)
 {
-	char *cadbuf = NULL, *retbuf = NULL;
+	lineproc_t *lineproc = NULL;
 
-	if ((cadbuf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-	if ((retbuf = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	s2c_check_file(bfile);
+	s2c_check_file(wfile);
 
-	s2c_parse_load_wl(cadbuf, retbuf, whead);
+	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
+
+	s2c_parse_load_wl(lineproc, whead);
 	s2c_pf_ruleadd(dev, tablename);
-	if (!B) s2c_parse_load_bl_static(dev, cadbuf, retbuf, tablename, whead, bhead);
+	if (!B) s2c_parse_load_bl_static(dev, lineproc, tablename, whead);
+	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
-	free(cadbuf);
-	free(retbuf);
+	free(lineproc);
 	return;
 }
 
@@ -210,7 +214,6 @@ s2c_spawn_expiretable(int dev, int t)
 void
 s2c_spawn_block_log(char *logip, char *logfile)
 {
-
 	thread_log_t *log_data = NULL;
 
 	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) s2c_malloc_err();
@@ -223,7 +226,7 @@ s2c_spawn_block_log(char *logip, char *logfile)
 	s2c_threads++;
 	pthread_mutex_unlock(&thr_mutex);
 
-	strlcpy(log_data->logfile, logfile, BUFSIZ);
+	strlcpy(log_data->logfile, logfile, NMBUFSIZ);
 	strlcpy(log_data->logip, logip, BUFSIZ);
 	s2c_spawn_thread(s2c_pf_block_log, log_data);
 
@@ -287,18 +290,22 @@ void
 s2c_ioctl_wait(char *ioctl_wait_flag)
 {
 	syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
-	sleep(1);
+	sleep(3);
 }
 
 void
 s2c_exit_fail()
 {
+	s2c_mutexes_destroy();
+	exit(EXIT_FAILURE);
+}
+
+void
+s2c_mutexes_destroy(){
 	if (s2c_threads > 0) {
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
 	}
-
-	exit(EXIT_FAILURE);
 }
 
 int
@@ -316,7 +323,7 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	exit(EXIT_FAILURE);
 }
@@ -325,10 +332,7 @@ void
 sighandle()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
-	if (s2c_threads > 0) {
-		pthread_mutex_destroy(&dns_mutex);
-		pthread_mutex_destroy(&thr_mutex);
-	}
+	s2c_mutexes_destroy();
 	exit(EXIT_SUCCESS);
 }
 

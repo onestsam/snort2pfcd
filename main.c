@@ -54,55 +54,53 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int fd = 0, dev = 0, ch = 0, B = 0, priority = 1;
+	int fd = 0, dev = 0, ch = 0, B = 0, repeat_offenses = 0, priority = 1;
+	int w = 0, b = 0, a = 0, l = 0, e = 0;
 	unsigned long t = 0;
-	char *alertfile = NULL, *tablename = NULL, *logfile = NULL;
-	struct wlist_head *whead = NULL;
-	struct blist_head *bhead = NULL;
+	char *tablename = NULL;
+	char *logfile = NULL, *alertfile = NULL;
+	wbhead_t *wbhead = NULL;
 
-	if ((wfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-	if ((bfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
+	if ((wfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
+	if ((bfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
+	if ((logfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
+	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((extif = (char *)malloc(sizeof(char)*IFNAMSIZ)) == NULL) s2c_malloc_err();
-	if ((alertfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-	if ((logfile = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
 	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2c_malloc_err();
 
-	bzero(wfile, BUFSIZ);
-	bzero(bfile, BUFSIZ);
+	bzero(wfile, NMBUFSIZ);
+	bzero(bfile, NMBUFSIZ);
+	bzero(logfile, NMBUFSIZ);
+	bzero(alertfile, NMBUFSIZ);
 	bzero(extif, IFNAMSIZ);
-	bzero(logfile, BUFSIZ);
-	bzero(alertfile, BUFSIZ);
 	bzero(tablename, PF_TABLE_NAME_SIZE);
 
-	strlcpy(wfile, PATH_WHITELIST, BUFSIZ);
-	strlcpy(bfile, PATH_BLACKLIST, BUFSIZ);
-	strlcpy(extif, "all", IFNAMSIZ);
-	strlcpy(alertfile, PATH_ALERT, BUFSIZ);
 	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
 	
-	strlcpy(logfile, PATH_LOG, BUFSIZ);
-	strlcat(logfile,  __progname, BUFSIZ);
-	strlcat(logfile, ".log", BUFSIZ);
-
-	while ((ch = getopt(argc, argv, "w:p:Bb:a:l:e:t:h")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:r:Bb:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
-				strlcpy(wfile, optarg, BUFSIZ);
+				strlcpy(wfile, optarg, NMBUFSIZ);
+				w = 1;
 				break;
 			case 'b':
-				strlcpy(bfile, optarg, BUFSIZ);
+				strlcpy(bfile, optarg, NMBUFSIZ);
+				b = 1;
 				break;
 			case 'B':
 				B = 1;
 				break;
 			case 'a':
-				strlcpy(alertfile, optarg, BUFSIZ);
+				strlcpy(alertfile, optarg, NMBUFSIZ);
+				a = 1;
 				break;
 			case 'l':
-				strlcpy(logfile, optarg, BUFSIZ);
+				strlcpy(logfile, optarg, NMBUFSIZ);
+				l = 1;
 				break;
 			case 'e':
 				strlcpy(extif, optarg, IFNAMSIZ);
+				e = 1;
 				break;
 			case 't':
 				t = optnum("t", optarg);
@@ -111,6 +109,10 @@ main(int argc, char **argv)
 			case 'p':
 				priority = optnum("p", optarg);
 				if(priority == -1) usage();
+				break;
+			case 'r':
+				repeat_offenses = optnum("r", optarg);
+				if(repeat_offenses == -1) usage();
 				break;
 			case 'h':
 				usage();
@@ -123,11 +125,17 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
+	if (!w) strlcpy(wfile, PATH_WHITELIST, NMBUFSIZ);
+	if (!b) strlcpy(bfile, PATH_BLACKLIST, NMBUFSIZ);
+	if (!a) strlcpy(alertfile, PATH_ALERT, NMBUFSIZ);
+	if (!e) strlcpy(extif, "all", IFNAMSIZ);
+	if (!l) {
+		strlcpy(logfile, PATH_LOG, NMBUFSIZ);
+		strlcat(logfile,  __progname, NMBUFSIZ);
+		strlcat(logfile, ".log", NMBUFSIZ);
+	}
+
 	s2c_daemonize();
-	s2c_check_file(bfile);
-	s2c_check_file(wfile);
-	s2c_check_file(alertfile);
-	s2c_check_file(logfile);
 
 	if ((dev = open(PFDEVICE, O_RDWR)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
@@ -139,7 +147,6 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	free(alertfile);
 	s2c_mutexes_init();
 	s2c_log_init(logfile);
 	s2c_spawn_expiretable(dev, t);
@@ -147,21 +154,17 @@ main(int argc, char **argv)
 	while (1) {
 		pf_reset = 0;
 
-		if ((whead = (struct wlist_head *)malloc(sizeof(struct wlist_head))) == NULL) s2c_malloc_err();
-		if ((bhead = (struct blist_head *)malloc(sizeof(struct blist_head))) == NULL) s2c_malloc_err();
+		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 
-		memset(whead, 0x00, sizeof(struct wlist_head));
-		memset(bhead, 0x00, sizeof(struct blist_head));
+		memset(wbhead, 0x00, sizeof(wbhead_t));
 
-		s2c_db_init(dev, B, tablename, whead, bhead);
-		s2c_kevent_loop(t, fd, dev, priority, logfile, tablename, whead, bhead);
+		s2c_db_init(dev, B, tablename, &wbhead->whead);
+		s2c_kevent_loop(t, fd, dev, priority, repeat_offenses, logfile, tablename, &wbhead->whead, &wbhead->bhead);
 
-		s2c_parse_and_block_wl_clear(whead);
-		s2c_parse_and_block_bl_clear(bhead);
+		s2c_parse_and_block_wl_clear(&wbhead->whead);
+		s2c_parse_and_block_bl_clear(&wbhead->bhead);
 		
-		free(whead);
-		free(bhead);
+		free(wbhead);
 	}
-	
 	return(0);
 }

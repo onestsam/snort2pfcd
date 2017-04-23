@@ -30,30 +30,33 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd October 12, 2016
+.Dd April 22, 2017
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
-.Nd provides real-time blocking of ip addresses from snort alerts via the packet filter firewall for a specified period of time.
+.Nd provides real-time blocking of ip addresses from snort alerts via packet filter firewall tables.
 .Sh SYNOPSIS
 .Nm snort2pfcd
-.Op Fl e Ar External Interface
-.Op Fl w Ar WhiteListFile
-.Op Fl b Ar BlackListFile
+.Op Fl e Ar External_Interface
+.Op Fl w Ar Whitelist_File
+.Op Fl b Ar Blacklist_File
 .Op Fl B
-.Op Fl l Ar LogFile
-.Op Fl a Ar AlertFile
+.Op Fl l Ar Log_File
+.Op Fl a Ar Alert_File
+.Op F1 p Ar Priority
+.Op F1 r Ar Repeat_Offenses
 .Op Fl t Ar Seconds
 .Op Fl h
 .Sh DESCRIPTION
 .Nm
-analyzes snort alert output and blocks ip addresses using pf for a specified
-period of time. Expiration of entries use Henrik Gustafsson's expiretable 
-functions. A whitelist is specified to exclude local and trusted ip address 
-from being blocked. Whitelist entries can be single ip addressess or blocks 
-of addresses in CIDR format (255.255.255.255/32). This program is based on 
-snort2c written by Antonio Benojar which was based on the original snort2pf 
-perl script written by Stephan Schmieder.
+Analyzes snort alert output and blocks ip addresses for a given snort priority using 
+pf table entries for a specified period of time. A whitelist is specified to exclude
+local and trusted ip address from being blocked. Whitelist entries can be single ip 
+addressess or blocks of addresses in CIDR format (255.255.255.255/32). Snort2pfcd also
+preloads the community maintained and supplied pulledpork blacklist by default. This program
+is based on snort2c written by Antonio Benojar which was based on the original snort2pf
+perl script written by Stephan Schmieder. Expiration of entries use Henrik
+Gustafsson's expiretable functions.
 .Pp
 While
 .Nm
@@ -81,23 +84,27 @@ and pulledpork communities.
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
-.It Fl e Ar External Interface
+.It Fl e Ar External_Interface
 external interface e.g. eth0 or "all" to whitelist all interfaces, default is to whitelist all interfaces
-.It Fl w Ar WhiteListFile
+.It Fl w Ar Whitelist_File
 whitelist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
-.It Fl b Ar BlackListFile
+.It Fl b Ar Blacklist_File
 blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
 .It Fl B 
 If set, will prevent loading of any blacklist file
-.It Fl l Ar LogFile
+.It Fl l Ar Log_File
 log file, default is /var/log/snort2pfcd.log.
-.It Fl a Ar AlertFile
+.It Fl a Ar Alert_File
 snort alert file, default is /var/log/snort/alert.
 .It Fl p Ar Priority 
-Priority level to block ip addresses in snort logs, default is 1. 
+The priority level to block ip addresses in snort logs, default is 1. 
 Lower priority includes higher priority, for example, -p 3 includes priorities 3, 2 and 1. 
+.It Fl r Ar Repeat_Offenses
+Number of times an ip address may commit a priority p offense before being added to pf block table.
+For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked only after 2 repeated
+snort alerts. 
 .It Fl t Ar Seconds 
-Seconds to block an ip address, default is 60*60 or 1 hour.
+The number of seconds to block an ip address, default is 60*60 or 1 hour.
 .It Fl h
 Show help.
 .El
