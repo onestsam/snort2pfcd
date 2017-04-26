@@ -30,21 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <syslog.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <pthread.h>
-
 #include "defdata.h"
 #include "tools.h"
 #include "spfc.h"
@@ -77,7 +62,10 @@ void
 		memcpy(target->pfrt_name, __progname, PF_TABLE_NAME_SIZE);
 		oldest_entry = time(NULL);
 		min_timestamp = oldest_entry - age;
+
+		pthread_mutex_lock(&pf_mutex);
 		astats_count = radix_get_astats(local_dev, &astats, target, 0);
+		pthread_mutex_unlock(&pf_mutex);
 
 		if (astats_count > 0) {
 
@@ -100,11 +88,13 @@ void
 					del_addrs_count++;
 				}
 
+			pthread_mutex_lock(&pf_mutex);
 			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
+			pthread_mutex_unlock(&pf_mutex);
 		}
 
 		free(del_addrs_list);
-		sleep(age + 1);
+		sleep(min_timestamp + 1);
 	}
 
 	free(target);
@@ -138,7 +128,9 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
 	pfbl->io.pfrio_size   = 1;
 
+	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCRADDADDRS, &pfbl->io)) != 0) s2c_ioctl_wait("DIOCRADDADDRS");
+	pthread_mutex_unlock(&pf_mutex);
 		
 	free(pfbl);
 	return;
@@ -170,21 +162,19 @@ void
 	free(arg);
 
 	timebuf = time(NULL);
-
 	pfbl_log->sa.sa_family = AF_INET;
 
+	pthread_mutex_lock(&dns_mutex);
 	if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
-		pthread_mutex_lock(&dns_mutex);
 		gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
-		pthread_mutex_unlock(&dns_mutex);
-
 		if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+
+		sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
+		s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
 	}
-
-	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
-	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
-
+	pthread_mutex_unlock(&dns_mutex);
+	
 	free(pfbl_log);
 
 	pthread_mutex_lock(&thr_mutex);
@@ -218,13 +208,17 @@ s2c_pf_ruleadd(int dev, char *tablename)
 
 	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 
+	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
 	if ((pf_reset = ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) != 0) s2c_ioctl_wait("DIOCBEGINADDRS");
+	pthread_mutex_unlock(&pf_mutex);
 
 	pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
 	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
 
+	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
+	pthread_mutex_unlock(&pf_mutex);
 
 	free(pfrla);
 	return;
@@ -249,27 +243,32 @@ s2c_pf_tbladd(int dev, char *tablename)
 	pftbl->io.pfrio_esize  = sizeof(struct pfr_table);
 	pftbl->io.pfrio_size   = 0;
 	
+	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pftbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
+	pthread_mutex_lock(&pf_mutex);
 	
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
 
+	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pftbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
+	pthread_mutex_lock(&pf_mutex);
 
 	for ( i = 0; i < pftbl->io.pfrio_size; i++)
 		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) f = 1;
 
 	if (!f) {
 
-	memset(pftbl, 0x00, sizeof(pftbl_t));
+		memset(pftbl, 0x00, sizeof(pftbl_t));
+		memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
+		pftbl->io.pfrio_buffer = &pftbl->table; 
+		pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
+		pftbl->io.pfrio_size   = 1; 
 
-	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
-	pftbl->io.pfrio_buffer = &pftbl->table; 
-	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
-	pftbl->io.pfrio_size   = 1; 
-
-	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) s2c_ioctl_wait(tablename);
+		pthread_mutex_lock(&pf_mutex);
+		while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRADDTABLES");
+		pthread_mutex_lock(&pf_mutex);
 	}
 
 	free(pftbl);

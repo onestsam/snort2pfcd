@@ -30,21 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <libutil.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <signal.h>
-#include <syslog.h>
-#include <libcidr.h>
-#include <pthread.h>
-
 #include "defdata.h"
 #include "spfc.h"
 #include "parser.h"
@@ -58,7 +43,6 @@ s2c_check_file(char *namefile)
 	struct stat *info = NULL;
 
 	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2c_malloc_err();
-
 	memset(info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
@@ -96,7 +80,7 @@ s2c_daemonize()
 
 	s2c_threads = 0;
 
-	fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
 
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
@@ -104,7 +88,6 @@ s2c_daemonize()
 	}
 
 	if ((pidfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-
 	memset(&otherpid, 0x00, sizeof(pid_t));
 	bzero(pidfile, NMBUFSIZ);
 
@@ -112,11 +95,8 @@ s2c_daemonize()
 	strlcat(pidfile,  __progname, NMBUFSIZ);
 	strlcat(pidfile, ".pid", NMBUFSIZ);
 	
-	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL) {
-		if (errno == EEXIST)
-			syslog(LOG_ERR | LOG_DAEMON, "%s, pid: %d.", LANG_DAEMON_RUNNING, otherpid);
+	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL)
 		fprintf(stderr, "%s", LANG_NO_PID);
-	}
 
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "%s", LANG_NO_DAEMON);
@@ -169,7 +149,7 @@ s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead)
 	s2c_parse_load_wl(lineproc, whead);
 	s2c_pf_ruleadd(dev, tablename);
 	if (!B) s2c_parse_load_bl_static(dev, lineproc, tablename, whead);
-	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
+	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
 	free(lineproc);
 	return;
@@ -181,14 +161,23 @@ s2c_mutexes_init()
 	s2c_threads = 1;
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset(&pf_mutex, 0x00, sizeof(pthread_mutex_t));
 
 	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 
 	if (pthread_mutex_init(&thr_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+		closelog();
+		exit(EXIT_FAILURE);
+	}
+
+	if (pthread_mutex_init(&pf_mutex, NULL) != 0) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 
@@ -221,10 +210,6 @@ s2c_spawn_block_log(char *logip, char *logfile)
 	memset(log_data, 0x00, sizeof(thread_log_t));
 
 	s2c_pf_block_log_check();
-
-	pthread_mutex_lock(&thr_mutex);
-	s2c_threads++;
-	pthread_mutex_unlock(&thr_mutex);
 
 	strlcpy(log_data->logfile, logfile, NMBUFSIZ);
 	strlcpy(log_data->logip, logip, BUFSIZ);
@@ -266,14 +251,15 @@ s2c_pf_block_log_check()
 	int threadcheck = 0;
 
 	pthread_mutex_lock(&thr_mutex);
+	s2c_threads++;
 	threadcheck = s2c_threads;
 	pthread_mutex_unlock(&thr_mutex);
 
-	while (!(threadcheck < THRMAX)){
-		sleep(10);
+	while (!(threadcheck < THRMAX)) {
 		pthread_mutex_lock(&thr_mutex);
 		threadcheck = s2c_threads;
-		pthread_mutex_unlock(&thr_mutex);  
+		pthread_mutex_unlock(&thr_mutex);
+		sleep(10);
 	}
 
 	return;
@@ -289,7 +275,7 @@ s2c_malloc_err()
 void
 s2c_ioctl_wait(char *ioctl_wait_flag)
 {
-	syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
+	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
 	sleep(3);
 }
 
@@ -297,6 +283,7 @@ void
 s2c_exit_fail()
 {
 	s2c_mutexes_destroy();
+	closelog();
 	exit(EXIT_FAILURE);
 }
 
@@ -305,6 +292,7 @@ s2c_mutexes_destroy(){
 	if (s2c_threads > 0) {
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
+		pthread_mutex_destroy(&pf_mutex);
 	}
 }
 
@@ -323,8 +311,9 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-r repeat_offenses]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
+	closelog();
 	exit(EXIT_FAILURE);
 }
 
@@ -333,6 +322,7 @@ sighandle()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
 	s2c_mutexes_destroy();
+	closelog();
 	exit(EXIT_SUCCESS);
 }
 

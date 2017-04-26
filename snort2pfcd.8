@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd April 22, 2017
+.Dd April 26, 2017
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -46,6 +46,7 @@
 .Op F1 p Ar Priority
 .Op F1 r Ar Repeat_Offenses
 .Op Fl t Ar Seconds
+.Op Fl v
 .Op Fl h
 .Sh DESCRIPTION
 .Nm
@@ -100,11 +101,13 @@ snort alert file, default is /var/log/snort/alert.
 The priority level to block ip addresses in snort logs, default is 1. 
 Lower priority includes higher priority, for example, -p 3 includes priorities 3, 2 and 1. 
 .It Fl r Ar Repeat_Offenses
-Number of times an ip address may commit a priority p offense before being added to pf block table.
-For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked only after 2 repeated
-snort alerts. 
+Number of times an ip address may commit a priority p offense before being added to pf block table. 
+Default is 0. For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked 
+only after 2 repeated snort alerts. 
 .It Fl t Ar Seconds 
 The number of seconds to block an ip address, default is 60*60 or 1 hour.
+.It Fl v
+Increase verbosity.
 .It Fl h
 Show help.
 .El

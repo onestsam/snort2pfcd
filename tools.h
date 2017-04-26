@@ -48,7 +48,6 @@ void s2c_db_init(int, int, char *, struct wlist_head *);
 void s2c_pf_block_log_check();
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
-
 long lmax(long ,long);
 long lmin(long ,long);
 int	optnum(char *, char *);

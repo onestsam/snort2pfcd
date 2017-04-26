@@ -100,6 +100,8 @@ radix_del_addrs(int dev, const struct pfr_table *table, struct pfr_addr *addrs, 
 	}
 }
 
+
+/* The above borrowed functions are the only ones used in our program.
 int
 radix_get_tables(int dev, struct pfr_table **tables, const struct pfr_table *filter, int flags) {
 	struct pfioc_table pt;
@@ -175,4 +177,4 @@ get_states(int dev, struct pf_state **states) {
 
 	*states = (struct pf_state *)ps.ps_states;
 	return(ps.ps_len / sizeof(struct pf_state));
-}
+}*/

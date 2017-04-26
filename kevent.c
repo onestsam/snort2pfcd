@@ -30,16 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <syslog.h>
-
 #include "defdata.h"
 #include "tools.h"
 #include "spfc.h"
@@ -52,7 +42,6 @@ s2c_kevent_open(char *file)
 {
 	int fd = 0;
 
-	s2c_check_file(file);
 	if ((fd = open(file, O_RDONLY)) == -1) return(-1);
 	if (lseek(fd, 0, SEEK_END) == -1) return(-1);
 	free(file);

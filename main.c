@@ -30,18 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <syslog.h>
-#include <pthread.h>
-
 #include "defdata.h"
 #include "spfc.h"
 #include "parser.h"
@@ -76,8 +64,10 @@ main(int argc, char **argv)
 	bzero(tablename, PF_TABLE_NAME_SIZE);
 
 	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+	pf_reset = 0;
+	v = 0;
 	
-	while ((ch = getopt(argc, argv, "w:p:r:Bb:a:l:e:t:h")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:r:vBb:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
 				strlcpy(wfile, optarg, NMBUFSIZ);
@@ -89,6 +79,9 @@ main(int argc, char **argv)
 				break;
 			case 'B':
 				B = 1;
+				break;
+			case 'v':
+				v = 1;
 				break;
 			case 'a':
 				strlcpy(alertfile, optarg, NMBUFSIZ);
@@ -139,32 +132,43 @@ main(int argc, char **argv)
 
 	if ((dev = open(PFDEVICE, O_RDWR)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 
-	if ((fd = s2c_kevent_open(alertfile)) == -1) {  
+	if ((fd = s2c_kevent_open(alertfile)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
+		closelog();
 		exit(EXIT_FAILURE);
 	}
 
 	s2c_mutexes_init();
 	s2c_log_init(logfile);
+
+	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
+	memset(wbhead, 0x00, sizeof(wbhead_t));
+
+	s2c_db_init(dev, B, tablename, &wbhead->whead);
 	s2c_spawn_expiretable(dev, t);
 
 	while (1) {
-		pf_reset = 0;
-
-		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
-
-		memset(wbhead, 0x00, sizeof(wbhead_t));
-
-		s2c_db_init(dev, B, tablename, &wbhead->whead);
 		s2c_kevent_loop(t, fd, dev, priority, repeat_offenses, logfile, tablename, &wbhead->whead, &wbhead->bhead);
 
 		s2c_parse_and_block_wl_clear(&wbhead->whead);
 		s2c_parse_and_block_bl_clear(&wbhead->bhead);
-		
 		free(wbhead);
+		pf_reset = 0;
+
+		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
+		memset(wbhead, 0x00, sizeof(wbhead_t));
+
+		s2c_db_init(dev, B, tablename, &wbhead->whead);
 	}
+
+	free(wfile);
+	free(bfile);
+	free(logfile);
+	free(tablename);
+	free(extif);
 	return(0);
 }

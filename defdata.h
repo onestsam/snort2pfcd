@@ -33,10 +33,26 @@
 #ifndef _DEFDATA_H_
 #define _DEFDATA_H_
 
-#include <libcidr.h>
-#include <regex.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/event.h>
 #include <net/if.h>
 #include <net/pfvar.h>
+#include <arpa/inet.h>
+#include <libcidr.h>
+#include <regex.h>
+#include <libutil.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <ctype.h>
+#include <syslog.h>
+#include <ifaddrs.h>
 
 #define THRMAX		100
 #define NMBUFSIZ	128
@@ -125,6 +141,7 @@ typedef struct _lineproc_t {
 } lineproc_t;
 
 extern char *__progname;
+int v;
 int s2c_threads;
 int pf_reset;
 char *wfile;
@@ -132,6 +149,7 @@ char *bfile;
 char *extif;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
+pthread_mutex_t pf_mutex;
 
 #endif /* _DEFDATA_H */
 

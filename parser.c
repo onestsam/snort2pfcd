@@ -30,26 +30,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
-#include <regex.h>
-#include <sys/queue.h> 
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <syslog.h>
-#include <libcidr.h>
-#include <ifaddrs.h>
-#include <pthread.h>
-
 #include "defdata.h"
 #include "tools.h"
 #include "spfc.h"
@@ -165,11 +145,12 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 {
 	char *p = NULL;
 
-	p = strstr(lineproc->cad, "Priority:");
-	if (p) memcpy(lineproc->prio, p, 12);
+	if ((p = strstr(lineproc->cad, "Priority:"))) {
+		memcpy(lineproc->prio, p, 12);
 
-	if (isdigit(lineproc->prio[10]))
-		if (priority >= (lineproc->prio[10] - 48)) return(1);
+		if (isdigit(lineproc->prio[10]))
+			if (priority >= (lineproc->prio[10] - 48)) return(1);
+	}
 
 	return(0);
 }
@@ -178,23 +159,20 @@ int
 s2c_parse_ip(lineproc_t *lineproc)
 {
 	int len = 0;
-	unsigned int enc = 1;
 
-	if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) !=0) {
+	if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
 		s2c_exit_fail();
 	}
-
-	if (regexec(&lineproc->expr, lineproc->cad, 1, &lineproc->resultado, 0) != 0) enc = 0;
 	
-	if (enc != 0) {
+	if (regexec(&lineproc->expr, lineproc->cad, 1, &lineproc->resultado, 0) == 0) {
 		len = lineproc->resultado.rm_eo - lineproc->resultado.rm_so;
 		memcpy(lineproc->ret, lineproc->cad + lineproc->resultado.rm_so, len);
 		lineproc->ret[len]='\0';
+		return(1);
 	}
 
-	if (enc) return(1);
-	else return(0);
+	return(0);
 }
 
 void
