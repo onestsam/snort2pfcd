@@ -31,10 +31,6 @@
  */
 
 #include "defdata.h"
-#include "spfc.h"
-#include "parser.h"
-#include "kevent.h"
-#include "tools.h"
 
 
 int
@@ -42,36 +38,41 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int fd = 0, dev = 0, ch = 0, B = 0, repeat_offenses = 0, priority = 1;
-	int w = 0, b = 0, a = 0, l = 0, e = 0;
+	int ch = 0, B = 0, W = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0;
 	unsigned long t = 0;
-	char *tablename = NULL;
-	char *logfile = NULL, *alertfile = NULL;
+	char *alertfile = NULL, *nmpfdev = NULL;
 	wbhead_t *wbhead = NULL;
+	loopdata_t *loopdata = NULL;
 
 	if ((wfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((bfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	if ((logfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
+	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((extif = (char *)malloc(sizeof(char)*IFNAMSIZ)) == NULL) s2c_malloc_err();
-	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2c_malloc_err();
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
 
 	bzero(wfile, NMBUFSIZ);
 	bzero(bfile, NMBUFSIZ);
-	bzero(logfile, NMBUFSIZ);
 	bzero(alertfile, NMBUFSIZ);
+	bzero(nmpfdev, NMBUFSIZ);
 	bzero(extif, IFNAMSIZ);
-	bzero(tablename, PF_TABLE_NAME_SIZE);
+	memset(loopdata, 0x00, sizeof(loopdata_t));
 
-	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+	loopdata->D = 0;
+	loopdata->priority = 1;
+	loopdata->thr_max = THRMAX;
+	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 	pf_reset = 0;
 	v = 0;
 	
-	while ((ch = getopt(argc, argv, "w:p:r:vBb:a:l:e:t:h")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:m:r:vWDBb:a:l:e:t:h")) != -1)
 		switch(ch) {
 			case 'w':
 				strlcpy(wfile, optarg, NMBUFSIZ);
 				w = 1;
+				break;
+			case 'W':
+				W = 1;
 				break;
 			case 'b':
 				strlcpy(bfile, optarg, NMBUFSIZ);
@@ -80,6 +81,9 @@ main(int argc, char **argv)
 			case 'B':
 				B = 1;
 				break;
+			case 'D':
+				loopdata->D = 1;
+				break;
 			case 'v':
 				v = 1;
 				break;
@@ -87,8 +91,12 @@ main(int argc, char **argv)
 				strlcpy(alertfile, optarg, NMBUFSIZ);
 				a = 1;
 				break;
+			case 'd':
+				strlcpy(nmpfdev, optarg, NMBUFSIZ);
+				d = 1;
+				break;
 			case 'l':
-				strlcpy(logfile, optarg, NMBUFSIZ);
+				strlcpy(loopdata->logfile, optarg, NMBUFSIZ);
 				l = 1;
 				break;
 			case 'e':
@@ -100,12 +108,18 @@ main(int argc, char **argv)
 				if(t == -1) usage();
 				break;
 			case 'p':
-				priority = optnum("p", optarg);
-				if(priority == -1) usage();
+				loopdata->priority = optnum("p", optarg);
+				if(loopdata->priority == -1) usage();
+				if(!loopdata->priority) loopdata->priority = 1;
 				break;
 			case 'r':
-				repeat_offenses = optnum("r", optarg);
-				if(repeat_offenses == -1) usage();
+				loopdata->repeat_offenses = optnum("r", optarg);
+				if(loopdata->repeat_offenses == -1) usage();
+				break;
+			case 'm':
+				loopdata->thr_max = optnum("m", optarg);
+				if(loopdata->thr_max == -1) usage();
+				if(!loopdata->thr_max) loopdata->thr_max = THRMAX;
 				break;
 			case 'h':
 				usage();
@@ -121,38 +135,41 @@ main(int argc, char **argv)
 	if (!w) strlcpy(wfile, PATH_WHITELIST, NMBUFSIZ);
 	if (!b) strlcpy(bfile, PATH_BLACKLIST, NMBUFSIZ);
 	if (!a) strlcpy(alertfile, PATH_ALERT, NMBUFSIZ);
+	if (!d) strlcpy(nmpfdev, PFDEVICE, NMBUFSIZ);
 	if (!e) strlcpy(extif, "all", IFNAMSIZ);
 	if (!l) {
-		strlcpy(logfile, PATH_LOG, NMBUFSIZ);
-		strlcat(logfile,  __progname, NMBUFSIZ);
-		strlcat(logfile, ".log", NMBUFSIZ);
+		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
+		strlcat(loopdata->logfile,  __progname, NMBUFSIZ);
+		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
 	}
 
 	s2c_daemonize();
 
-	if ((dev = open(PFDEVICE, O_RDWR)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, PFDEVICE, LANG_EXIT);
+	if ((loopdata->dev = open(nmpfdev, O_RDWR)) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
 		closelog();
 		exit(EXIT_FAILURE);
 	}
 
-	if ((fd = s2c_kevent_open(alertfile)) == -1) {
+	free(nmpfdev);
+
+	if ((loopdata->fd = s2c_kevent_open(alertfile)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
 		closelog();
 		exit(EXIT_FAILURE);
 	}
 
 	s2c_mutexes_init();
-	s2c_log_init(logfile);
+	s2c_log_init(loopdata->logfile);
 
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	memset(wbhead, 0x00, sizeof(wbhead_t));
 
-	s2c_db_init(dev, B, tablename, &wbhead->whead);
-	s2c_spawn_expiretable(dev, t);
+	s2c_db_init(loopdata->dev, B, W, loopdata->tablename, &wbhead->whead);
+	s2c_spawn_expiretable(loopdata->dev, loopdata->t);
 
 	while (1) {
-		s2c_kevent_loop(t, fd, dev, priority, repeat_offenses, logfile, tablename, &wbhead->whead, &wbhead->bhead);
+		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
 
 		s2c_parse_and_block_wl_clear(&wbhead->whead);
 		s2c_parse_and_block_bl_clear(&wbhead->bhead);
@@ -162,13 +179,13 @@ main(int argc, char **argv)
 		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 		memset(wbhead, 0x00, sizeof(wbhead_t));
 
-		s2c_db_init(dev, B, tablename, &wbhead->whead);
+		s2c_db_init(loopdata->dev, B, W, loopdata->tablename, &wbhead->whead);
 	}
 
+	free(loopdata);
+	free(wbhead);
 	free(wfile);
 	free(bfile);
-	free(logfile);
-	free(tablename);
 	free(extif);
 	return(0);
 }

@@ -1,5 +1,5 @@
 # snort2pfcd
-v1.7
+v1.8
 
 Analyzes snort alert output and blocks ip addresses for a given snort priority using 
 pf table entries for a specified period of time. A whitelist is specified to exclude

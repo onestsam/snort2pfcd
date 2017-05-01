@@ -54,6 +54,7 @@
 #include <syslog.h>
 #include <ifaddrs.h>
 
+/* Params */
 #define THRMAX		100
 #define NMBUFSIZ	128
 #define EXPTIME		60*60
@@ -101,10 +102,14 @@
 #define LANG_KE_READ_ERROR "kevent read error"
 #define LANG_KE_ERROR "unable to set kevent structure"
 #define LANG_FILE_ERROR "file error: file is a directory"
+#define LANG_LOGTHR_ERROR "!! internal log thread error !!"
+#define LANG_DNS_DISABLED "DNS lookup disabled"
 
+/* Macros */
 LIST_HEAD(wlist_head, ipwlist);
 LIST_HEAD(blist_head, ipblist);
 
+/* Global structs */
 struct ipwlist {
 	CIDR *waddr;
 	LIST_ENTRY(ipwlist) elem;
@@ -123,6 +128,7 @@ typedef struct _thread_expt_t {
 } thread_expt_t;
 
 typedef struct _thread_log_t {
+	int D;
 	char logip[BUFSIZ];
 	char logfile[NMBUFSIZ];
 } thread_log_t;
@@ -140,6 +146,19 @@ typedef struct _lineproc_t {
 	regmatch_t resultado;
 } lineproc_t;
 
+typedef struct _loopdata_t {
+	int D;
+	int fd;
+	int dev;
+	unsigned long t;
+	int priority;
+	int thr_max;
+	int repeat_offenses;
+	char logfile[NMBUFSIZ];
+	char tablename[PF_TABLE_NAME_SIZE];
+} loopdata_t;
+
+/* Global vars */
 extern char *__progname;
 int v;
 int s2c_threads;
@@ -150,6 +169,52 @@ char *extif;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
 pthread_mutex_t pf_mutex;
+
+/* Function defs */
+void usage();
+void sighandle();
+void s2c_daemonize();
+void s2c_exit_fail();
+void s2c_malloc_err();
+void s2c_ioctl_wait(char *);
+void s2c_spawn_expiretable(int, int);
+void s2c_spawn_block_log(int, int, char *, char *);
+void s2c_spawn_thread(void *(*) (void *), void *);
+void s2c_mutexes_init();
+void s2c_mutexes_destroy();
+void s2c_log_init(char *);
+void s2c_db_init(int, int, int, char *, struct wlist_head *);
+void s2c_pf_block_log_check(int);
+void s2c_check_file(char *);
+void s2c_write_file(char *, char *);
+long lmax(long ,long);
+long lmin(long ,long);
+int	optnum(char *, char *);
+
+void s2c_pf_block(int, char *, char *);
+void s2c_pf_tbladd(int, char *);
+void s2c_pf_ruleadd(int, char *);
+void *s2c_pf_block_log(void *);
+void *s2c_pf_expiretable(void *);
+
+int s2c_parse_ip(lineproc_t *);
+int s2c_parse_priority(int, lineproc_t *);
+int s2c_parse_line(char *, FILE *);
+void s2c_parse_and_block_bl_clear(struct blist_head *);
+void s2c_parse_and_block_wl_clear(struct wlist_head *);
+void s2c_parse_and_block_bl_del(unsigned long, unsigned long, struct blist_head *);
+void s2c_parse_and_block(loopdata_t *, lineproc_t *, struct wlist_head *, struct blist_head *);
+void s2c_parse_load_bl_static(int, lineproc_t *, char*, struct wlist_head *);
+int s2c_parse_and_block_bl(char *, struct blist_head *);
+int s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
+void s2c_parse_load_wl_ifaces(struct ipwlist *);
+void s2c_parse_load_wl(lineproc_t *, struct wlist_head *);
+int s2c_parse_search_wl(char *, struct wlist_head *);
+
+int s2c_kevent_open(char *);
+int s2c_kevent_read_l(int, char *);
+int s2c_kevent_read_f(loopdata_t *, struct wlist_head *, struct blist_head *, lineproc_t *lineproc, int);
+void s2c_kevent_loop(loopdata_t *, struct wlist_head *, struct blist_head *);
 
 #endif /* _DEFDATA_H */
 

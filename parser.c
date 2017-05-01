@@ -31,9 +31,6 @@
  */
 
 #include "defdata.h"
-#include "tools.h"
-#include "spfc.h"
-#include "parser.h"
 
 
 int
@@ -176,20 +173,20 @@ s2c_parse_ip(lineproc_t *lineproc)
 }
 
 void
-s2c_parse_and_block(int dev, int priority, int repeat_offenses, char *logfile, char *tablename, lineproc_t *lineproc, struct wlist_head *whead, struct blist_head *bhead)
+s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, struct wlist_head *whead, struct blist_head *bhead)
 {
 	int pb_status = 0;
 
-	if (!s2c_parse_priority(priority, lineproc)) return;
+	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) return;
 
 	if (!LIST_EMPTY(whead))
 		if (s2c_parse_search_wl(lineproc->ret, whead)) return;
 
-	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, bhead)) == repeat_offenses) {
+	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, bhead)) == loopdata->repeat_offenses) {
 
-		s2c_spawn_block_log(lineproc->ret, logfile);
-		s2c_pf_block(dev, tablename, lineproc->ret);
+		s2c_spawn_block_log(loopdata->D, loopdata->thr_max, lineproc->ret, loopdata->logfile);
+		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 	}
 
 	if(pb_status == -1) {
@@ -270,7 +267,7 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, struct 
 	FILE *blfile = NULL;
 
 	if ((blfile = fopen(bfile, "r")) == NULL) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s blacklist file - %s", LANG_NO_OPEN, LANG_WARN);
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, bfile, LANG_WARN);
 		return;
 	}
 
@@ -324,10 +321,12 @@ s2c_parse_load_wl(lineproc_t *lineproc, struct wlist_head *head)
 		ifr->ifr_addr.sa_family = AF_INET;
 		strlcpy(ifr->ifr_name, extif, IFNAMSIZ);
 
+		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
 			syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, extif, LANG_EXIT);
 			s2c_exit_fail();
 		}
+		pthread_mutex_unlock(&pf_mutex);
 
 		close(fd);
 		free(ifr);

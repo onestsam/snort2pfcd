@@ -31,9 +31,6 @@
  */
 
 #include "defdata.h"
-#include "spfc.h"
-#include "parser.h"
-#include "tools.h"
 #include "version.h"
 
 
@@ -137,7 +134,7 @@ s2c_log_init(char *logfile)
 }
 
 void
-s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead)
+s2c_db_init(int dev, int B, int W, char *tablename, struct wlist_head *whead)
 {
 	lineproc_t *lineproc = NULL;
 
@@ -146,7 +143,7 @@ s2c_db_init(int dev, int B, char *tablename, struct wlist_head *whead)
 
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
 
-	s2c_parse_load_wl(lineproc, whead);
+	if (!W) s2c_parse_load_wl(lineproc, whead);
 	s2c_pf_ruleadd(dev, tablename);
 	if (!B) s2c_parse_load_bl_static(dev, lineproc, tablename, whead);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
@@ -201,7 +198,7 @@ s2c_spawn_expiretable(int dev, int t)
 }
 
 void
-s2c_spawn_block_log(char *logip, char *logfile)
+s2c_spawn_block_log(int D, int thr_max, char *logip, char *logfile)
 {
 	thread_log_t *log_data = NULL;
 
@@ -209,8 +206,9 @@ s2c_spawn_block_log(char *logip, char *logfile)
 
 	memset(log_data, 0x00, sizeof(thread_log_t));
 
-	s2c_pf_block_log_check();
+	s2c_pf_block_log_check(thr_max);
 
+	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, NMBUFSIZ);
 	strlcpy(log_data->logip, logip, BUFSIZ);
 	s2c_spawn_thread(s2c_pf_block_log, log_data);
@@ -246,7 +244,7 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 }
 
 void
-s2c_pf_block_log_check()
+s2c_pf_block_log_check(int thr_max)
 {
 	int threadcheck = 0;
 
@@ -255,7 +253,7 @@ s2c_pf_block_log_check()
 	threadcheck = s2c_threads;
 	pthread_mutex_unlock(&thr_mutex);
 
-	while (!(threadcheck < THRMAX)) {
+	while (!(threadcheck < thr_max)) {
 		pthread_mutex_lock(&thr_mutex);
 		threadcheck = s2c_threads;
 		pthread_mutex_unlock(&thr_mutex);
@@ -311,7 +309,7 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-B] [-b bfile] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-r repeat_offenses]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-D] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	closelog();
 	exit(EXIT_FAILURE);

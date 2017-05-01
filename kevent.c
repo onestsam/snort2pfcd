@@ -31,10 +31,6 @@
  */
 
 #include "defdata.h"
-#include "tools.h"
-#include "spfc.h"
-#include "parser.h"
-#include "kevent.h"
 
 
 int
@@ -50,7 +46,7 @@ s2c_kevent_open(char *file)
 }
 
 void
-s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int repeat_offenses, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead)
+s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead)
 {
 	struct kevent ke, kev;
 	int kq = 0;
@@ -60,7 +56,7 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int repeat_offen
 	
 
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-	if (t > 0) age = t;
+	if (loopdata->t > 0) age = loopdata->t;
 	this_time = time(NULL);
 	last_time = this_time;
 
@@ -70,7 +66,7 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int repeat_offen
 	}
 
 	memset(&kev, 0x00, sizeof(struct kevent));
-	EV_SET(&kev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+	EV_SET(&kev, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
 	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
@@ -97,7 +93,7 @@ s2c_kevent_loop(unsigned long t, int fd, int dev, int priority, int repeat_offen
 		}
 
 		if (ke.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(fd, dev, priority, repeat_offenses, logfile, tablename, whead, bhead, lineproc, ke.data) == -1)
+			if (s2c_kevent_read_f(loopdata, whead, bhead, lineproc, ke.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 	}
 
@@ -120,13 +116,13 @@ s2c_kevent_read_l(int fd, char *buf)
 }
 
 int
-s2c_kevent_read_f(int fd, int dev, int priority, int repeat_offenses, char *logfile, char *tablename, struct wlist_head *whead, struct blist_head *bhead, lineproc_t *lineproc, int nbytes)
+s2c_kevent_read_f(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead, lineproc_t *lineproc, int nbytes)
 {
 	int i = 0, total = 0;
 
 	do  {
-		if ((i = s2c_kevent_read_l(fd, lineproc->cad)) == -1) return(-1);
-		s2c_parse_and_block(dev, priority, repeat_offenses, logfile, tablename, lineproc, whead, bhead);
+		if ((i = s2c_kevent_read_l(loopdata->fd, lineproc->cad)) == -1) return(-1);
+		s2c_parse_and_block(loopdata, lineproc, whead, bhead);
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		total += i;
 

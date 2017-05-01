@@ -31,9 +31,6 @@
  */
 
 #include "defdata.h"
-#include "tools.h"
-#include "spfc.h"
-#include "parser.h"
 #include "ioctl_helpers.h"
 
 
@@ -148,31 +145,39 @@ void
 	} pfbl_log_t;
 
 	long timebuf = 0;
-	int gni_error = 0;
+	int gni_error = 0, D = 0;
 	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;
-
 
 	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
 
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
+	D = data->D;
 	memcpy(pfbl_log->local_logip, data->logip, BUFSIZ);
 	memcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
 	free(arg);
 
 	timebuf = time(NULL);
-	pfbl_log->sa.sa_family = AF_INET;
 
 	pthread_mutex_lock(&dns_mutex);
-	if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
+	if(!D) {
+		
+		pfbl_log->sa.sa_family = AF_INET;
+		if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
-		gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
-		if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
+			if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 
-		sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
-		s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
+		} else {
+			strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+		}
+	} else {
+		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 	}
+
+	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
+	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
 	pthread_mutex_unlock(&dns_mutex);
 	
 	free(pfbl_log);
