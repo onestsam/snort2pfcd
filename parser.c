@@ -105,6 +105,16 @@ s2c_parse_and_block_wl_clear(struct wlist_head *whead)
 }
 
 void
+s2c_parse_and_block_bl_static_clear(int dev, char *tablename)
+{
+	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
+	s2c_pf_tbldel(dev, tablename);
+	bzero(tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+	return;
+}
+
+void
 s2c_parse_and_block_bl_del(unsigned long age, unsigned long this_time, struct blist_head *bl)
 {
 	struct ipblist *aux2 = NULL;

@@ -66,6 +66,7 @@ s2c_write_file(char *namefile, char *message)
 	fputs(message, lfile);
 	funlockfile(lfile);
 	fclose(lfile);
+	return;
 }
 
 void
@@ -153,12 +154,13 @@ s2c_db_init(int dev, int B, int W, char *tablename, struct wlist_head *whead)
 }
 
 void
-s2c_mutexes_init()
+s2c_mutex_init()
 {
 	s2c_threads = 1;
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&pf_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset(&fm_mutex, 0x00, sizeof(pthread_mutex_t));
 
 	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
@@ -178,6 +180,38 @@ s2c_mutexes_init()
 		exit(EXIT_FAILURE);
 	}
 
+	if (pthread_mutex_init(&fm_mutex, NULL) != 0) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+		closelog();
+		exit(EXIT_FAILURE);
+	}
+
+	return;
+}
+
+void
+s2c_thr_init(int dev, int t){
+
+	s2c_spawn_expiretable(dev, t);
+	s2c_spawn_file_monitor(&wfile_monitor, wfile);
+	s2c_spawn_file_monitor(&bfile_monitor, bfile);
+
+	return;
+}
+
+void
+s2c_spawn_file_monitor(int *notifaddr, char *filename)
+{
+	thread_fm_t *fm_data = NULL;
+
+	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) s2c_malloc_err();
+
+	memset(fm_data, 0x00, sizeof(thread_fm_t));
+
+	fm_data->file_monitor = notifaddr;
+	strlcpy(fm_data->file, filename, NMBUFSIZ);
+	s2c_spawn_thread(s2c_kevent_file_monitor, fm_data);
+
 	return;
 }
 
@@ -192,6 +226,7 @@ s2c_spawn_expiretable(int dev, int t)
 
 	expt_data->t = t;
 	expt_data->dev = dev;
+	strlcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	return;
@@ -275,23 +310,26 @@ s2c_ioctl_wait(char *ioctl_wait_flag)
 {
 	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
 	sleep(3);
+	return;
 }
 
 void
 s2c_exit_fail()
 {
-	s2c_mutexes_destroy();
+	s2c_mutex_destroy();
 	closelog();
 	exit(EXIT_FAILURE);
 }
 
 void
-s2c_mutexes_destroy(){
+s2c_mutex_destroy(){
 	if (s2c_threads > 0) {
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
 		pthread_mutex_destroy(&pf_mutex);
+		pthread_mutex_destroy(&fm_mutex);
 	}
+	return;
 }
 
 int
@@ -319,7 +357,7 @@ void
 sighandle()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
-	s2c_mutexes_destroy();
+	s2c_mutex_destroy();
 	closelog();
 	exit(EXIT_SUCCESS);
 }
@@ -333,4 +371,3 @@ long
 lmin(long a,long b) {
 	return (a < b)?a:b;
 }
-

@@ -32,6 +32,55 @@
 
 #include "defdata.h"
 
+void
+*s2c_kevent_file_monitor(void *arg){
+	thread_fm_t *data = (thread_fm_t *)arg;
+	struct kevent change, trigger;
+	int fd = 0, kq = 0, *fm = NULL;
+	char *local_file = NULL;
+
+	if ((local_file = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
+	strlcpy(local_file, data->file, NMBUFSIZ);
+	fm = data->file_monitor;
+	free(data);
+
+	if ((kq = kqueue()) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+   if ((fd = s2c_kevent_open(local_file)) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, local_file, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
+
+	memset(&change, 0x00, sizeof(struct kevent));
+	EV_SET(&change, fd, EVFILT_VNODE, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXTEND | NOTE_WRITE, 0, 0);
+
+	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1){
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	while (1) {
+		
+		memset(&trigger, 0x00, sizeof(struct kevent));
+		if (kevent(kq, NULL, 0, &trigger, 1, NULL) == -1){
+			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
+			s2c_exit_fail();
+
+		} else if (trigger.fflags & NOTE_EXTEND || trigger.fflags & NOTE_WRITE) {
+			pthread_mutex_lock(&fm_mutex);
+			*fm = 1;
+			pthread_mutex_unlock(&fm_mutex);
+		}
+	}
+
+	close(kq);
+	close(fd);
+	free(local_file);
+	pthread_exit(NULL);
+}
 
 int
 s2c_kevent_open(char *file)
@@ -40,7 +89,6 @@ s2c_kevent_open(char *file)
 
 	if ((fd = open(file, O_RDONLY)) == -1) return(-1);
 	if (lseek(fd, 0, SEEK_END) == -1) return(-1);
-	free(file);
 
 	return(fd);
 }
@@ -48,7 +96,7 @@ s2c_kevent_open(char *file)
 void
 s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead)
 {
-	struct kevent ke, kev;
+	struct kevent trigger, change;
 	int kq = 0;
 	unsigned long age = EXPTIME;
 	unsigned long last_time = 0, this_time = 0;
@@ -65,10 +113,10 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		s2c_exit_fail();
 	}
 
-	memset(&kev, 0x00, sizeof(struct kevent));
-	EV_SET(&kev, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+	memset(&change, 0x00, sizeof(struct kevent));
+	EV_SET(&change, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-	if (kevent(kq, &kev, 1, NULL, 0, NULL) == -1) {
+	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
@@ -76,7 +124,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 
 	while (pf_reset != -1) {
 
-		memset(&ke, 0x00, sizeof(struct kevent));
+		memset(&trigger, 0x00, sizeof(struct kevent));
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		
 		pf_reset = 0;
@@ -87,28 +135,50 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 			s2c_parse_and_block_bl_del(age, this_time, bhead);
 		}
 
-		if (kevent(kq, NULL, 0, &ke, 1, NULL) == -1) {
+		if (kevent(kq, NULL, 0, &trigger, 1, NULL) == -1) {
 			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 			s2c_exit_fail();
 		}
 
-		if (ke.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(loopdata, whead, bhead, lineproc, ke.data) == -1)
+		if (trigger.filter == EVFILT_READ)
+			if (s2c_kevent_read_f(loopdata, whead, bhead, lineproc, trigger.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
+
+		pthread_mutex_lock(&fm_mutex);
+
+		if(wfile_monitor) {
+			wfile_monitor = 0;
+			if(!loopdata->W) {
+				s2c_check_file(wfile);
+				s2c_parse_and_block_wl_clear(whead);
+				s2c_parse_load_wl(lineproc, whead);
+			}
+		}
+
+		if(bfile_monitor) {
+			bfile_monitor = 0;
+			if(!loopdata->B) {
+				s2c_check_file(bfile);
+				s2c_parse_and_block_bl_static_clear(loopdata->dev, loopdata->tablename);
+				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, whead);
+			}
+		}
+
+		pthread_mutex_unlock(&fm_mutex);
 	}
 
+	close(kq);
 	free(lineproc);
+	return;
 }
 
 int
 s2c_kevent_read_l(int fd, char *buf)
 {
-	int i = 0, b_r = 0;
+	int i = 0, r = 0;
 
 	for (i = 0; i < BUFSIZ; i++) {
-
-		b_r = read(fd, &buf[i], sizeof(char));
-		if (b_r == -1 || b_r == 0) return(b_r);
+		if((r = read(fd, &buf[i], sizeof(char))) <= 0) return(r);
 		if (buf[i] == '\n') break;
 	}
 	

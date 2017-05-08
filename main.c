@@ -38,7 +38,7 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int ch = 0, B = 0, W = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0;
+	int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0;
 	unsigned long t = 0;
 	char *alertfile = NULL, *nmpfdev = NULL;
 	wbhead_t *wbhead = NULL;
@@ -59,9 +59,13 @@ main(int argc, char **argv)
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
 	loopdata->D = 0;
+	loopdata->B = 0;
+	loopdata->W = 0;
 	loopdata->priority = 1;
 	loopdata->thr_max = THRMAX;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
+	wfile_monitor = 0;
+	bfile_monitor = 0;
 	pf_reset = 0;
 	v = 0;
 	
@@ -72,14 +76,14 @@ main(int argc, char **argv)
 				w = 1;
 				break;
 			case 'W':
-				W = 1;
+				loopdata->W = 1;
 				break;
 			case 'b':
 				strlcpy(bfile, optarg, NMBUFSIZ);
 				b = 1;
 				break;
 			case 'B':
-				B = 1;
+				loopdata->B = 1;
 				break;
 			case 'D':
 				loopdata->D = 1;
@@ -150,7 +154,6 @@ main(int argc, char **argv)
 		closelog();
 		exit(EXIT_FAILURE);
 	}
-
 	free(nmpfdev);
 
 	if ((loopdata->fd = s2c_kevent_open(alertfile)) == -1) {
@@ -158,15 +161,15 @@ main(int argc, char **argv)
 		closelog();
 		exit(EXIT_FAILURE);
 	}
-
-	s2c_mutexes_init();
-	s2c_log_init(loopdata->logfile);
+	free(alertfile);
 
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	memset(wbhead, 0x00, sizeof(wbhead_t));
 
-	s2c_db_init(loopdata->dev, B, W, loopdata->tablename, &wbhead->whead);
-	s2c_spawn_expiretable(loopdata->dev, loopdata->t);
+	s2c_mutex_init();
+	s2c_log_init(loopdata->logfile);
+	s2c_db_init(loopdata->dev, loopdata->B, loopdata->W, loopdata->tablename, &wbhead->whead);
+	s2c_thr_init(loopdata->dev, loopdata->t);
 
 	while (1) {
 		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
@@ -179,9 +182,11 @@ main(int argc, char **argv)
 		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 		memset(wbhead, 0x00, sizeof(wbhead_t));
 
-		s2c_db_init(loopdata->dev, B, W, loopdata->tablename, &wbhead->whead);
+		s2c_db_init(loopdata->dev, loopdata->B, loopdata->W, loopdata->tablename, &wbhead->whead);
 	}
 
+	close(loopdata->dev);
+	close(loopdata->fd);
 	free(loopdata);
 	free(wbhead);
 	free(wfile);

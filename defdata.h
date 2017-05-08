@@ -122,9 +122,15 @@ struct ipblist {
 	LIST_ENTRY(ipblist) elem;
 };
 
+typedef struct _pftbl_t {
+	struct pfioc_table io;
+	struct pfr_table table;
+} pftbl_t;
+
 typedef struct _thread_expt_t {
 	int dev;
 	unsigned long t;
+	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
 typedef struct _thread_log_t {
@@ -132,6 +138,11 @@ typedef struct _thread_log_t {
 	char logip[BUFSIZ];
 	char logfile[NMBUFSIZ];
 } thread_log_t;
+
+typedef struct _thread_fm_t {
+	int *file_monitor;
+	char file[NMBUFSIZ];
+} thread_fm_t;
 
 typedef struct _wbhead_t {
 	struct wlist_head whead;
@@ -147,6 +158,8 @@ typedef struct _lineproc_t {
 } lineproc_t;
 
 typedef struct _loopdata_t {
+	int B;
+	int W;
 	int D;
 	int fd;
 	int dev;
@@ -163,12 +176,15 @@ extern char *__progname;
 int v;
 int s2c_threads;
 int pf_reset;
+int wfile_monitor;
+int bfile_monitor;
 char *wfile;
 char *bfile;
 char *extif;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
 pthread_mutex_t pf_mutex;
+pthread_mutex_t fm_mutex;
 
 /* Function defs */
 void usage();
@@ -177,11 +193,13 @@ void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_ioctl_wait(char *);
+void s2c_thr_init(int, int);
+void s2c_spawn_file_monitor(int *, char *);
 void s2c_spawn_expiretable(int, int);
 void s2c_spawn_block_log(int, int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
-void s2c_mutexes_init();
-void s2c_mutexes_destroy();
+void s2c_mutex_init();
+void s2c_mutex_destroy();
 void s2c_log_init(char *);
 void s2c_db_init(int, int, int, char *, struct wlist_head *);
 void s2c_pf_block_log_check(int);
@@ -193,7 +211,9 @@ int	optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
 void s2c_pf_tbladd(int, char *);
+void s2c_pf_tbldel(int, char *);
 void s2c_pf_ruleadd(int, char *);
+void *s2c_file_monitor(void *);
 void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);
 
@@ -202,6 +222,7 @@ int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);
 void s2c_parse_and_block_bl_clear(struct blist_head *);
 void s2c_parse_and_block_wl_clear(struct wlist_head *);
+void s2c_parse_and_block_bl_static_clear(int, char *);
 void s2c_parse_and_block_bl_del(unsigned long, unsigned long, struct blist_head *);
 void s2c_parse_and_block(loopdata_t *, lineproc_t *, struct wlist_head *, struct blist_head *);
 void s2c_parse_load_bl_static(int, lineproc_t *, char*, struct wlist_head *);
@@ -211,6 +232,7 @@ void s2c_parse_load_wl_ifaces(struct ipwlist *);
 void s2c_parse_load_wl(lineproc_t *, struct wlist_head *);
 int s2c_parse_search_wl(char *, struct wlist_head *);
 
+void *s2c_kevent_file_monitor(void *arg);
 int s2c_kevent_open(char *);
 int s2c_kevent_read_l(int, char *);
 int s2c_kevent_read_f(loopdata_t *, struct wlist_head *, struct blist_head *, lineproc_t *lineproc, int);
