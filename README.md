@@ -1,7 +1,7 @@
 # snort2pfcd
 v1.9
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Sun May  7 23:13:33 2017 -->
+<!-- CreationDate: Tue May  9 07:42:43 2017 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -46,10 +46,10 @@ alerts via packet filter firewall tables.</p>
 
 <p style="margin-left:6%;"><b>snort2pfcd</b> Analyzes snort
 alert output and blocks ip addresses for a given snort
-priority using pf table entries for a specified period of
-time. A whitelist is specified to exclude local and trusted
-ip address from being blocked. <b>snort2pfcd</b> also
-preloads the community maintained and supplied snort
+priority using packet filter table entries for a specified
+period of time. A whitelist is specified to exclude local
+and trusted ip address from being blocked. <b>snort2pfcd</b>
+also preloads the community maintained and supplied snort
 blacklist by default. The whitelist and blacklist files are
 monitored and <b>snort2pfcd</b> automatically reloads and
 updates the tables when changes are made to the files.</p>
@@ -118,10 +118,10 @@ priorities 3, 2 and 1.</p>
 <i>Repeat_Offenses</i></p>
 
 <p style="margin-left:17%;">Number of times an ip address
-may commit a priority p offense before being added to pf
-block table. Default is 0. For example, -p 2 -r 2 specifies
-that priority 1 or 2 snort alerts will be blocked only after
-2 repeated snort alerts (3 snort alerts total).</p>
+may commit an offense before being added to pf block table.
+Default is 0. For example, -p 2 -r 2 specifies that priority
+1 or 2 snort alerts will be blocked only after 2 repeated
+snort alerts (3 snort alerts total).</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;t</b>
 <i>Seconds</i></p>
@@ -167,12 +167,14 @@ OPERATION</b></p>
 system monitors network traffic and will generate an alert
 if this traffic matches a rule for a type of malicious
 activity. <b>snort2pfcd</b> monitors this alert file and can
-then add the offending ip address to a pf block table.
-<b>snort2pfcd</b> provides the above options for the user to
-specify the conditions under which the offending address is
-added to the pf block table. Differentiating between benign
-and malicious network traffic is difficult and,
-unfortunately, snort generates a fair amount of
+then add the offending ip address to a packet filter block
+table. <b>snort2pfcd</b> provides the above options for the
+user to specify the conditions under which the offending
+address is added to the packet filter block table.</p>
+
+<p style="margin-left:6%; margin-top: 1em">Differentiating
+between benign and malicious network traffic is difficult
+and, unfortunately, snort generates a fair amount of
 false-positives. One will find that many established and
 trusted websites will also produce network traffic that
 appears (or is genuinely) malicious. To assist the user with
@@ -185,15 +187,26 @@ address, or alternatively, research and add the entire CIDR
 address block assigned to that network entity, to the
 whitelist. Whitelisted addresses or CIDR address blocks
 generating a snort alert will not be added to the packet
-filter block table. <b>snort2pfcd</b> also loads the snort
-community supplied blacklist file into a separate packet
-filter block table by default. Table entries are named
-&quot;snort2pfcd&quot; for dynamic entries which can be
-viewed with &quot;pfctl -t snort2pfcd -T show&quot;. Static
-entries loaded from the community provided snort blacklist
-are populated within the &quot;snort2pfcd_static&quot; table
-which can be viewed with &quot;pfctl -t snort2pfcd_static -T
-show&quot;.</p>
+filter block table.</p>
+
+
+<p style="margin-left:6%; margin-top: 1em"><b>snort2pfcd</b>
+also loads the snort community supplied blacklist file into
+a separate packet filter block table by default. Table
+entries are named &quot;snort2pfcd&quot; for dynamic entries
+which can be viewed with &quot;pfctl -t snort2pfcd -T
+show&quot;. Static entries loaded from the community
+provided snort blacklist are populated within the
+&quot;snort2pfcd_static&quot; table which can be viewed with
+&quot;pfctl -t snort2pfcd_static -T show&quot;.</p>
+
+<p style="margin-left:6%; margin-top: 1em">At no time
+should <b>snort2pfcd</b> need to be restarted.
+<b>snort2pfcd</b> will repopulate its packet filter tables
+if pf is restarted. <b>snort2pfcd</b> also monitors the
+whitelist and blacklist files for changes. Changes applied
+to these files are automatically reloaded and applied to the
+running <b>snort2pfcd</b> processes.</p>
 
 <p style="margin-top: 1em" valign="top"><b>FILES <br>
 Whitelist</b></p>
@@ -225,9 +238,9 @@ binary output.</p>
 <p style="margin-left:6%; margin-top: 1em">By default, the
 user-supplied whitelist is prepended with the addresses of
 all of the local interfaces as the handling of these
-addresses are usually specified by more complex pf rules and
-simply blocking these addresses can cause problems with
-certain configurations.</p>
+addresses are usually specified by more complex packet
+filter rules and simply blocking these addresses can cause
+problems with certain configurations.</p>
 
 <p style="margin-left:6%; margin-top: 1em">The
 user-supplied whitelist can also be prepended with the
@@ -238,11 +251,11 @@ configurations. Lo0 is always whitelisted.</p>
 <p style="margin-left:6%; margin-top: 1em"><b>snort2pfcd</b>
 also automatically whitelists addresses found within the
 /etc/resolv.conf file as these addresses should also be
-handled by specific pf rules.</p>
+handled by specific packet filter rules.</p>
 
 <p style="margin-left:6%; margin-top: 1em">A static
-blacklist table is also maintained and populated within pf
-with the addresses found within the
+blacklist table is also maintained and populated within
+packet filter with the addresses found within the
 /usr/local/etc/snort/rules/iplists/default.blacklist file.
 These addresses can be supplied by the user or automatically
 populated with addresses supplied by the snort
@@ -266,7 +279,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">April&nbsp;30,
+<p style="margin-left:6%; margin-top: 1em">May&nbsp;8,
 2017</p>
 <hr>
 </body>

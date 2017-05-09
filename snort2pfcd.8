@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd April 30, 2017
+.Dd May 8, 2017
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -54,7 +54,7 @@
 .Op Fl h
 .Sh DESCRIPTION
 .Nm
-Analyzes snort alert output and blocks ip addresses for a given snort priority using pf table entries for a specified period of time. A whitelist is specified to exclude local and trusted ip address from being blocked. 
+Analyzes snort alert output and blocks ip addresses for a given snort priority using packet filter table entries for a specified period of time. A whitelist is specified to exclude local and trusted ip address from being blocked. 
 .Nm
 also preloads the community maintained and supplied snort blacklist by default. The whitelist and blacklist files are monitored and
 .Nm
@@ -82,7 +82,7 @@ snort alert file, default is /var/log/snort/alert.
 The priority level to block ip addresses in snort logs, default is 1. 
 Lower priority includes higher priority, for example, -p 3 includes priorities 3, 2 and 1. 
 .It Fl r Ar Repeat_Offenses
-Number of times an ip address may commit a priority p offense before being added to pf block table. 
+Number of times an ip address may commit an offense before being added to pf block table. 
 Default is 0. For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked only after 2 repeated snort alerts (3 snort alerts total). 
 .It Fl t Ar Seconds 
 The number of seconds to block an ip address, default is 60*60 or 1 hour.
@@ -102,22 +102,35 @@ Show help.
 .Sh THEORY OF OPERATION
 The snort intrusion detection system monitors network traffic and will generate an alert if this traffic matches a rule for a type of malicious activity.
 .Nm
-monitors this alert file and can then add the offending ip address to a pf block table. 
+monitors this alert file and can then add the offending ip address to a packet filter block table. 
 .Nm
-provides the above options for the user to specify the conditions under which the offending address is added to the pf block table. Differentiating between benign and malicious network traffic is difficult and, unfortunately, snort generates a fair amount of false-positives. One will find that many established and trusted websites will also produce network traffic that appears (or is genuinely) malicious. To assist the user with filtering network traffic produced by various network entities, 
+provides the above options for the user to specify the conditions under which the offending address is added to the packet filter block table.
+.Pp
+Differentiating between benign and malicious network traffic is difficult and, unfortunately, snort generates a fair amount of false-positives. One will find that many established and trusted websites will also produce network traffic that appears (or is genuinely) malicious. To assist the user with filtering network traffic produced by various network entities, 
 .Nm
 will automatically resolve the offending ip address and display the DNS name in the 
 .Nm
 block log. Should the user decide that the offending address is trustworthy, the user can add the address, or alternatively, research and add the entire CIDR address block assigned to that network entity, to the whitelist. Whitelisted addresses or CIDR address blocks generating a snort alert will not be added to the packet filter block table.
+.Pp
 .Nm
 also loads the snort community supplied blacklist file into a separate packet filter block table by default. Table entries are named "snort2pfcd" for dynamic entries which can be viewed with "pfctl -t snort2pfcd -T show". Static entries loaded from the community provided snort blacklist are populated within the "snort2pfcd_static" table which can be viewed with "pfctl -t snort2pfcd_static -T show".
+.Pp
+At no time should
+.Nm
+need to be restarted.
+.Nm
+will repopulate its packet filter tables if pf is restarted. 
+.Nm
+also monitors the whitelist and blacklist files for changes. Changes applied to these files are automatically reloaded and applied to the running
+.Nm
+processes.
 .Sh FILES
 .Pp
-.Sh 	Whitelist
+.Sh     Whitelist
 .Pp
 Whitelist entries can be single ip addressess (e.g. 192.168.0.1) or blocks of addresses in CIDR format (e.g. 192.168.0.0/24). Each entry should be on a separate line.
 .Pp
-.Sh 	Blacklist
+.Sh     Blacklist
 .Pp
 Blacklist entries provided by the snort community contain a list of single ip addresses and 
 .Nm
@@ -127,14 +140,14 @@ While
 .Nm
 will parse the default snort alert file, this can produce less than real-time blocking given the burden being placed on snort especially over an active, fast or low latency connection. Would strongly recommend using a spooler like barnyard2 to output the text alerts from the snort unified2 binary output.
 .Pp
-By default, the user-supplied whitelist is prepended with the addresses of all of the local interfaces as the handling of these addresses are usually specified by more complex pf rules and simply blocking these addresses can cause problems with certain configurations.
+By default, the user-supplied whitelist is prepended with the addresses of all of the local interfaces as the handling of these addresses are usually specified by more complex packet filter rules and simply blocking these addresses can cause problems with certain configurations.
 .Pp
 The user-supplied whitelist can also be prepended with the address of the external interface only for paranoid configurations. Lo0 is always whitelisted.
 .Pp
 .Nm
-also automatically whitelists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific pf rules.
+also automatically whitelists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific packet filter rules.
 .Pp
-A static blacklist table is also maintained and populated within pf with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
+A static blacklist table is also maintained and populated within packet filter with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
 .Sh CREDITS
 This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions.
 .Sh SEE ALSO

@@ -45,13 +45,18 @@ void
 	long min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 	char *tablename = NULL;
+	pfbl_log_t *pfbl_log = NULL;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
+	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
 	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2c_malloc_err();
 	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) s2c_malloc_err();
 	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) s2c_malloc_err();
 
+	bzero(tablename, PF_TABLE_NAME_SIZE);
+	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	local_dev = data->dev;
 	free(data);
@@ -85,6 +90,8 @@ void
 				if (astats[i].pfras_tzero <= min_timestamp) {
 					del_addrs_list[del_addrs_count] = astats[i].pfras_a;
 					del_addrs_list[del_addrs_count].pfra_fback = 0;
+					((struct sockaddr_in *)&pfbl_log->sa)->sin_addr = astats[i].pfras_a.pfra_ip4addr;
+					s2c_pf_unblock_log(pfbl_log);
 					del_addrs_count++;
 				}
 
@@ -97,13 +104,12 @@ void
 		sleep(min_timestamp + 1);
 	}
 
+	free(pfbl_log);
 	free(tablename);
 	free(target);
 	free(astats);
 	pthread_exit(NULL);
 }
-
-
 
 void
 s2c_pf_block(int dev, char *tablename, char *ip) 
@@ -140,16 +146,30 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 }
 
 void
+s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
+{
+	long timebuf = 0;
+
+	timebuf = time(NULL);
+	
+	pfbl_log->sa.sa_family = AF_INET;
+	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->local_logip, sizeof(struct sockaddr_in)))
+		strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+
+	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_UNBLOCKED, asctime(localtime(&timebuf)));
+	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
+
+	memset(&pfbl_log->sa, 0x00, sizeof(pfbl_log->sa));
+	bzero(pfbl_log->message, BUFSIZ);
+	bzero(pfbl_log->local_logip, BUFSIZ);
+	bzero(pfbl_log->hbuf, NI_MAXHOST);
+
+	return;
+}
+
+void
 *s2c_pf_block_log(void *arg)
 {
-	typedef struct _pfbl_log_t {
-		char message[BUFSIZ];
-		char local_logip[BUFSIZ];
-		char local_logfile[NMBUFSIZ];
-		char hbuf[NI_MAXHOST];
-		struct sockaddr sa;
-	} pfbl_log_t;
-
 	long timebuf = 0;
 	int gni_error = 0, D = 0;
 	pfbl_log_t *pfbl_log = NULL;
@@ -182,9 +202,10 @@ void
 		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 	}
 
+	pthread_mutex_unlock(&dns_mutex);
+
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
-	pthread_mutex_unlock(&dns_mutex);
 	
 	free(pfbl_log);
 

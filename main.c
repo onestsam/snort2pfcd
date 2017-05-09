@@ -169,7 +169,7 @@ main(int argc, char **argv)
 	s2c_mutex_init();
 	s2c_log_init(loopdata->logfile);
 	s2c_db_init(loopdata->dev, loopdata->B, loopdata->W, loopdata->tablename, &wbhead->whead);
-	s2c_thr_init(loopdata->dev, loopdata->t);
+	s2c_thr_init(loopdata->dev, loopdata->t, loopdata->logfile);
 
 	while (1) {
 		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);

@@ -72,6 +72,7 @@
 /* Language */
 #define LANG_EXIT "exiting"
 #define LANG_WARN "warning"
+#define LANG_RELOAD "reloading"
 #define LANG_START "started"
 #define LANG_USE "usage"
 #define LANG_MAN "see man"
@@ -82,7 +83,8 @@
 #define LANG_DETAILS "for more details"
 #define LANG_NO_DAEMON "cannot daemonize"
 #define LANG_MALLOC_ERROR "malloc error"
-#define LANG_INTDB "unkown internal database error"
+#define LANG_STATE_CHANGE "state change detected in"
+#define LANG_INTDB "!! internal database error !!"
 #define LANG_CON_EST "connection with pf established"
 #define LANG_IOCTL_WAIT "error: attempting to re-establish connection with pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
@@ -95,6 +97,7 @@
 #define LANG_SET_THR "unable to set detached thread attributes"
 #define LANG_LAUNCH_THR "unable to launch detached thread attributes"
 #define LANG_NOT_WHITELISTED "not whitelisted, added to block table"
+#define LANG_UNBLOCKED "removed from block table"
 #define LANG_ERR_ROOT "error: must be root to run"
 #define LANG_ERR_REGEX "error compiling regex expr"
 #define LANG_KQ_ERROR "kqueue init error"
@@ -130,6 +133,7 @@ typedef struct _pftbl_t {
 typedef struct _thread_expt_t {
 	int dev;
 	unsigned long t;
+	char logfile[NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
@@ -157,6 +161,14 @@ typedef struct _lineproc_t {
 	regmatch_t resultado;
 } lineproc_t;
 
+typedef struct _pfbl_log_t {
+	char message[BUFSIZ];
+	char local_logip[BUFSIZ];
+	char local_logfile[NMBUFSIZ];
+	char hbuf[NI_MAXHOST];
+	struct sockaddr sa;
+} pfbl_log_t;
+
 typedef struct _loopdata_t {
 	int B;
 	int W;
@@ -181,6 +193,7 @@ int bfile_monitor;
 char *wfile;
 char *bfile;
 char *extif;
+pthread_mutex_t log_mutex;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
 pthread_mutex_t pf_mutex;
@@ -193,9 +206,9 @@ void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_ioctl_wait(char *);
-void s2c_thr_init(int, int);
+void s2c_thr_init(int, int, char *);
 void s2c_spawn_file_monitor(int *, char *);
-void s2c_spawn_expiretable(int, int);
+void s2c_spawn_expiretable(int, int, char *);
 void s2c_spawn_block_log(int, int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutex_init();
@@ -213,6 +226,7 @@ void s2c_pf_block(int, char *, char *);
 void s2c_pf_tbladd(int, char *);
 void s2c_pf_tbldel(int, char *);
 void s2c_pf_ruleadd(int, char *);
+void s2c_pf_unblock_log(pfbl_log_t *);
 void *s2c_file_monitor(void *);
 void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);

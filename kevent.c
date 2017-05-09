@@ -152,6 +152,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 				s2c_check_file(wfile);
 				s2c_parse_and_block_wl_clear(whead);
 				s2c_parse_load_wl(lineproc, whead);
+				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, wfile, LANG_RELOAD);
 			}
 		}
 
@@ -161,6 +162,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 				s2c_check_file(bfile);
 				s2c_parse_and_block_bl_static_clear(loopdata->dev, loopdata->tablename);
 				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, whead);
+				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, bfile, LANG_RELOAD);
 			}
 		}
 

@@ -57,6 +57,8 @@ s2c_write_file(char *namefile, char *message)
 {
 	FILE *lfile = NULL;
 
+	pthread_mutex_lock(&log_mutex);
+
 	if ((lfile = fopen(namefile, "a")) == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
 		s2c_exit_fail();
@@ -66,6 +68,8 @@ s2c_write_file(char *namefile, char *message)
 	fputs(message, lfile);
 	funlockfile(lfile);
 	fclose(lfile);
+
+	pthread_mutex_unlock(&log_mutex);
 	return;
 }
 
@@ -157,10 +161,17 @@ void
 s2c_mutex_init()
 {
 	s2c_threads = 1;
+	memset(&log_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&pf_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&fm_mutex, 0x00, sizeof(pthread_mutex_t));
+
+	if (pthread_mutex_init(&log_mutex, NULL) != 0) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+		closelog();
+		exit(EXIT_FAILURE);
+	}
 
 	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
@@ -190,9 +201,9 @@ s2c_mutex_init()
 }
 
 void
-s2c_thr_init(int dev, int t){
+s2c_thr_init(int dev, int t, char *logfile){
 
-	s2c_spawn_expiretable(dev, t);
+	s2c_spawn_expiretable(dev, t, logfile);
 	s2c_spawn_file_monitor(&wfile_monitor, wfile);
 	s2c_spawn_file_monitor(&bfile_monitor, bfile);
 
@@ -216,7 +227,7 @@ s2c_spawn_file_monitor(int *notifaddr, char *filename)
 }
 
 void
-s2c_spawn_expiretable(int dev, int t)
+s2c_spawn_expiretable(int dev, int t, char *logfile)
 {
 	thread_expt_t *expt_data = NULL;
 
@@ -226,6 +237,7 @@ s2c_spawn_expiretable(int dev, int t)
 
 	expt_data->t = t;
 	expt_data->dev = dev;
+	strlcpy(expt_data->logfile, logfile, NMBUFSIZ);
 	strlcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
@@ -324,6 +336,7 @@ s2c_exit_fail()
 void
 s2c_mutex_destroy(){
 	if (s2c_threads > 0) {
+		pthread_mutex_destroy(&log_mutex);
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
 		pthread_mutex_destroy(&pf_mutex);
