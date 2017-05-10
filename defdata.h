@@ -97,7 +97,7 @@
 #define LANG_SET_THR "unable to set detached thread attributes"
 #define LANG_LAUNCH_THR "unable to launch detached thread attributes"
 #define LANG_NOT_WHITELISTED "not whitelisted, added to block table"
-#define LANG_UNBLOCKED "removed from block table"
+#define LANG_UNBLOCKED "block-time expired, removed from block table"
 #define LANG_ERR_ROOT "error: must be root to run"
 #define LANG_ERR_REGEX "error compiling regex expr"
 #define LANG_KQ_ERROR "kqueue init error"

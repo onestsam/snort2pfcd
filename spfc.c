@@ -101,7 +101,7 @@ void
 		}
 
 		free(del_addrs_list);
-		sleep(min_timestamp + 1);
+		sleep(age + 1);
 	}
 
 	free(pfbl_log);
