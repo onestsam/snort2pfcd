@@ -311,13 +311,12 @@ s2c_pf_tbldel(int dev, char *tablename)
 
 	memset(pftbl, 0x00, sizeof(pftbl_t));
 	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 	pftbl->io.pfrio_buffer = &pftbl->table; 
 	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
 	pftbl->io.pfrio_size   = 1; 
 
 	pthread_mutex_lock(&pf_mutex);
-	if (ioctl(dev, DIOCRDELTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRADDTABLES");
+	if (ioctl(dev, DIOCRDELTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRDELTABLES");
 	pthread_mutex_lock(&pf_mutex);
 
 	free(pftbl);
