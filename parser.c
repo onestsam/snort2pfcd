@@ -188,9 +188,7 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, struct wlist_hea
 
 		s2c_spawn_block_log(loopdata->D, loopdata->thr_max, lineproc->ret, loopdata->logfile);
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
-	}
-
-	if(pb_status == -1) {
+	} else if (pb_status == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
 		s2c_exit_fail();
 	}
@@ -239,15 +237,13 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 	}
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr == NULL)
-			continue;
-
+		if (ifa->ifa_addr == NULL) continue;
 		if ((ifa->ifa_addr)->sa_family == AF_INET) {
 
 			if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 			memset(ipw2, 0x00, sizeof(struct ipwlist));
-			ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr);
 
+			ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr);
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
 		}
@@ -301,8 +297,8 @@ s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 
 	if ((ipw1 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 	memset(ipw1, 0x00, sizeof(struct ipwlist));
-	ipw1->waddr = *cidr_from_str("127.0.0.0/8");
 
+	ipw1->waddr = *cidr_from_str("127.0.0.0/8");
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipw1, elem);
 
@@ -328,8 +324,8 @@ s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 
 		if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 		memset(ipw2, 0x00, sizeof(struct ipwlist));
-		ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr);
 
+		ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr);
 		LIST_INSERT_AFTER(ipw1, ipw2, elem);
 		ipw1 = ipw2;
 	}
@@ -352,17 +348,16 @@ s2c_parse_search_wl(char *ip, struct wlist_head *wl)
 {
 	struct ipwlist *aux2 = NULL;
 	CIDR *ipcidr = cidr_alloc();
+	int f = 0;
 
 	if (ipcidr == NULL) s2c_malloc_err();
-
 	ipcidr = cidr_from_str(ip);
-	for (aux2=wl->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-		if (!cidr_contains(&aux2->waddr, ipcidr)){
-			cidr_free(ipcidr);
-			return(1);
+
+	for (aux2 = wl->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
+		if (!cidr_contains(&aux2->waddr, ipcidr)) { 
+			f = 1; break;
 		}
-	}
 
 	cidr_free(ipcidr);
-	return(0);
+	return(f);
 }
