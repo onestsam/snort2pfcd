@@ -72,25 +72,45 @@ s2c_write_file(char *namefile, char *message)
 	return;
 }
 
-void
-s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
+int
+s2c_open_pf(char *nmpfdev)
 {
-	memset(pftbl, 0x00, sizeof(pftbl_t));
-	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	pftbl->io.pfrio_buffer = &pftbl->table; 
-	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
-	pftbl->io.pfrio_size   = 1; 
+	int dev = 0;
 
-	return;
+	if ((dev = open(nmpfdev, O_RDWR)) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
+		s2c_exit_fail();
+	}
+	free(nmpfdev);
+	return(dev);
+}
+
+int
+s2c_open_file(char *file)
+{
+	int fd = 0;
+
+	if ((fd = s2c_kevent_open(file)) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
+		s2c_exit_fail();
+	}
+	free(file);
+	return(fd);
 }
 
 void
-s2c_ipb_set(char *ret, struct ipblist *ipb)
+s2c_wbhead_reset(wbhead_t *wbhead)
 {
-	memset(ipb, 0x00, sizeof(struct ipblist));
-	memcpy(ipb->baddr, ret, BUFSIZ);
-	ipb->t = time(NULL);
-	ipb->repeat_offenses = 0;
+	s2c_parse_and_block_wl_clear(&wbhead->whead);
+	s2c_parse_and_block_bl_clear(&wbhead->bhead);
+	free(wbhead);
+
+	pthread_mutex_lock(&pf_mutex);
+	pf_reset = 0;
+	pthread_mutex_unlock(&pf_mutex);
+
+	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
+	memset(wbhead, 0x00, sizeof(wbhead_t));
 
 	return;
 }
@@ -318,26 +338,6 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
 
 	free(yarn);
-	return;
-}
-
-void
-s2c_pf_block_log_check(int thr_max)
-{
-	int threadcheck = 0;
-
-	pthread_mutex_lock(&thr_mutex);
-	s2c_threads++;
-	threadcheck = s2c_threads;
-	pthread_mutex_unlock(&thr_mutex);
-
-	while (!(threadcheck < thr_max)) {
-		pthread_mutex_lock(&thr_mutex);
-		threadcheck = s2c_threads;
-		pthread_mutex_unlock(&thr_mutex);
-		sleep(10);
-	}
-
 	return;
 }
 

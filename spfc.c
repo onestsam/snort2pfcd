@@ -109,6 +109,26 @@ void
 }
 
 void
+s2c_pf_block_log_check(int thr_max)
+{
+	int threadcheck = 0;
+
+	pthread_mutex_lock(&thr_mutex);
+	s2c_threads++;
+	threadcheck = s2c_threads;
+	pthread_mutex_unlock(&thr_mutex);
+
+	while (!(threadcheck < thr_max)) {
+		pthread_mutex_lock(&thr_mutex);
+		threadcheck = s2c_threads;
+		pthread_mutex_unlock(&thr_mutex);
+		sleep(10);
+	}
+
+	return;
+}
+
+void
 s2c_pf_block(int dev, char *tablename, char *ip) 
 { 
 	typedef struct _pfbl_t {
@@ -120,7 +140,6 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	pfbl_t *pfbl = NULL;
 
 	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2c_malloc_err();
-
 	memset(pfbl, 0x00, sizeof(pfbl_t));
 	
 	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
@@ -173,7 +192,6 @@ void
 	thread_log_t *data = (thread_log_t *)arg;
 
 	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
-
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
 	D = data->D;
@@ -182,24 +200,17 @@ void
 	free(data);
 
 	timebuf = time(NULL);
-
-	pthread_mutex_lock(&dns_mutex);
 	if(!D) {
-		
 		pfbl_log->sa.sa_family = AF_INET;
 		if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
+			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
 			if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+			pthread_mutex_unlock(&dns_mutex);
 
-		} else {
-			strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
-		}
-	} else {
-		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
-	}
-
-	pthread_mutex_unlock(&dns_mutex);
+		} else { strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST); }
+	} else { strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST); }
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
@@ -226,16 +237,14 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	s2c_pf_tbladd(dev, tablename);
 
 	if ((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) s2c_malloc_err();
-
 	memset(pfrla, 0x00, sizeof(pfrla_t));
 
+	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 	pfrla->io_rule.rule.direction = PF_IN;
 	pfrla->io_rule.rule.action = PF_DROP;
 	pfrla->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
 	pfrla->io_rule.rule.rule_flag = PFRULE_RETURN;
 	memcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
-
-	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
 
 	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
@@ -276,10 +285,9 @@ s2c_pf_tbladd(int dev, char *tablename)
 	pthread_mutex_lock(&pf_mutex);
 
 	for ( i = 0; i < pftbl->io.pfrio_size; i++)
-		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) f = 1;
+		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) { f = 1; break; }
 
 	if (!f) {
-
 		s2c_pftbl_set(tablename, pftbl);
 		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
@@ -305,5 +313,29 @@ s2c_pf_tbldel(int dev, char *tablename)
 	pthread_mutex_lock(&pf_mutex);
 
 	free(pftbl);
+	return;
+}
+
+void
+s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
+{
+	memset(pftbl, 0x00, sizeof(pftbl_t));
+	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	pftbl->io.pfrio_buffer = &pftbl->table; 
+	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
+	pftbl->io.pfrio_size   = 1; 
+
+	return;
+}
+
+void
+s2c_ipb_set(char *ret, struct ipblist *ipb)
+{
+	if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
+	memset(ipb, 0x00, sizeof(struct ipblist));
+	memcpy(ipb->baddr, ret, BUFSIZ);
+	ipb->t = time(NULL);
+	ipb->repeat_offenses = 0;
+
 	return;
 }

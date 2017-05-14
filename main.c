@@ -110,17 +110,8 @@ main(int argc, char **argv)
 	if(!F) s2c_daemonize();
 	if (q) sleep(q);
 
-	if ((loopdata->dev = open(nmpfdev, O_RDWR)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
-		s2c_exit_fail();
-	}
-	free(nmpfdev);
-
-	if ((loopdata->fd = s2c_kevent_open(alertfile)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
-		s2c_exit_fail();
-	}
-	free(alertfile);
+	loopdata->dev = s2c_open_pf(nmpfdev);
+	loopdata->fd = s2c_open_file(alertfile);
 
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	memset(wbhead, 0x00, sizeof(wbhead_t));
@@ -131,18 +122,7 @@ main(int argc, char **argv)
 
 	while (1) {
 		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
-
-		s2c_parse_and_block_wl_clear(&wbhead->whead);
-		s2c_parse_and_block_bl_clear(&wbhead->bhead);
-		free(wbhead);
-
-		pthread_mutex_lock(&pf_mutex);
-		pf_reset = 0;
-		pthread_mutex_unlock(&pf_mutex);
-
-		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
-		memset(wbhead, 0x00, sizeof(wbhead_t));
-
+		s2c_wbhead_reset(wbhead);
 		s2c_db_init(loopdata, &wbhead->whead);
 	}
 

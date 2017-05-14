@@ -44,16 +44,8 @@ void
 	fm = data->file_monitor;
 	free(data);
 
-	if ((kq = kqueue()) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
-   if ((fd = s2c_kevent_open(local_file)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, local_file, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
+	kq = s2c_open_kq();
+	fd = s2c_open_file(local_file);
 	memset(&change, 0x00, sizeof(struct kevent));
 	EV_SET(&change, fd, EVFILT_VNODE, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXTEND | NOTE_WRITE, 0, 0);
 
@@ -77,7 +69,6 @@ void
 	}
 
 	close(fd);
-	free(local_file);
 	pthread_exit(NULL);
 }
 
@@ -90,6 +81,18 @@ s2c_kevent_open(char *file)
 	if (lseek(fd, 0, SEEK_END) == -1) return(-1);
 
 	return(fd);
+}
+
+int s2c_open_kq()
+{
+	int kq = 0;
+
+	if ((kq = kqueue()) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
+	return(kq);
 }
 
 void
@@ -107,11 +110,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 	this_time = time(NULL);
 	last_time = this_time;
 
-	if ((kq = kqueue()) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
+	kq = s2c_open_kq();
 	memset(&change, 0x00, sizeof(struct kevent));
 	EV_SET(&change, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 

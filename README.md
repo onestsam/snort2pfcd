@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.0
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Sat May 13 19:17:21 2017 -->
+<!-- CreationDate: Sun May 14 01:47:17 2017 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -106,7 +106,8 @@ mode. If set, will not daemonize.</p>
 <p style="margin-top: 1em" valign="top"><b>&minus;Z</b></p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
-prevent whitelisting of the /etc/resolv.conf file.</p>
+prevent whitelisting of entries in the /etc/resolv.conf
+file.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;l</b>
 <i>Log_File</i></p>
