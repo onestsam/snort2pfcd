@@ -220,32 +220,27 @@ s2c_mutex_init()
 
 	if (pthread_mutex_init(&log_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	if (pthread_mutex_init(&thr_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	if (pthread_mutex_init(&pf_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	if (pthread_mutex_init(&fm_mutex, NULL) != 0) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	return;

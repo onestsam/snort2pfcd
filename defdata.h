@@ -114,7 +114,7 @@ LIST_HEAD(blist_head, ipblist);
 
 /* Global structs */
 struct ipwlist {
-	CIDR *waddr;
+	CIDR waddr;
 	LIST_ENTRY(ipwlist) elem;
 };
 

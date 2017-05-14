@@ -39,6 +39,7 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 	struct ipblist *aux2 = NULL, *ipb = NULL;
 
 	if (blist->lh_first == NULL){
+		if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
 		s2c_ipb_set(ret, ipb);
 		LIST_INIT(blist);
 		LIST_INSERT_HEAD(blist, ipb, elem);
@@ -51,6 +52,7 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 				return(aux2->repeat_offenses);
 			}
 			else if (!aux2->elem.le_next) {
+				if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
 				s2c_ipb_set(ret, ipb);
 				LIST_INSERT_AFTER(aux2, ipb, elem);
 				return(0);
@@ -86,7 +88,6 @@ s2c_parse_and_block_wl_clear(struct wlist_head *whead)
 
 	while (n1 != NULL) {
 		n2 = LIST_NEXT(n1, elem);
-		cidr_free(n1->waddr);
 		free(n1);
 		n1 = n2;
 	}
@@ -213,8 +214,7 @@ s2c_parse_load_wl_file(lineproc_t *lineproc, char *wlist_file, struct ipwlist *i
 
 			if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 			memset(ipw2, 0x00, sizeof(struct ipwlist));
-			if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
-			ipw2->waddr = cidr_from_str(lineproc->ret);
+			ipw2->waddr = *cidr_from_str(lineproc->ret);
 
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
@@ -246,8 +246,7 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 
 			if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 			memset(ipw2, 0x00, sizeof(struct ipwlist));
-			if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
-			ipw2->waddr = cidr_from_inaddr(&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr);
+			ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr);
 
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
@@ -302,8 +301,7 @@ s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 
 	if ((ipw1 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 	memset(ipw1, 0x00, sizeof(struct ipwlist));
-	if ((ipw1->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
-	ipw1->waddr = cidr_from_str("127.0.0.0/8");
+	ipw1->waddr = *cidr_from_str("127.0.0.0/8");
 
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipw1, elem);
@@ -312,8 +310,8 @@ s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 	else {
 
 		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) s2c_malloc_err();
-		
 		memset(ifr, 0x00, sizeof(struct ifreq));
+		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		ifr->ifr_addr.sa_family = AF_INET;
 		strlcpy(ifr->ifr_name, extif, IFNAMSIZ);
@@ -330,8 +328,7 @@ s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 
 		if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 		memset(ipw2, 0x00, sizeof(struct ipwlist));
-		if ((ipw2->waddr = cidr_alloc()) == NULL) s2c_malloc_err();
-		ipw2->waddr = cidr_from_inaddr(&((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr);
+		ipw2->waddr = *cidr_from_inaddr(&((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr);
 
 		LIST_INSERT_AFTER(ipw1, ipw2, elem);
 		ipw1 = ipw2;
@@ -360,7 +357,7 @@ s2c_parse_search_wl(char *ip, struct wlist_head *wl)
 
 	ipcidr = cidr_from_str(ip);
 	for (aux2=wl->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-		if (!cidr_contains(aux2->waddr, ipcidr)){
+		if (!cidr_contains(&aux2->waddr, ipcidr)){
 			cidr_free(ipcidr);
 			return(1);
 		}

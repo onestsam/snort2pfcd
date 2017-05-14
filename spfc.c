@@ -331,7 +331,6 @@ s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
 void
 s2c_ipb_set(char *ret, struct ipblist *ipb)
 {
-	if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
 	memset(ipb, 0x00, sizeof(struct ipblist));
 	memcpy(ipb->baddr, ret, BUFSIZ);
 	ipb->t = time(NULL);
