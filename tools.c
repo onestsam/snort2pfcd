@@ -31,7 +31,6 @@
  */
 
 #include "defdata.h"
-#include "version.h"
 
 
 void
@@ -74,20 +73,57 @@ s2c_write_file(char *namefile, char *message)
 }
 
 void
-s2c_daemonize()
+s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
 {
-	struct pidfh *pfh = NULL;
-	pid_t otherpid;
-	char *pidfile = NULL;
+	memset(pftbl, 0x00, sizeof(pftbl_t));
+	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	pftbl->io.pfrio_buffer = &pftbl->table; 
+	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
+	pftbl->io.pfrio_size   = 1; 
 
+	return;
+}
+
+void
+s2c_ipb_set(char *ret, struct ipblist *ipb)
+{
+	memset(ipb, 0x00, sizeof(struct ipblist));
+	memcpy(ipb->baddr, ret, BUFSIZ);
+	ipb->t = time(NULL);
+	ipb->repeat_offenses = 0;
+
+	return;
+}
+
+void
+s2c_init()
+{
+	wfile_monitor = 0;
+	bfile_monitor = 0;
 	s2c_threads = 0;
-
-	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	pf_reset = 0;
+	v = 0;
 
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
+
+	s2c_mutex_init();
+
+	signal(SIGHUP,  sighandle);
+	signal(SIGTERM, sighandle);
+	signal(SIGINT,  sighandle);
+
+	return;
+}
+
+void
+s2c_daemonize()
+{
+	struct pidfh *pfh = NULL;
+	pid_t otherpid;
+	char *pidfile = NULL;
 
 	if ((pidfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	memset(&otherpid, 0x00, sizeof(pid_t));
@@ -111,11 +147,6 @@ s2c_daemonize()
 
 	pidfile_write(pfh);
 	free(pidfile);
-
-	signal(SIGHUP,  sighandle);
-	signal(SIGTERM, sighandle);
-	signal(SIGINT,  sighandle);
-
 	return;
 }
 
@@ -139,7 +170,7 @@ s2c_log_init(char *logfile)
 }
 
 void
-s2c_db_init(int dev, int B, int W, char *tablename, struct wlist_head *whead)
+s2c_db_init(loopdata_t *loopdata, struct wlist_head *whead)
 {
 	lineproc_t *lineproc = NULL;
 
@@ -148,9 +179,9 @@ s2c_db_init(int dev, int B, int W, char *tablename, struct wlist_head *whead)
 
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
 
-	if (!W) s2c_parse_load_wl(lineproc, whead);
-	s2c_pf_ruleadd(dev, tablename);
-	if (!B) s2c_parse_load_bl_static(dev, lineproc, tablename, whead);
+	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, lineproc, whead);
+	s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
+	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, whead);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
 	free(lineproc);
@@ -201,9 +232,9 @@ s2c_mutex_init()
 }
 
 void
-s2c_thr_init(int dev, int t, char *logfile){
+s2c_thr_init(loopdata_t *loopdata){
 
-	s2c_spawn_expiretable(dev, t, logfile);
+	s2c_spawn_expiretable(loopdata->dev, loopdata->t, loopdata->logfile);
 	s2c_spawn_file_monitor(&wfile_monitor, wfile);
 	s2c_spawn_file_monitor(&bfile_monitor, bfile);
 
@@ -335,7 +366,13 @@ s2c_exit_fail()
 
 void
 s2c_mutex_destroy(){
-	if (s2c_threads > 0) {
+	int s2c_local_threads = 0;
+
+	pthread_mutex_lock(&thr_mutex);
+	s2c_local_threads = s2c_threads;
+	pthread_mutex_unlock(&thr_mutex);
+
+	if (s2c_local_threads > 0) {
 		pthread_mutex_destroy(&log_mutex);
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);
@@ -360,10 +397,9 @@ optnum(char *opt, char *targ)
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-D] [-a alertfile] [-l logfile] [-p priority] [-t expiretime] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
-	closelog();
-	exit(EXIT_FAILURE);
+	s2c_exit_fail();
 }
 
 void

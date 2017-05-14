@@ -104,10 +104,7 @@ void
 		sleep(age + 1);
 	}
 
-	free(pfbl_log);
-	free(tablename);
-	free(target);
-	free(astats);
+	free(pfbl_log); free(tablename); free(target); free(astats);
 	pthread_exit(NULL);
 }
 
@@ -264,11 +261,8 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
 
-	memset(pftbl, 0x00, sizeof(pftbl_t));
-
-	pftbl->io.pfrio_buffer = &pftbl->table;
-	pftbl->io.pfrio_esize  = sizeof(struct pfr_table);
-	pftbl->io.pfrio_size   = 0;
+	s2c_pftbl_set(tablename, pftbl);
+	pftbl->io.pfrio_size = 0;
 	
 	pthread_mutex_lock(&pf_mutex);
 	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pftbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
@@ -286,12 +280,8 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 	if (!f) {
 
-		memset(pftbl, 0x00, sizeof(pftbl_t));
-		memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		s2c_pftbl_set(tablename, pftbl);
 		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
-		pftbl->io.pfrio_buffer = &pftbl->table; 
-		pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
-		pftbl->io.pfrio_size   = 1; 
 
 		pthread_mutex_lock(&pf_mutex);
 		while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRADDTABLES");
@@ -308,15 +298,10 @@ s2c_pf_tbldel(int dev, char *tablename)
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
-
-	memset(pftbl, 0x00, sizeof(pftbl_t));
-	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-	pftbl->io.pfrio_buffer = &pftbl->table; 
-	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
-	pftbl->io.pfrio_size   = 1; 
+	s2c_pftbl_set(tablename, pftbl);
 
 	pthread_mutex_lock(&pf_mutex);
-	if (ioctl(dev, DIOCRDELTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRDELTABLES");
+	if ((pf_reset = ioctl(dev, DIOCRDELTABLES, &pftbl->io) != 0)) s2c_ioctl_wait("DIOCRDELTABLES");
 	pthread_mutex_lock(&pf_mutex);
 
 	free(pftbl);

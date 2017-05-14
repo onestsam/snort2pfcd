@@ -173,6 +173,7 @@ typedef struct _loopdata_t {
 	int B;
 	int W;
 	int D;
+	int Z;
 	int fd;
 	int dev;
 	unsigned long t;
@@ -202,11 +203,12 @@ pthread_mutex_t fm_mutex;
 /* Function defs */
 void usage();
 void sighandle();
+void s2c_init();
 void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_ioctl_wait(char *);
-void s2c_thr_init(int, int, char *);
+void s2c_thr_init(loopdata_t *);
 void s2c_spawn_file_monitor(int *, char *);
 void s2c_spawn_expiretable(int, int, char *);
 void s2c_spawn_block_log(int, int, char *, char *);
@@ -214,13 +216,15 @@ void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutex_init();
 void s2c_mutex_destroy();
 void s2c_log_init(char *);
-void s2c_db_init(int, int, int, char *, struct wlist_head *);
+void s2c_db_init(loopdata_t *, struct wlist_head *);
 void s2c_pf_block_log_check(int);
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
+void s2c_pftbl_set(char *, pftbl_t *);
+void s2c_ipb_set(char *, struct ipblist *);
 long lmax(long ,long);
 long lmin(long ,long);
-int	optnum(char *, char *);
+int optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
 void s2c_pf_tbladd(int, char *);
@@ -243,7 +247,7 @@ void s2c_parse_load_bl_static(int, lineproc_t *, char*, struct wlist_head *);
 int s2c_parse_and_block_bl(char *, struct blist_head *);
 int s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
 void s2c_parse_load_wl_ifaces(struct ipwlist *);
-void s2c_parse_load_wl(lineproc_t *, struct wlist_head *);
+void s2c_parse_load_wl(int, lineproc_t *, struct wlist_head *);
 int s2c_parse_search_wl(char *, struct wlist_head *);
 
 void *s2c_kevent_file_monitor(void *arg);

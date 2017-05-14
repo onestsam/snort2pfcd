@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd May 8, 2017
+.Dd May 14, 2017
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -43,12 +43,15 @@
 .Op Fl W
 .Op Fl B
 .Op Fl D
+.Op Fl F
+.Op Fl Z
 .Op Fl l Ar Log_File
 .Op Fl a Ar Alert_File
 .Op Fl p Ar Priority
 .Op Fl r Ar Repeat_Offenses
 .Op Fl t Ar Seconds
-.Op Fl d Ar pf_device
+.Op Fl d Ar Pf_device
+.Op Fl q Ar Seconds
 .Op Fl m Ar Thr_max
 .Op Fl v
 .Op Fl h
@@ -74,6 +77,10 @@ blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
 If set, will prevent loading of the snort blacklist file.
 .It Fl D
 If set, will disable the DNS lookup functionality.
+.It Fl F
+Foreground mode. If set, will not daemonize.
+.It Fl Z
+If set, will prevent whitelisting of the /etc/resolv.conf file.
 .It Fl l Ar Log_File
 log file, default is /var/log/snort2pfcd.log.
 .It Fl a Ar Alert_File
@@ -86,8 +93,12 @@ Number of times an ip address may commit an offense before being added to pf blo
 Default is 0. For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked only after 2 repeated snort alerts (3 snort alerts total). 
 .It Fl t Ar Seconds 
 The number of seconds to block an ip address, default is 60*60 or 1 hour.
-.It Fl d Ar pf_device
+.It Fl d Ar Pf_device
 Packet filter device interface. Default is /dev/pf.
+.It Fl q Ar Seconds
+The number of seconds to wait before starting to parse the snort alert file. Useful if 
+.Nm
+is interfering with connection setup, especially shortly after boot. Default is 0.
 .It Fl m Ar thr_max
 Maximum number of DNS request threads. Default is 100.
 .Nm
@@ -100,13 +111,13 @@ Increase verbosity.
 Show help.
 .El
 .Sh THEORY OF OPERATION
-The snort intrusion detection system monitors network traffic and will generate an alert if this traffic matches a rule for a type of malicious activity.
+The snort intrusion detection system monitors network traffic and will generate an alert if this traffic matches a rule for a type of noteworthy activity.
 .Nm
 monitors this alert file and can then add the offending ip address to a packet filter block table. 
 .Nm
 provides the above options for the user to specify the conditions under which the offending address is added to the packet filter block table.
 .Pp
-Differentiating between benign and malicious network traffic is difficult and, unfortunately, snort generates a fair amount of false-positives. One will find that many established and trusted websites will also produce network traffic that appears (or is genuinely) malicious. To assist the user with filtering network traffic produced by various network entities, 
+Differentiating between benign and malicious network traffic is difficult and, unfortunately, snort generates a fair amount of false-positives. Also, the snort IDS primary function is to log noteworthy network traffic and its authors did not necessarily intend for the logged addresses to be blocked. This being said, snorts rules are highly configurable and can be adjusted for more appropriate functioning in this context. To assist the user with filtering network traffic produced by various network entities, 
 .Nm
 will automatically resolve the offending ip address and display the DNS name in the 
 .Nm
@@ -148,7 +159,7 @@ also automatically whitelists addresses found within the /etc/resolv.conf file a
 .Pp
 A static blacklist table is also maintained and populated within packet filter with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
 .Sh CREDITS
-This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions.
+This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions. Blocking functionality based on pfctl and pftabled functions by Armin's Wolfermann.
 .Sh SEE ALSO
 .Xr pf 4 ,
 .Xr pfctl 8 ,

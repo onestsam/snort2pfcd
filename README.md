@@ -1,7 +1,7 @@
 # snort2pfcd
-v1.9.1
+v2.0
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Thu May 11 18:08:05 2017 -->
+<!-- CreationDate: Sat May 13 19:17:21 2017 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -32,12 +32,14 @@ alerts via packet filter firewall tables.</p>
 [<b>&minus;w&nbsp;</b><i>Whitelist_File</i>]
 [<b>&minus;b&nbsp;</b><i>Blacklist_File</i>]
 [<b>&minus;W</b>] [<b>&minus;B</b>] [<b>&minus;D</b>]
+[<b>&minus;F</b>] [<b>&minus;Z</b>]
 [<b>&minus;l&nbsp;</b><i>Log_File</i>]
 [<b>&minus;a&nbsp;</b><i>Alert_File</i>]
 [<b>&minus;p&nbsp;</b><i>Priority</i>]
 [<b>&minus;r&nbsp;</b><i>Repeat_Offenses</i>]
 [<b>&minus;t&nbsp;</b><i>Seconds</i>]
-[<b>&minus;d&nbsp;</b><i>pf_device</i>]
+[<b>&minus;d&nbsp;</b><i>Pf_device</i>]
+[<b>&minus;q&nbsp;</b><i>Seconds</i>]
 [<b>&minus;m&nbsp;</b><i>Thr_max</i>] [<b>&minus;v</b>]
 [<b>&minus;h</b>]</p>
 
@@ -94,6 +96,18 @@ prevent loading of the snort blacklist file.</p>
 <p style="margin-left:17%; margin-top: 1em">If set, will
 disable the DNS lookup functionality.</p>
 
+
+<p style="margin-top: 1em" valign="top"><b>&minus;F</b></p>
+
+<p style="margin-left:17%; margin-top: 1em">Foreground
+mode. If set, will not daemonize.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;Z</b></p>
+
+<p style="margin-left:17%; margin-top: 1em">If set, will
+prevent whitelisting of the /etc/resolv.conf file.</p>
+
 <p style="margin-top: 1em" valign="top"><b>&minus;l</b>
 <i>Log_File</i></p>
 
@@ -130,10 +144,18 @@ snort alerts (3 snort alerts total).</p>
 an ip address, default is 60*60 or 1 hour.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;d</b>
-<i>pf_device</i></p>
+<i>Pf_device</i></p>
 
 <p style="margin-left:17%;">Packet filter device interface.
 Default is /dev/pf.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;q</b>
+<i>Seconds</i></p>
+
+<p style="margin-left:17%;">The number of seconds to wait
+before starting to parse the snort alert file. Useful if
+<b>snort2pfcd</b> is interfering with connection setup,
+especially shortly after boot. Default is 0.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;m</b>
 <i>thr_max</i></p>
@@ -165,7 +187,7 @@ OPERATION</b></p>
 
 <p style="margin-left:6%;">The snort intrusion detection
 system monitors network traffic and will generate an alert
-if this traffic matches a rule for a type of malicious
+if this traffic matches a rule for a type of noteworthy
 activity. <b>snort2pfcd</b> monitors this alert file and can
 then add the offending ip address to a packet filter block
 table. <b>snort2pfcd</b> provides the above options for the
@@ -175,19 +197,21 @@ address is added to the packet filter block table.</p>
 <p style="margin-left:6%; margin-top: 1em">Differentiating
 between benign and malicious network traffic is difficult
 and, unfortunately, snort generates a fair amount of
-false-positives. One will find that many established and
-trusted websites will also produce network traffic that
-appears (or is genuinely) malicious. To assist the user with
-filtering network traffic produced by various network
-entities, <b>snort2pfcd</b> will automatically resolve the
-offending ip address and display the DNS name in the
-<b>snort2pfcd</b> block log. Should the user decide that the
-offending address is trustworthy, the user can add the
-address, or alternatively, research and add the entire CIDR
-address block assigned to that network entity, to the
-whitelist. Whitelisted addresses or CIDR address blocks
-generating a snort alert will not be added to the packet
-filter block table.</p>
+false-positives. Also, the snort IDS primary function is to
+log noteworthy network traffic and its authors did not
+necessarily intend for the logged addresses to be blocked.
+This being said, snorts rules are highly configurable and
+can be adjusted for more appropriate functioning in this
+context. To assist the user with filtering network traffic
+produced by various network entities, <b>snort2pfcd</b> will
+automatically resolve the offending ip address and display
+the DNS name in the <b>snort2pfcd</b> block log. Should the
+user decide that the offending address is trustworthy, the
+user can add the address, or alternatively, research and add
+the entire CIDR address block assigned to that network
+entity, to the whitelist. Whitelisted addresses or CIDR
+address blocks generating a snort alert will not be added to
+the packet filter block table.</p>
 
 
 <p style="margin-left:6%; margin-top: 1em"><b>snort2pfcd</b>
@@ -267,7 +291,8 @@ community.</p>
 written by Antonio Benojar which was based on the original
 snort2pf perl script written by Stephan Schmieder.
 Expiration of entries use Henrik Gustafsson&rsquo;s
-expiretable functions.</p>
+expiretable functions. Blocking functionality based on pfctl
+and pftabled functions by Armin&rsquo;s Wolfermann.</p>
 
 <p style="margin-top: 1em" valign="top"><b>SEE ALSO</b></p>
 
@@ -279,7 +304,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">May&nbsp;8,
+<p style="margin-left:6%; margin-top: 1em">May&nbsp;14,
 2017</p>
 <hr>
 </body>

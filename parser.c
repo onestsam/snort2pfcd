@@ -41,10 +41,7 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 	if (blist->lh_first == NULL){
 
 		if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
-		memset(ipb, 0x00, sizeof(struct ipblist));
-		memcpy(ipb->baddr, ret, BUFSIZ);
-		ipb->t = time(NULL);
-		ipb->repeat_offenses = 0;
+		s2c_ipb_set(ret, ipb);
 		LIST_INIT(blist);
 		LIST_INSERT_HEAD(blist, ipb, elem);
 		return(0);
@@ -58,10 +55,7 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 			else if (!aux2->elem.le_next) {
 
 				if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
-				memset(ipb, 0x00, sizeof(struct ipblist));
-				memcpy(ipb->baddr, ret, BUFSIZ);
-				ipb->t = time(NULL);
-				ipb->repeat_offenses = 0;
+				s2c_ipb_set(ret, ipb);
 				LIST_INSERT_AFTER(aux2, ipb, elem);
 				return(0);
 			}
@@ -306,7 +300,7 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, struct 
 }
 
 void
-s2c_parse_load_wl(lineproc_t *lineproc, struct wlist_head *head)
+s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
 {
 	struct ipwlist *ipw1 = NULL, *ipw2 = NULL;
 	struct ifreq *ifr = NULL;
@@ -351,7 +345,7 @@ s2c_parse_load_wl(lineproc_t *lineproc, struct wlist_head *head)
 		ipw1 = ipw2;
 	}
 
-	if (s2c_parse_load_wl_file(lineproc, PATH_RESOLV, ipw1)) {
+	if (!Z) if (s2c_parse_load_wl_file(lineproc, PATH_RESOLV, ipw1)) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, PATH_RESOLV, LANG_WARN);
 		return;
 	}

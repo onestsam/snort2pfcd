@@ -31,6 +31,7 @@
  */
 
 #include "defdata.h"
+#include "version.h"
 
 
 int
@@ -38,7 +39,7 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0;
+	int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	unsigned long t = 0;
 	char *alertfile = NULL, *nmpfdev = NULL;
 	wbhead_t *wbhead = NULL;
@@ -58,79 +59,37 @@ main(int argc, char **argv)
 	bzero(extif, IFNAMSIZ);
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
-	loopdata->D = 0;
-	loopdata->B = 0;
-	loopdata->W = 0;
 	loopdata->priority = 1;
 	loopdata->thr_max = THRMAX;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
-	wfile_monitor = 0;
-	bfile_monitor = 0;
-	pf_reset = 0;
-	v = 0;
 	
-	while ((ch = getopt(argc, argv, "w:p:m:r:vWDBb:a:l:e:t:h")) != -1)
+	s2c_init();
+	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
-			case 'w':
-				strlcpy(wfile, optarg, NMBUFSIZ);
-				w = 1;
-				break;
-			case 'W':
-				loopdata->W = 1;
-				break;
-			case 'b':
-				strlcpy(bfile, optarg, NMBUFSIZ);
-				b = 1;
-				break;
-			case 'B':
-				loopdata->B = 1;
-				break;
-			case 'D':
-				loopdata->D = 1;
-				break;
-			case 'v':
-				v = 1;
-				break;
-			case 'a':
-				strlcpy(alertfile, optarg, NMBUFSIZ);
-				a = 1;
-				break;
-			case 'd':
-				strlcpy(nmpfdev, optarg, NMBUFSIZ);
-				d = 1;
-				break;
-			case 'l':
-				strlcpy(loopdata->logfile, optarg, NMBUFSIZ);
-				l = 1;
-				break;
-			case 'e':
-				strlcpy(extif, optarg, IFNAMSIZ);
-				e = 1;
-				break;
-			case 't':
-				t = optnum("t", optarg);
-				if(t == -1) usage();
-				break;
+			case 'w': strlcpy(wfile, optarg, NMBUFSIZ); w = 1; break;
+			case 'b': strlcpy(bfile, optarg, NMBUFSIZ); b = 1; break;
+			case 'W': loopdata->W = 1; break;
+			case 'B': loopdata->B = 1; break;
+			case 'D': loopdata->D = 1; break;
+			case 'Z': loopdata->Z = 1; break;
+			case 'v': v = 1; break;
+			case 'F': F = 1; break;
+			case 'a': strlcpy(alertfile, optarg, NMBUFSIZ); a = 1; break;
+			case 'd': strlcpy(nmpfdev, optarg, NMBUFSIZ); d = 1; break;
+			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
+			case 'e': strlcpy(extif, optarg, IFNAMSIZ); e = 1; break;
+			case 't': if ((t = optnum("t", optarg)) == -1) usage(); break;
+			case 'q': if ((q = optnum("q", optarg)) == -1) usage(); break;
 			case 'p':
-				loopdata->priority = optnum("p", optarg);
-				if(loopdata->priority == -1) usage();
-				if(!loopdata->priority) loopdata->priority = 1;
-				break;
-			case 'r':
-				loopdata->repeat_offenses = optnum("r", optarg);
-				if(loopdata->repeat_offenses == -1) usage();
-				break;
+				if ((loopdata->priority = optnum("p", optarg)) == -1) usage(); 
+				if (!loopdata->priority) loopdata->priority = 1; break;
 			case 'm':
-				loopdata->thr_max = optnum("m", optarg);
-				if(loopdata->thr_max == -1) usage();
-				if(!loopdata->thr_max) loopdata->thr_max = THRMAX;
-				break;
-			case 'h':
-				usage();
-			case '?':
-				usage();
-			default:
-				usage();
+				if ((loopdata->thr_max = optnum("m", optarg)) == -1) usage();
+				if (!loopdata->thr_max) loopdata->thr_max = THRMAX; break;
+			case 'r': if ((loopdata->repeat_offenses = optnum("r", optarg)) == -1) usage(); break;
+			case 'h': usage();
+			case '?': usage();
+			default: usage();
 		}
 	
 	argc -= optind;
@@ -147,29 +106,28 @@ main(int argc, char **argv)
 		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
 	}
 
-	s2c_daemonize();
+	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	if(!F) s2c_daemonize();
+	if (q) sleep(q);
 
 	if ((loopdata->dev = open(nmpfdev, O_RDWR)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 	free(nmpfdev);
 
 	if ((loopdata->fd = s2c_kevent_open(alertfile)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
-		closelog();
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 	free(alertfile);
 
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	memset(wbhead, 0x00, sizeof(wbhead_t));
 
-	s2c_mutex_init();
 	s2c_log_init(loopdata->logfile);
-	s2c_db_init(loopdata->dev, loopdata->B, loopdata->W, loopdata->tablename, &wbhead->whead);
-	s2c_thr_init(loopdata->dev, loopdata->t, loopdata->logfile);
+	s2c_db_init(loopdata, &wbhead->whead);
+	s2c_thr_init(loopdata);
 
 	while (1) {
 		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
@@ -177,20 +135,19 @@ main(int argc, char **argv)
 		s2c_parse_and_block_wl_clear(&wbhead->whead);
 		s2c_parse_and_block_bl_clear(&wbhead->bhead);
 		free(wbhead);
+
+		pthread_mutex_lock(&pf_mutex);
 		pf_reset = 0;
+		pthread_mutex_unlock(&pf_mutex);
 
 		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 		memset(wbhead, 0x00, sizeof(wbhead_t));
 
-		s2c_db_init(loopdata->dev, loopdata->B, loopdata->W, loopdata->tablename, &wbhead->whead);
+		s2c_db_init(loopdata, &wbhead->whead);
 	}
 
-	close(loopdata->dev);
-	close(loopdata->fd);
-	free(loopdata);
-	free(wbhead);
-	free(wfile);
-	free(bfile);
-	free(extif);
+	close(loopdata->dev); close(loopdata->fd);
+	free(loopdata); free(wbhead); free(wfile); free(bfile); free(extif);
+	closelog();
 	return(0);
 }

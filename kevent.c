@@ -51,13 +51,13 @@ void
 
    if ((fd = s2c_kevent_open(local_file)) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, local_file, LANG_EXIT);
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	}
 
 	memset(&change, 0x00, sizeof(struct kevent));
 	EV_SET(&change, fd, EVFILT_VNODE, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXTEND | NOTE_WRITE, 0, 0);
 
-	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1){
+	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
@@ -65,7 +65,7 @@ void
 	while (1) {
 		
 		memset(&trigger, 0x00, sizeof(struct kevent));
-		if (kevent(kq, NULL, 0, &trigger, 1, NULL) == -1){
+		if (kevent(kq, NULL, 0, &trigger, 1, NULL) == -1) {
 			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 			s2c_exit_fail();
 
@@ -76,7 +76,6 @@ void
 		}
 	}
 
-	close(kq);
 	close(fd);
 	free(local_file);
 	pthread_exit(NULL);
@@ -151,7 +150,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 			if(!loopdata->W) {
 				s2c_check_file(wfile);
 				s2c_parse_and_block_wl_clear(whead);
-				s2c_parse_load_wl(lineproc, whead);
+				s2c_parse_load_wl(loopdata->Z, lineproc, whead);
 				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, wfile, LANG_RELOAD);
 			}
 		}
@@ -169,7 +168,6 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		pthread_mutex_unlock(&fm_mutex);
 	}
 
-	close(kq);
 	free(lineproc);
 	return;
 }
