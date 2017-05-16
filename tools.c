@@ -109,14 +109,11 @@ s2c_wbhead_reset(wbhead_t *wbhead)
 	pf_reset = 0;
 	pthread_mutex_unlock(&pf_mutex);
 
-	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
-	memset(wbhead, 0x00, sizeof(wbhead_t));
-
 	return;
 }
 
 void
-s2c_init()
+s2c_init(loopdata_t *loopdata)
 {
 	wfile_monitor = 0;
 	bfile_monitor = 0;
@@ -128,6 +125,12 @@ s2c_init()
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
+
+	memset(loopdata, 0x00, sizeof(loopdata_t));
+
+	loopdata->priority = 1;
+	loopdata->thr_max = THRMAX;
+	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 
 	s2c_mutex_init();
 
@@ -190,18 +193,19 @@ s2c_log_init(char *logfile)
 }
 
 void
-s2c_db_init(loopdata_t *loopdata, struct wlist_head *whead)
+s2c_db_init(loopdata_t *loopdata, wbhead_t *wbhead)
 {
 	lineproc_t *lineproc = NULL;
 
 	s2c_check_file(loopdata->bfile);
 	s2c_check_file(loopdata->wfile);
 
+	memset(wbhead, 0x00, sizeof(wbhead_t));
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
 
-	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, whead);
+	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, &wbhead->whead);
 	s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
-	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, whead);
+	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
 	free(lineproc);
@@ -262,7 +266,6 @@ s2c_spawn_file_monitor(int *notifaddr, char *filename)
 	thread_fm_t *fm_data = NULL;
 
 	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) s2c_malloc_err();
-
 	memset(fm_data, 0x00, sizeof(thread_fm_t));
 
 	fm_data->file_monitor = notifaddr;
@@ -278,7 +281,6 @@ s2c_spawn_expiretable(int dev, int t, char *logfile)
 	thread_expt_t *expt_data = NULL;
 
 	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
-
 	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
 	expt_data->t = t;
@@ -353,10 +355,13 @@ s2c_exit_fail()
 
 void
 s2c_mutex_destroy(){
+	int s2c_threads_check = 0;
 	
 	pthread_mutex_lock(&thr_mutex);
-	if (s2c_threads > 0) {
-		pthread_mutex_unlock(&thr_mutex);
+	s2c_threads_check = s2c_threads;
+	pthread_mutex_unlock(&thr_mutex);
+
+	if (s2c_threads_check > 0) {
 		pthread_mutex_destroy(&log_mutex);
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);

@@ -99,7 +99,7 @@ void
 s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead)
 {
 	struct kevent trigger, change;
-	int kq = 0;
+	int kq = 0, pf_reset_check = 0;
 	unsigned long age = EXPTIME;
 	unsigned long last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
@@ -120,12 +120,16 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 	}
 
 	pthread_mutex_lock(&pf_mutex);
+	pf_reset_check = pf_reset;
+	pthread_mutex_unlock(&pf_mutex);
 
-	while (pf_reset != -1) {
+
+	while (pf_reset_check != -1) {
 
 		memset(&trigger, 0x00, sizeof(struct kevent));
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		
+		pthread_mutex_lock(&pf_mutex);
 		pf_reset = 0;
 		pthread_mutex_unlock(&pf_mutex);
 

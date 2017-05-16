@@ -45,33 +45,30 @@ main(int argc, char **argv)
 	wbhead_t *wbhead = NULL;
 	loopdata_t *loopdata = NULL;
 
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
+	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
-
+	
 	bzero(alertfile, NMBUFSIZ);
 	bzero(nmpfdev, NMBUFSIZ);
-	memset(loopdata, 0x00, sizeof(loopdata_t));
-
-	loopdata->priority = 1;
-	loopdata->thr_max = THRMAX;
-	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 	
-	s2c_init();
+	s2c_init(loopdata);
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
+
+			case 'v': v = 1; break;
+			case 'F': F = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
-			case 'v': v = 1; break;
-			case 'F': F = 1; break;
+			case 'd': strlcpy(nmpfdev, optarg, NMBUFSIZ); d = 1; break;
+			case 'a': strlcpy(alertfile, optarg, NMBUFSIZ); a = 1; break;
 			case 'w': strlcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
 			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
-			case 'a': strlcpy(alertfile, optarg, NMBUFSIZ); a = 1; break;
-			case 'd': strlcpy(nmpfdev, optarg, NMBUFSIZ); d = 1; break;
-			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
+			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
 			case 't': if ((t = optnum("t", optarg)) == -1) usage(); break;
 			case 'q': if ((q = optnum("q", optarg)) == -1) usage(); break;
 			case 'p':
@@ -80,7 +77,8 @@ main(int argc, char **argv)
 			case 'm':
 				if ((loopdata->thr_max = optnum("m", optarg)) == -1) usage();
 				if (!loopdata->thr_max) loopdata->thr_max = THRMAX; break;
-			case 'r': if ((loopdata->repeat_offenses = optnum("r", optarg)) == -1) usage(); break;
+			case 'r': 
+				if ((loopdata->repeat_offenses = optnum("r", optarg)) == -1) usage(); break;
 			case 'h': usage();
 			case '?': usage();
 			default: usage();
@@ -107,17 +105,14 @@ main(int argc, char **argv)
 	loopdata->dev = s2c_open_pf(nmpfdev);
 	loopdata->fd = s2c_open_file(alertfile);
 
-	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
-	memset(wbhead, 0x00, sizeof(wbhead_t));
-
 	s2c_log_init(loopdata->logfile);
-	s2c_db_init(loopdata, &wbhead->whead);
 	s2c_thr_init(loopdata);
+	s2c_db_init(loopdata, wbhead);
 
 	while (1) {
 		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
 		s2c_wbhead_reset(wbhead);
-		s2c_db_init(loopdata, &wbhead->whead);
+		s2c_db_init(loopdata, wbhead);
 	}
 
 	close(loopdata->dev); close(loopdata->fd);

@@ -283,7 +283,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 			if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
 			sleep(3);
 		}
-		pthread_mutex_lock(&pf_mutex);
+		pthread_mutex_unlock(&pf_mutex);
 	}
 
 	free(pftbl);
