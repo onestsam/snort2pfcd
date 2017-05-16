@@ -99,20 +99,6 @@ s2c_open_file(char *file)
 }
 
 void
-s2c_wbhead_reset(wbhead_t *wbhead)
-{
-	s2c_parse_and_block_wl_clear(&wbhead->whead);
-	s2c_parse_and_block_bl_clear(&wbhead->bhead);
-	free(wbhead);
-
-	pthread_mutex_lock(&pf_mutex);
-	pf_reset = 0;
-	pthread_mutex_unlock(&pf_mutex);
-
-	return;
-}
-
-void
 s2c_init(loopdata_t *loopdata)
 {
 	wfile_monitor = 0;

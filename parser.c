@@ -174,17 +174,17 @@ s2c_parse_ip(lineproc_t *lineproc)
 }
 
 void
-s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, struct wlist_head *whead, struct blist_head *bhead)
+s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead)
 {
 	int pb_status = 0;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) return;
 
-	if (!LIST_EMPTY(whead))
-		if (s2c_parse_search_wl(lineproc->ret, whead)) return;
+	if (!LIST_EMPTY(&wbhead->whead))
+		if (s2c_parse_search_wl(lineproc->ret, &wbhead->whead)) return;
 
-	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, bhead)) == loopdata->repeat_offenses) {
+	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &wbhead->bhead)) == loopdata->repeat_offenses) {
 
 		s2c_spawn_block_log(loopdata->D, loopdata->thr_max, lineproc->ret, loopdata->logfile);
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);

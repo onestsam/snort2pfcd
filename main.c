@@ -110,8 +110,9 @@ main(int argc, char **argv)
 	s2c_db_init(loopdata, wbhead);
 
 	while (1) {
-		s2c_kevent_loop(loopdata, &wbhead->whead, &wbhead->bhead);
-		s2c_wbhead_reset(wbhead);
+		s2c_kevent_loop(loopdata, wbhead);
+		s2c_parse_and_block_wl_clear(&wbhead->whead);
+		s2c_parse_and_block_bl_clear(&wbhead->bhead);
 		s2c_db_init(loopdata, wbhead);
 	}
 

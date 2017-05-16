@@ -308,9 +308,9 @@ s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
 {
 
 	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, request, pf_io_arg) != 0)) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
-		sleep(1);
+	if (ioctl(dev, request, pf_io_arg) != 0) {
+		if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
+		pf_reset = 1;
 	}
 	pthread_mutex_unlock(&pf_mutex);
 

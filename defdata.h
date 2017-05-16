@@ -86,8 +86,8 @@
 #define LANG_STATE_CHANGE "state change detected in"
 #define LANG_INTDB "!! internal database error !!"
 #define LANG_CON_EST "connection with pf established"
-#define LANG_IOCTL_WAIT "error: attempting to re-establish connection with pf"
-#define LANG_IOCTL_ERROR "error: unable to connect to pf"
+#define LANG_IOCTL_WAIT "attempting to re-establish connection with pf"
+#define LANG_IOCTL_ERROR "unable to connect to pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
 #define LANG_MUTEX_ERROR "unable to init mutex"
 #define LANG_NO_OPEN "unable to open"
@@ -226,7 +226,6 @@ void s2c_ipb_set(char *, struct ipblist *);
 int s2c_open_pf(char *);
 int s2c_open_file(char *);
 int s2c_open_kq();
-void s2c_wbhead_reset(wbhead_t *);
 long lmax(long ,long);
 long lmin(long ,long);
 int optnum(char *, char *);
@@ -247,7 +246,7 @@ void s2c_parse_and_block_bl_clear(struct blist_head *);
 void s2c_parse_and_block_wl_clear(struct wlist_head *);
 void s2c_parse_and_block_bl_static_clear(int, char *);
 void s2c_parse_and_block_bl_del(unsigned long, unsigned long, struct blist_head *);
-void s2c_parse_and_block(loopdata_t *, lineproc_t *, struct wlist_head *, struct blist_head *);
+void s2c_parse_and_block(loopdata_t *, lineproc_t *, wbhead_t *);
 void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct wlist_head *);
 int s2c_parse_and_block_bl(char *, struct blist_head *);
 int s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
@@ -258,8 +257,8 @@ int s2c_parse_search_wl(char *, struct wlist_head *);
 void *s2c_kevent_file_monitor(void *arg);
 int s2c_kevent_open(char *);
 int s2c_kevent_read_l(int, char *);
-int s2c_kevent_read_f(loopdata_t *, struct wlist_head *, struct blist_head *, lineproc_t *lineproc, int);
-void s2c_kevent_loop(loopdata_t *, struct wlist_head *, struct blist_head *);
+int s2c_kevent_read_f(loopdata_t *, wbhead_t *, lineproc_t *lineproc, int);
+void s2c_kevent_loop(loopdata_t *, wbhead_t *);
 
 #endif /* _DEFDATA_H */
 

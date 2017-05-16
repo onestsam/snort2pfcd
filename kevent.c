@@ -96,7 +96,7 @@ int s2c_open_kq()
 }
 
 void
-s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead)
+s2c_kevent_loop(loopdata_t *loopdata, wbhead_t *wbhead)
 {
 	struct kevent trigger, change;
 	int kq = 0, pf_reset_check = 0;
@@ -119,25 +119,16 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		s2c_exit_fail();
 	}
 
-	pthread_mutex_lock(&pf_mutex);
-	pf_reset_check = pf_reset;
-	pthread_mutex_unlock(&pf_mutex);
-
-
-	while (pf_reset_check != -1) {
+	while (!pf_reset_check) {
 
 		memset(&trigger, 0x00, sizeof(struct kevent));
 		memset(lineproc, 0x00, sizeof(lineproc_t));
-		
-		pthread_mutex_lock(&pf_mutex);
-		pf_reset = 0;
-		pthread_mutex_unlock(&pf_mutex);
 
 		this_time = time(NULL);
 		
 		if ((last_time + age) < (this_time + 1)) {
 			last_time = this_time;
-			s2c_parse_and_block_bl_del(age, this_time, bhead);
+			s2c_parse_and_block_bl_del(age, this_time, &wbhead->bhead);
 		}
 
 		if (kevent(kq, NULL, 0, &trigger, 1, NULL) == -1) {
@@ -146,7 +137,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		}
 
 		if (trigger.filter == EVFILT_READ)
-			if (s2c_kevent_read_f(loopdata, whead, bhead, lineproc, trigger.data) == -1)
+			if (s2c_kevent_read_f(loopdata, wbhead, lineproc, trigger.data) == -1)
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 
 		pthread_mutex_lock(&fm_mutex);
@@ -155,8 +146,8 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 			wfile_monitor = 0;
 			if(!loopdata->W) {
 				s2c_check_file(loopdata->wfile);
-				s2c_parse_and_block_wl_clear(whead);
-				s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, whead);
+				s2c_parse_and_block_wl_clear(&wbhead->whead);
+				s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, &wbhead->whead);
 				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->wfile, LANG_RELOAD);
 			}
 		}
@@ -166,12 +157,17 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 			if(!loopdata->B) {
 				s2c_check_file(loopdata->bfile);
 				s2c_parse_and_block_bl_static_clear(loopdata->dev, loopdata->tablename);
-				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, whead);
+				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
 				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
 			}
 		}
 
 		pthread_mutex_unlock(&fm_mutex);
+
+		pthread_mutex_lock(&pf_mutex);
+		pf_reset_check = pf_reset;
+		pf_reset = 0;
+		pthread_mutex_unlock(&pf_mutex);
 	}
 
 	free(lineproc);
@@ -192,13 +188,13 @@ s2c_kevent_read_l(int fd, char *buf)
 }
 
 int
-s2c_kevent_read_f(loopdata_t *loopdata, struct wlist_head *whead, struct blist_head *bhead, lineproc_t *lineproc, int nbytes)
+s2c_kevent_read_f(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, int nbytes)
 {
 	int i = 0, total = 0;
 
 	do  {
 		if ((i = s2c_kevent_read_l(loopdata->fd, lineproc->cad)) == -1) return(-1);
-		s2c_parse_and_block(loopdata, lineproc, whead, bhead);
+		s2c_parse_and_block(loopdata, lineproc, wbhead);
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		total += i;
 
