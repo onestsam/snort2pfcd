@@ -194,14 +194,14 @@ s2c_db_init(loopdata_t *loopdata, struct wlist_head *whead)
 {
 	lineproc_t *lineproc = NULL;
 
-	s2c_check_file(bfile);
-	s2c_check_file(wfile);
+	s2c_check_file(loopdata->bfile);
+	s2c_check_file(loopdata->wfile);
 
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
 
-	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, lineproc, whead);
+	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, whead);
 	s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
-	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, whead);
+	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, whead);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
 	free(lineproc);
@@ -250,8 +250,8 @@ void
 s2c_thr_init(loopdata_t *loopdata){
 
 	s2c_spawn_expiretable(loopdata->dev, loopdata->t, loopdata->logfile);
-	s2c_spawn_file_monitor(&wfile_monitor, wfile);
-	s2c_spawn_file_monitor(&bfile_monitor, bfile);
+	s2c_spawn_file_monitor(&wfile_monitor, loopdata->wfile);
+	s2c_spawn_file_monitor(&bfile_monitor, loopdata->bfile);
 
 	return;
 }
@@ -344,14 +344,6 @@ s2c_malloc_err()
 }
 
 void
-s2c_ioctl_wait(char *ioctl_wait_flag)
-{
-	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s - %s", ioctl_wait_flag, LANG_IOCTL_WAIT, LANG_WARN);
-	sleep(3);
-	return;
-}
-
-void
 s2c_exit_fail()
 {
 	s2c_mutex_destroy();
@@ -361,13 +353,10 @@ s2c_exit_fail()
 
 void
 s2c_mutex_destroy(){
-	int s2c_local_threads = 0;
-
+	
 	pthread_mutex_lock(&thr_mutex);
-	s2c_local_threads = s2c_threads;
-	pthread_mutex_unlock(&thr_mutex);
-
-	if (s2c_local_threads > 0) {
+	if (s2c_threads > 0) {
+		pthread_mutex_unlock(&thr_mutex);
 		pthread_mutex_destroy(&log_mutex);
 		pthread_mutex_destroy(&dns_mutex);
 		pthread_mutex_destroy(&thr_mutex);

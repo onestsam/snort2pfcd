@@ -255,7 +255,7 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 }
 
 void
-s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, struct wlist_head *whead)
+s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *bfile, struct wlist_head *whead)
 {
 	FILE *blfile = NULL;
 
@@ -289,7 +289,7 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, struct 
 }
 
 void
-s2c_parse_load_wl(int Z, lineproc_t *lineproc, struct wlist_head *head)
+s2c_parse_load_wl(int Z, char *extif, char *wfile, lineproc_t *lineproc, struct wlist_head *head)
 {
 	struct ipwlist *ipw1 = NULL, *ipw2 = NULL;
 	struct ifreq *ifr = NULL;

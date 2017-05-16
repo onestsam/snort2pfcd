@@ -119,6 +119,7 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		s2c_exit_fail();
 	}
 
+	pthread_mutex_lock(&pf_mutex);
 
 	while (pf_reset != -1) {
 
@@ -126,6 +127,8 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		
 		pf_reset = 0;
+		pthread_mutex_unlock(&pf_mutex);
+
 		this_time = time(NULL);
 		
 		if ((last_time + age) < (this_time + 1)) {
@@ -147,20 +150,20 @@ s2c_kevent_loop(loopdata_t *loopdata, struct wlist_head *whead, struct blist_hea
 		if(wfile_monitor) {
 			wfile_monitor = 0;
 			if(!loopdata->W) {
-				s2c_check_file(wfile);
+				s2c_check_file(loopdata->wfile);
 				s2c_parse_and_block_wl_clear(whead);
-				s2c_parse_load_wl(loopdata->Z, lineproc, whead);
-				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, wfile, LANG_RELOAD);
+				s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, whead);
+				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->wfile, LANG_RELOAD);
 			}
 		}
 
 		if(bfile_monitor) {
 			bfile_monitor = 0;
 			if(!loopdata->B) {
-				s2c_check_file(bfile);
+				s2c_check_file(loopdata->bfile);
 				s2c_parse_and_block_bl_static_clear(loopdata->dev, loopdata->tablename);
-				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, whead);
-				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, bfile, LANG_RELOAD);
+				s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, whead);
+				if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
 			}
 		}
 

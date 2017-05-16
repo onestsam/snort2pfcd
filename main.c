@@ -45,18 +45,12 @@ main(int argc, char **argv)
 	wbhead_t *wbhead = NULL;
 	loopdata_t *loopdata = NULL;
 
-	if ((wfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	if ((bfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	if ((extif = (char *)malloc(sizeof(char)*IFNAMSIZ)) == NULL) s2c_malloc_err();
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
 
-	bzero(wfile, NMBUFSIZ);
-	bzero(bfile, NMBUFSIZ);
 	bzero(alertfile, NMBUFSIZ);
 	bzero(nmpfdev, NMBUFSIZ);
-	bzero(extif, IFNAMSIZ);
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
 	loopdata->priority = 1;
@@ -66,18 +60,18 @@ main(int argc, char **argv)
 	s2c_init();
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
-			case 'w': strlcpy(wfile, optarg, NMBUFSIZ); w = 1; break;
-			case 'b': strlcpy(bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
 			case 'v': v = 1; break;
 			case 'F': F = 1; break;
+			case 'w': strlcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
+			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'a': strlcpy(alertfile, optarg, NMBUFSIZ); a = 1; break;
 			case 'd': strlcpy(nmpfdev, optarg, NMBUFSIZ); d = 1; break;
 			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
-			case 'e': strlcpy(extif, optarg, IFNAMSIZ); e = 1; break;
+			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
 			case 't': if ((t = optnum("t", optarg)) == -1) usage(); break;
 			case 'q': if ((q = optnum("q", optarg)) == -1) usage(); break;
 			case 'p':
@@ -95,11 +89,11 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (!w) strlcpy(wfile, PATH_WHITELIST, NMBUFSIZ);
-	if (!b) strlcpy(bfile, PATH_BLACKLIST, NMBUFSIZ);
+	if (!w) strlcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
+	if (!b) strlcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
 	if (!a) strlcpy(alertfile, PATH_ALERT, NMBUFSIZ);
 	if (!d) strlcpy(nmpfdev, PFDEVICE, NMBUFSIZ);
-	if (!e) strlcpy(extif, "all", IFNAMSIZ);
+	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);
 	if (!l) {
 		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
 		strlcat(loopdata->logfile,  __progname, NMBUFSIZ);
@@ -127,7 +121,7 @@ main(int argc, char **argv)
 	}
 
 	close(loopdata->dev); close(loopdata->fd);
-	free(loopdata); free(wbhead); free(wfile); free(bfile); free(extif);
+	free(loopdata); free(wbhead); 
 	closelog();
 	return(0);
 }

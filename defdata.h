@@ -87,6 +87,7 @@
 #define LANG_INTDB "!! internal database error !!"
 #define LANG_CON_EST "connection with pf established"
 #define LANG_IOCTL_WAIT "error: attempting to re-establish connection with pf"
+#define LANG_IOCTL_ERROR "error: unable to connect to pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
 #define LANG_MUTEX_ERROR "unable to init mutex"
 #define LANG_NO_OPEN "unable to open"
@@ -180,6 +181,9 @@ typedef struct _loopdata_t {
 	int priority;
 	int thr_max;
 	int repeat_offenses;
+	char wfile[NMBUFSIZ];
+	char bfile[NMBUFSIZ];
+	char extif[IFNAMSIZ];
 	char logfile[NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } loopdata_t;
@@ -191,9 +195,6 @@ int s2c_threads;
 int pf_reset;
 int wfile_monitor;
 int bfile_monitor;
-char *wfile;
-char *bfile;
-char *extif;
 pthread_mutex_t log_mutex;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
@@ -207,8 +208,8 @@ void s2c_init();
 void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
-void s2c_ioctl_wait(char *);
 void s2c_thr_init(loopdata_t *);
+void s2c_pf_ioctl(int, unsigned long, void *);
 void s2c_spawn_file_monitor(int *, char *);
 void s2c_spawn_expiretable(int, int, char *);
 void s2c_spawn_block_log(int, int, char *, char *);
@@ -247,11 +248,11 @@ void s2c_parse_and_block_wl_clear(struct wlist_head *);
 void s2c_parse_and_block_bl_static_clear(int, char *);
 void s2c_parse_and_block_bl_del(unsigned long, unsigned long, struct blist_head *);
 void s2c_parse_and_block(loopdata_t *, lineproc_t *, struct wlist_head *, struct blist_head *);
-void s2c_parse_load_bl_static(int, lineproc_t *, char*, struct wlist_head *);
+void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct wlist_head *);
 int s2c_parse_and_block_bl(char *, struct blist_head *);
 int s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
 void s2c_parse_load_wl_ifaces(struct ipwlist *);
-void s2c_parse_load_wl(int, lineproc_t *, struct wlist_head *);
+void s2c_parse_load_wl(int, char *, char *, lineproc_t *, struct wlist_head *);
 int s2c_parse_search_wl(char *, struct wlist_head *);
 
 void *s2c_kevent_file_monitor(void *arg);

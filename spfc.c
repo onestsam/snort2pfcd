@@ -153,9 +153,7 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
 	pfbl->io.pfrio_size   = 1;
 
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCRADDADDRS, &pfbl->io)) != 0) s2c_ioctl_wait("DIOCRADDADDRS");
-	pthread_mutex_unlock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCRADDADDRS, &pfbl->io);
 		
 	free(pfbl);
 	return;
@@ -246,17 +244,12 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	pfrla->io_rule.rule.rule_flag = PFRULE_RETURN;
 	memcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
 
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
-	if ((pf_reset = ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr)) != 0) s2c_ioctl_wait("DIOCBEGINADDRS");
-	pthread_mutex_unlock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule);
+	s2c_pf_ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr);
 
 	pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
 	pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
-
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule) != 0)) s2c_ioctl_wait("DIOCCHANGERULE");
-	pthread_mutex_unlock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule);
 
 	free(pfrla);
 	return;
@@ -272,17 +265,11 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 	s2c_pftbl_set(tablename, pftbl);
 	pftbl->io.pfrio_size = 0;
-	
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pftbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
-	pthread_mutex_lock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 	
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
-
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCRGETTABLES, &pftbl->io)) != 0) s2c_ioctl_wait("DIOCRGETTABLES");
-	pthread_mutex_lock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
 	for ( i = 0; i < pftbl->io.pfrio_size; i++)
 		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) { f = 1; break; }
@@ -292,7 +279,10 @@ s2c_pf_tbladd(int dev, char *tablename)
 		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
 		pthread_mutex_lock(&pf_mutex);
-		while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) s2c_ioctl_wait("DIOCRADDTABLES");
+		while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
+			if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
+			sleep(3);
+		}
 		pthread_mutex_lock(&pf_mutex);
 	}
 
@@ -307,12 +297,23 @@ s2c_pf_tbldel(int dev, char *tablename)
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
 	s2c_pftbl_set(tablename, pftbl);
-
-	pthread_mutex_lock(&pf_mutex);
-	if ((pf_reset = ioctl(dev, DIOCRDELTABLES, &pftbl->io) != 0)) s2c_ioctl_wait("DIOCRDELTABLES");
-	pthread_mutex_lock(&pf_mutex);
+	s2c_pf_ioctl(dev, DIOCRDELTABLES, &pftbl->io);
 
 	free(pftbl);
+	return;
+}
+
+void
+s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
+{
+
+	pthread_mutex_lock(&pf_mutex);
+	if ((pf_reset = ioctl(dev, request, pf_io_arg) != 0)) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
+		sleep(1);
+	}
+	pthread_mutex_unlock(&pf_mutex);
+
 	return;
 }
 
