@@ -188,6 +188,7 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 
 		s2c_spawn_block_log(loopdata->D, loopdata->thr_max, lineproc->ret, loopdata->logfile);
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
+
 	} else if (pb_status == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
 		s2c_exit_fail();
@@ -196,18 +197,22 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 	return;
 }
 
-int
-s2c_parse_load_wl_file(lineproc_t *lineproc, char *wlist_file, struct ipwlist *ipw1)
+void
+s2c_parse_load_wl_file(lineproc_t *lineproc, char *wfile, struct ipwlist *ipw1)
 {
 	struct ipwlist *ipw2 = NULL;
-	FILE *wlfile = NULL;
-
-	if ((wlfile = fopen(wlist_file, "r")) == NULL) return(1);
-
-	flockfile(wlfile);
+	FILE *file = NULL;
+	
 	memset(lineproc, 0x00, sizeof(lineproc_t));
 
-	while (s2c_parse_line(lineproc->cad, wlfile)) {
+	if ((file = fopen(wfile, "r")) == NULL) {
+		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, wfile, LANG_WARN);
+		return;
+	}
+
+	flockfile(file);
+
+	while (s2c_parse_line(lineproc->cad, file)) {
 		if (s2c_parse_ip(lineproc)) {
 
 			if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
@@ -219,10 +224,9 @@ s2c_parse_load_wl_file(lineproc_t *lineproc, char *wlist_file, struct ipwlist *i
 		}
 	}
 
-	funlockfile(wlfile);
-	fclose(wlfile);
-
-	return(0);
+	funlockfile(file);
+	fclose(file);
+	return;
 }
 
 void
@@ -330,15 +334,8 @@ s2c_parse_load_wl(int Z, char *extif, char *wfile, lineproc_t *lineproc, struct 
 		ipw1 = ipw2;
 	}
 
-	if (!Z) if (s2c_parse_load_wl_file(lineproc, PATH_RESOLV, ipw1)) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, PATH_RESOLV, LANG_WARN);
-		return;
-	}
-
-	if (s2c_parse_load_wl_file(lineproc, wfile, ipw1)) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, wfile, LANG_WARN);
-		return;
-	}
+	if (!Z) s2c_parse_load_wl_file(lineproc, PATH_RESOLV, ipw1);
+	s2c_parse_load_wl_file(lineproc, wfile, ipw1);
 
 	return;
 }

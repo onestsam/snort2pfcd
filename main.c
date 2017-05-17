@@ -42,11 +42,11 @@ main(int argc, char **argv)
 	int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	unsigned long t = 0;
 	char *alertfile = NULL, *nmpfdev = NULL;
-	wbhead_t *wbhead = NULL;
+	
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
-	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
+	
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	
@@ -102,22 +102,15 @@ main(int argc, char **argv)
 	if(!F) s2c_daemonize();
 	if (q) sleep(q);
 
-	loopdata->dev = s2c_open_pf(nmpfdev);
-	loopdata->fd = s2c_open_file(alertfile);
+	loopdata->dev = s2c_pf_open(nmpfdev);
+	loopdata->fd = s2c_kevent_open(alertfile);
 
 	s2c_log_init(loopdata->logfile);
 	s2c_thr_init(loopdata);
-	s2c_db_init(loopdata, wbhead);
-
-	while (1) {
-		s2c_kevent_loop(loopdata, wbhead);
-		s2c_parse_and_block_wl_clear(&wbhead->whead);
-		s2c_parse_and_block_bl_clear(&wbhead->bhead);
-		s2c_db_init(loopdata, wbhead);
-	}
+	s2c_kevent_loop(loopdata);
 
 	close(loopdata->dev); close(loopdata->fd);
-	free(loopdata); free(wbhead); 
+	free(loopdata);
 	closelog();
 	return(0);
 }

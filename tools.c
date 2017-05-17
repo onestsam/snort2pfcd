@@ -72,38 +72,11 @@ s2c_write_file(char *namefile, char *message)
 	return;
 }
 
-int
-s2c_open_pf(char *nmpfdev)
-{
-	int dev = 0;
-
-	if ((dev = open(nmpfdev, O_RDWR)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
-		s2c_exit_fail();
-	}
-	free(nmpfdev);
-	return(dev);
-}
-
-int
-s2c_open_file(char *file)
-{
-	int fd = 0;
-
-	if ((fd = s2c_kevent_open(file)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
-		s2c_exit_fail();
-	}
-	free(file);
-	return(fd);
-}
-
 void
 s2c_init(loopdata_t *loopdata)
 {
 	wfile_monitor = 0;
 	bfile_monitor = 0;
-	s2c_threads = 0;
 	pf_reset = 0;
 	v = 0;
 
@@ -175,26 +148,6 @@ s2c_log_init(char *logfile)
 	s2c_write_file(logfile, initmess);
 
 	free(initmess);
-	return;
-}
-
-void
-s2c_db_init(loopdata_t *loopdata, wbhead_t *wbhead)
-{
-	lineproc_t *lineproc = NULL;
-
-	s2c_check_file(loopdata->bfile);
-	s2c_check_file(loopdata->wfile);
-
-	memset(wbhead, 0x00, sizeof(wbhead_t));
-	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-
-	if (!loopdata->W) s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, &wbhead->whead);
-	s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
-	if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
-	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
-
-	free(lineproc);
 	return;
 }
 
