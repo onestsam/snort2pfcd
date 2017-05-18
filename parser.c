@@ -186,7 +186,8 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 
 	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &wbhead->bhead)) == loopdata->repeat_offenses) {
 
-		s2c_spawn_block_log(loopdata->D, loopdata->thr_max, lineproc->ret, loopdata->logfile);
+		if(s2c_pf_block_log_check(loopdata->thr_max))
+			s2c_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 
 	} else if (pb_status == -1) {

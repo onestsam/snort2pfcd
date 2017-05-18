@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.0
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Wed May 17 22:31:58 2017 -->
+<!-- CreationDate: Thu May 18 14:23:27 2017 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -50,11 +50,12 @@ alerts via packet filter firewall tables.</p>
 alert output and blocks ip addresses for a given snort
 priority using packet filter table entries for a specified
 period of time. A whitelist is specified to exclude local
-and trusted ip address from being blocked. <b>snort2pfcd</b>
-also preloads the community maintained and supplied snort
-blacklist by default. The whitelist and blacklist files are
-monitored and <b>snort2pfcd</b> automatically reloads and
-updates the tables when changes are made to the files.</p>
+and trusted ip addresses from being blocked.
+<b>snort2pfcd</b> also preloads the community maintained and
+supplied snort blacklist by default. The whitelist and
+blacklist files are monitored and <b>snort2pfcd</b>
+automatically reloads and updates the tables when changes
+are made to these files.</p>
 
 <p style="margin-left:6%; margin-top: 1em">The options are
 as follows:</p>
@@ -106,7 +107,7 @@ mode. If set, will not daemonize.</p>
 <p style="margin-top: 1em" valign="top"><b>&minus;Z</b></p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
-prevent whitelisting of entries in the /etc/resolv.conf
+prevent the whitelisting of entries in the /etc/resolv.conf
 file.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;l</b>
@@ -165,13 +166,17 @@ especially shortly after boot. Default is 0.</p>
 <p style="margin-left:17%;">Maximum number of DNS request
 threads. Default is 100. <b>snort2pfcd</b> uses a
 non-blocking design to ensure that waiting for DNS names to
-resolve in the block log do not interere with the blocking
+resolve in the block log do not interfere with the blocking
 of snort alerts. Instead of the main program waiting, a new
-thread is spun to do the waiting. Since connection speeds
+thread is spawned to do the waiting. Since connection speeds
 vary widely (100mb/s - &gt;40Gb/s) and servers also vary in
 terms of processing capability, the option exists to
 increase or decrease the maximum number of threads waiting
-for DNS requests.</p>
+for DNS requests. Once the maximum number of threads waiting
+for a DNS response is reached, logging will stop until an
+active thread exits. The main program however will continue
+its blocking function with a cessation in logging until a
+new thread can be spawned.</p>
 
 
 <p style="margin-top: 1em" valign="top"><b>&minus;v</b></p>
@@ -294,7 +299,7 @@ written by Antonio Benojar which was based on the original
 snort2pf perl script written by Stephan Schmieder.
 Expiration of entries use Henrik Gustafsson&rsquo;s
 expiretable functions. Blocking functionality based on pfctl
-and pftabled functions by Armin&rsquo;s Wolfermann.</p>
+and pftabled functions by Armin Wolfermann.</p>
 
 <p style="margin-top: 1em" valign="top"><b>SEE ALSO</b></p>
 

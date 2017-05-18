@@ -178,7 +178,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 			}
 
 			if (trigger.filter == EVFILT_READ)
-				if (s2c_kevent_read_f(loopdata, wbhead, lineproc, trigger.data) == -1)
+				if (s2c_kevent_read(loopdata, wbhead, lineproc, trigger.data) == -1)
 					syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 
 			pthread_mutex_lock(&fm_mutex);
@@ -222,25 +222,16 @@ s2c_kevent_loop(loopdata_t *loopdata)
 }
 
 int
-s2c_kevent_read_l(int fd, char *buf)
+s2c_kevent_read(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, int nbytes)
 {
-	int i = 0, r = 0;
-
-	for (i = 0; i < BUFSIZ; i++) {
-		if((r = read(fd, &buf[i], sizeof(char))) <= 0) return(r);
-		if (buf[i] == '\n') break;
-	}
-	
-	return(i);
-}
-
-int
-s2c_kevent_read_f(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, int nbytes)
-{
-	int i = 0, total = 0;
+	int i = 0, r = 0, total = 0;
 
 	do  {
-		if ((i = s2c_kevent_read_l(loopdata->fd, lineproc->cad)) == -1) return(-1);
+
+		for (i = 0; i < BUFSIZ; i++) {
+			if((r = read(loopdata->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
+			if (lineproc->cad[i] == '\n') break;
+		}
 		s2c_parse_and_block(loopdata, lineproc, wbhead);
 		memset(lineproc, 0x00, sizeof(lineproc_t));
 		total += i;

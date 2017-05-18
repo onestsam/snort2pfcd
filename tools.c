@@ -235,15 +235,13 @@ s2c_spawn_expiretable(int dev, int t, char *logfile)
 }
 
 void
-s2c_spawn_block_log(int D, int thr_max, char *logip, char *logfile)
+s2c_spawn_block_log(int D, char *logip, char *logfile)
 {
 	thread_log_t *log_data = NULL;
 
 	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) s2c_malloc_err();
 
 	memset(log_data, 0x00, sizeof(thread_log_t));
-
-	s2c_pf_block_log_check(thr_max);
 
 	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, NMBUFSIZ);
