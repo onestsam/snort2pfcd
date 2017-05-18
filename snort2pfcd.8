@@ -30,7 +30,7 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .\"
-.Dd May 14, 2017
+.Dd May 17, 2017
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -57,7 +57,7 @@
 .Op Fl h
 .Sh DESCRIPTION
 .Nm
-Analyzes snort alert output and blocks ip addresses for a given snort priority using packet filter table entries for a specified period of time. A whitelist is specified to exclude local and trusted ip address from being blocked. 
+monitors snort alert output and blocks ip addresses for a given snort priority using packet filter table entries for a specified period of time. A whitelist is specified to exclude local and trusted ip address from being blocked. 
 .Nm
 also preloads the community maintained and supplied snort blacklist by default. The whitelist and blacklist files are monitored and
 .Nm
@@ -82,15 +82,15 @@ Foreground mode. If set, will not daemonize.
 .It Fl Z
 If set, will prevent whitelisting of entries in the /etc/resolv.conf file.
 .It Fl l Ar Log_File
-log file, default is /var/log/snort2pfcd.log.
+log file location, default is /var/log/snort2pfcd.log.
 .It Fl a Ar Alert_File
-snort alert file, default is /var/log/snort/alert.
+snort alert file location, default is /var/log/snort/alert.
 .It Fl p Ar Priority 
-The priority level to block ip addresses in snort logs, default is 1. 
+The priority level at which to block an ip addresses in the snort log. Default is 1. 
 Lower priority includes higher priority, for example, -p 3 includes priorities 3, 2 and 1. 
 .It Fl r Ar Repeat_Offenses
-Number of times an ip address may commit an offense before being added to pf block table. 
-Default is 0. For example, -p 2 -r 2 specifies that priority 1 or 2 snort alerts will be blocked only after 2 repeated snort alerts (3 snort alerts total). 
+Number of times an ip address may commit an offense before being added to the packet filter block table. 
+Default is 0. For example, -p 2 -r 2 specifies that any priority 1 or 2 snort alert for a given network address will be blocked only after 2 repeated snort alerts (3 snort alerts total). 
 .It Fl t Ar Seconds 
 The number of seconds to block an ip address, default is 60*60 or 1 hour.
 .It Fl d Ar Pf_device
@@ -102,9 +102,7 @@ is interfering with connection setup, especially shortly after boot. Default is 
 .It Fl m Ar thr_max
 Maximum number of DNS request threads. Default is 100.
 .Nm
-uses a non-blocking design to ensure that waiting for DNS names to resolve in the block log do not interere with 
-.Nm
-blocking of snort alerts. Instead of the main program waiting, a new thread is spun to do the waiting. Since connection speeds vary widely (100mb/s - >40Gb/s) and servers also vary in terms of processing capability, the option exists to increase or decrease the maximum number of threads waiting for DNS requests.
+uses a non-blocking design to ensure that waiting for DNS names to resolve in the block log do not interere with the blocking of snort alerts. Instead of the main program waiting, a new thread is spun to do the waiting. Since connection speeds vary widely (100mb/s - >40Gb/s) and servers also vary in terms of processing capability, the option exists to increase or decrease the maximum number of threads waiting for DNS requests.
 .It Fl v
 Increase verbosity.
 .It Fl h
@@ -130,7 +128,7 @@ At no time should
 .Nm
 need to be restarted.
 .Nm
-will repopulate its packet filter tables if pf is restarted. 
+will repopulate its packet filter tables if the packet filter is restarted. 
 .Nm
 also monitors the whitelist and blacklist files for changes. Changes applied to these files are automatically reloaded and applied to the running
 .Nm
@@ -148,7 +146,7 @@ will only accept entries in this format (e.g. 192.168.0.1). Each entry should be
 .Sh NOTES
 While
 .Nm
-will parse the default snort alert file, this can produce less than real-time blocking given the burden being placed on snort especially over an active, fast or low latency connection. Would strongly recommend using a spooler like barnyard2 to output the text alerts from the snort unified2 binary output.
+will parse the default snort alert file, this can produce less than real-time blocking given the burden being placed on snort especially over an active, fast or low-latency connection. The author would strongly recommend using a spooler like barnyard2 to output the text alerts from the snort unified2 binary output.
 .Pp
 By default, the user-supplied whitelist is prepended with the addresses of all of the local interfaces as the handling of these addresses are usually specified by more complex packet filter rules and simply blocking these addresses can cause problems with certain configurations.
 .Pp
@@ -157,7 +155,7 @@ The user-supplied whitelist can also be prepended with the address of the extern
 .Nm
 also automatically whitelists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific packet filter rules.
 .Pp
-A static blacklist table is also maintained and populated within packet filter with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
+A static blacklist table is also maintained and populated within the packet filter firewall with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
 .Sh CREDITS
 This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions. Blocking functionality based on pfctl and pftabled functions by Armin's Wolfermann.
 .Sh SEE ALSO

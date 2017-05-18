@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.0
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Wed May 17 14:20:31 2017 -->
+<!-- CreationDate: Wed May 17 22:31:58 2017 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -46,7 +46,7 @@ alerts via packet filter firewall tables.</p>
 
 <p style="margin-top: 1em" valign="top"><b>DESCRIPTION</b></p>
 
-<p style="margin-left:6%;"><b>snort2pfcd</b> Analyzes snort
+<p style="margin-left:6%;"><b>snort2pfcd</b> monitors snort
 alert output and blocks ip addresses for a given snort
 priority using packet filter table entries for a specified
 period of time. A whitelist is specified to exclude local
@@ -112,31 +112,32 @@ file.</p>
 <p style="margin-top: 1em" valign="top"><b>&minus;l</b>
 <i>Log_File</i></p>
 
-<p style="margin-left:17%;">log file, default is
+<p style="margin-left:17%;">log file location, default is
 /var/log/snort2pfcd.log.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;a</b>
 <i>Alert_File</i></p>
 
-<p style="margin-left:17%;">snort alert file, default is
-/var/log/snort/alert.</p>
+<p style="margin-left:17%;">snort alert file location,
+default is /var/log/snort/alert.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;p</b>
 <i>Priority</i></p>
 
-<p style="margin-left:17%;">The priority level to block ip
-addresses in snort logs, default is 1. Lower priority
-includes higher priority, for example, -p 3 includes
-priorities 3, 2 and 1.</p>
+<p style="margin-left:17%;">The priority level at which to
+block an ip addresses in the snort log. Default is 1. Lower
+priority includes higher priority, for example, -p 3
+includes priorities 3, 2 and 1.</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;r</b>
 <i>Repeat_Offenses</i></p>
 
 <p style="margin-left:17%;">Number of times an ip address
-may commit an offense before being added to pf block table.
-Default is 0. For example, -p 2 -r 2 specifies that priority
-1 or 2 snort alerts will be blocked only after 2 repeated
-snort alerts (3 snort alerts total).</p>
+may commit an offense before being added to the packet
+filter block table. Default is 0. For example, -p 2 -r 2
+specifies that any priority 1 or 2 snort alert for a given
+network address will be blocked only after 2 repeated snort
+alerts (3 snort alerts total).</p>
 
 <p style="margin-top: 1em" valign="top"><b>&minus;t</b>
 <i>Seconds</i></p>
@@ -164,13 +165,13 @@ especially shortly after boot. Default is 0.</p>
 <p style="margin-left:17%;">Maximum number of DNS request
 threads. Default is 100. <b>snort2pfcd</b> uses a
 non-blocking design to ensure that waiting for DNS names to
-resolve in the block log do not interere with
-<b>snort2pfcd</b> blocking of snort alerts. Instead of the
-main program waiting, a new thread is spun to do the
-waiting. Since connection speeds vary widely (100mb/s -
-&gt;40Gb/s) and servers also vary in terms of processing
-capability, the option exists to increase or decrease the
-maximum number of threads waiting for DNS requests.</p>
+resolve in the block log do not interere with the blocking
+of snort alerts. Instead of the main program waiting, a new
+thread is spun to do the waiting. Since connection speeds
+vary widely (100mb/s - &gt;40Gb/s) and servers also vary in
+terms of processing capability, the option exists to
+increase or decrease the maximum number of threads waiting
+for DNS requests.</p>
 
 
 <p style="margin-top: 1em" valign="top"><b>&minus;v</b></p>
@@ -228,10 +229,10 @@ provided snort blacklist are populated within the
 <p style="margin-left:6%; margin-top: 1em">At no time
 should <b>snort2pfcd</b> need to be restarted.
 <b>snort2pfcd</b> will repopulate its packet filter tables
-if pf is restarted. <b>snort2pfcd</b> also monitors the
-whitelist and blacklist files for changes. Changes applied
-to these files are automatically reloaded and applied to the
-running <b>snort2pfcd</b> processes.</p>
+if the packet filter is restarted. <b>snort2pfcd</b> also
+monitors the whitelist and blacklist files for changes.
+Changes applied to these files are automatically reloaded
+and applied to the running <b>snort2pfcd</b> processes.</p>
 
 <p style="margin-top: 1em" valign="top"><b>FILES <br>
 Whitelist</b></p>
@@ -255,10 +256,10 @@ separate line.</p>
 <p style="margin-left:6%;">While <b>snort2pfcd</b> will
 parse the default snort alert file, this can produce less
 than real-time blocking given the burden being placed on
-snort especially over an active, fast or low latency
-connection. Would strongly recommend using a spooler like
-barnyard2 to output the text alerts from the snort unified2
-binary output.</p>
+snort especially over an active, fast or low-latency
+connection. The author would strongly recommend using a
+spooler like barnyard2 to output the text alerts from the
+snort unified2 binary output.</p>
 
 <p style="margin-left:6%; margin-top: 1em">By default, the
 user-supplied whitelist is prepended with the addresses of
@@ -279,8 +280,8 @@ also automatically whitelists addresses found within the
 handled by specific packet filter rules.</p>
 
 <p style="margin-left:6%; margin-top: 1em">A static
-blacklist table is also maintained and populated within
-packet filter with the addresses found within the
+blacklist table is also maintained and populated within the
+packet filter firewall with the addresses found within the
 /usr/local/etc/snort/rules/iplists/default.blacklist file.
 These addresses can be supplied by the user or automatically
 populated with addresses supplied by the snort
@@ -305,7 +306,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">May&nbsp;14,
+<p style="margin-left:6%; margin-top: 1em">May&nbsp;17,
 2017</p>
 <hr>
 </body>

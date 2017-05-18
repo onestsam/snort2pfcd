@@ -31,7 +31,6 @@
  */
 
 #include "defdata.h"
-#include "version.h"
 
 
 int
@@ -42,11 +41,9 @@ main(int argc, char **argv)
 	int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	unsigned long t = 0;
 	char *alertfile = NULL, *nmpfdev = NULL;
-	
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
-	
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	
@@ -98,7 +95,6 @@ main(int argc, char **argv)
 		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
 	}
 
-	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
 	if(!F) s2c_daemonize();
 	if (q) sleep(q);
 

@@ -31,6 +31,7 @@
  */
 
 #include "defdata.h"
+#include "version.h"
 
 
 void
@@ -80,6 +81,8 @@ s2c_init(loopdata_t *loopdata)
 	pf_reset = 0;
 	v = 0;
 
+	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
+	
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
 		exit(EXIT_FAILURE);
