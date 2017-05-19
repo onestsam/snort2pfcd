@@ -150,6 +150,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 		if (loopdata->t > 0) age = loopdata->t;
 		this_time = time(NULL);
 		last_time = this_time;
+		pf_reset_check = 0;
 
 		kq = s2c_kqueue_open();
 		memset(&change, 0x00, sizeof(struct kevent));
