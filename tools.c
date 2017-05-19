@@ -339,11 +339,6 @@ sighandle()
 	closelog();
 	exit(EXIT_SUCCESS);
 }
-
-long
-lmax(long a,long b) {
-	return (a > b)?a:b;
-}
  
 long
 lmin(long a,long b) {

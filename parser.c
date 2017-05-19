@@ -176,7 +176,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 void
 s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead)
 {
-	int pb_status = 0;
+	int pb_status = 0, threadcheck = 0;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) return;
@@ -186,7 +186,12 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 
 	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &wbhead->bhead)) == loopdata->repeat_offenses) {
 
-		if(s2c_pf_block_log_check(loopdata->thr_max))
+		pthread_mutex_lock(&thr_mutex);
+		s2c_threads++;
+		threadcheck = s2c_threads;
+		pthread_mutex_unlock(&thr_mutex);
+
+		if(threadcheck < loopdata->thr_max)
 			s2c_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 

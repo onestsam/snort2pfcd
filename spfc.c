@@ -108,21 +108,6 @@ void
 	pthread_exit(NULL);
 }
 
-int
-s2c_pf_block_log_check(int thr_max)
-{
-	int threadcheck = 0;
-
-	pthread_mutex_lock(&thr_mutex);
-	s2c_threads++;
-	threadcheck = s2c_threads;
-	pthread_mutex_unlock(&thr_mutex);
-
-	if (threadcheck < thr_max) return(1);
-
-	return(0);
-}
-
 void
 s2c_pf_block(int dev, char *tablename, char *ip) 
 { 
