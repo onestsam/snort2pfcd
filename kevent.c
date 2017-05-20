@@ -68,6 +68,7 @@ void
 		}
 	}
 
+	close(kq);
 	close(fd);
 	pthread_exit(NULL);
 }
@@ -134,6 +135,17 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
 
+	if (loopdata->t > 0) age = loopdata->t;
+
+	kq = s2c_kqueue_open();
+	memset(&change, 0x00, sizeof(struct kevent));
+	EV_SET(&change, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+
+	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
+		s2c_exit_fail();
+	}
+
 	while (1) {
 
 		s2c_check_file(loopdata->bfile);
@@ -147,19 +159,9 @@ s2c_kevent_loop(loopdata_t *loopdata)
 		if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
-		if (loopdata->t > 0) age = loopdata->t;
 		this_time = time(NULL);
 		last_time = this_time;
 		pf_reset_check = 0;
-
-		kq = s2c_kqueue_open();
-		memset(&change, 0x00, sizeof(struct kevent));
-		EV_SET(&change, loopdata->fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-
-		if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
-			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_ERROR, LANG_EXIT);
-			s2c_exit_fail();
-		}
 
 		while (!pf_reset_check) {
 
@@ -214,9 +216,9 @@ s2c_kevent_loop(loopdata_t *loopdata)
 
 		s2c_parse_and_block_wl_clear(&wbhead->whead);
 		s2c_parse_and_block_bl_clear(&wbhead->bhead);
-
 	}
 
+	close(kq);
 	free(wbhead); 
 	free(lineproc);
 	return;
