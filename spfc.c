@@ -238,7 +238,7 @@ s2c_pf_ruleadd(int dev, char *tablename)
 void
 s2c_pf_tbladd(int dev, char *tablename)
 {
-	int i = 0;
+	int i = 0, f = 0;
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
@@ -252,7 +252,9 @@ s2c_pf_tbladd(int dev, char *tablename)
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
 	for ( i = 0; i < pftbl->io.pfrio_size; i++)
-		if (strcmp((&pftbl->table)[i].pfrt_name, tablename) != 0) {
+		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) f = 1;
+
+		if(!f) {
 			s2c_pftbl_set(tablename, pftbl);
 			pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
