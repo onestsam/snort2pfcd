@@ -252,7 +252,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
 	for ( i = 0; i < pftbl->io.pfrio_size; i++)
-		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) {
+		if (strcmp((&pftbl->table)[i].pfrt_name, tablename) != 0) {
 			s2c_pftbl_set(tablename, pftbl);
 			pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
@@ -262,7 +262,6 @@ s2c_pf_tbladd(int dev, char *tablename)
 				sleep(3);
 			}
 			pthread_mutex_unlock(&pf_mutex);
-			break;
 		}
 
 	free(pftbl);

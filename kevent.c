@@ -134,7 +134,6 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	
 	if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 	if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-
 	if (loopdata->t > 0) age = loopdata->t;
 
 	kq = s2c_kqueue_open();
@@ -159,8 +158,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 		if (!loopdata->B) s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
-		this_time = time(NULL);
-		last_time = this_time;
+		this_time = last_time = time(NULL);
 		pf_reset_check = 0;
 
 		while (!pf_reset_check) {
