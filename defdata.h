@@ -93,6 +93,7 @@
 #define LANG_STATE_CHANGE "state change detected in"
 #define LANG_INTDB "!! internal database error !!"
 #define LANG_CON_EST "connection with pf established"
+#define LANG_TBLADD "tables added"
 #define LANG_IOCTL_WAIT "attempting to re-establish connection with pf"
 #define LANG_IOCTL_ERROR "unable to connect to pf"
 #define LANG_IFADDR_ERROR "ifaddr error"

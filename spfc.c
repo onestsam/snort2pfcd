@@ -102,11 +102,6 @@ void
 			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
 			pthread_mutex_unlock(&pf_mutex);
 		} else {
-			close(local_dev);
-			if ((local_dev = open(nmpfdev, O_RDWR)) == -1) {
-				syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
-				s2c_exit_fail();
-			}
 		}
 
 		free(del_addrs_list);
@@ -278,6 +273,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 			sleep(3);
 		}
 	pthread_mutex_unlock(&pf_mutex);
+	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_TBLADD);
 
 	free(pftbl);
 	return;

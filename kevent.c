@@ -133,12 +133,6 @@ void
 		}
 
 		if (fr) {
-			close(loopdata->dev);
-			if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-				syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
-				s2c_exit_fail();
-			}
-
 			s2c_kevent_wlf_load(loopdata, lineproc, wbhead);
 			s2c_kevent_blf_load(loopdata, lineproc, wbhead);
 			s2c_parse_and_block_bl_clear(&wbhead->bhead);
@@ -228,13 +222,9 @@ s2c_kevent_loop(loopdata_t *loopdata)
 		pf_reset = 0;
 		pthread_mutex_unlock(&pf_mutex);
 
-		if (pf_reset_check) {
-			close(loopdata->dev);
-			if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-				syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
-				s2c_exit_fail();
-			}
-
+		if(pf_reset_check) {
+			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
+			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 		}
 
 	sleep(5);
