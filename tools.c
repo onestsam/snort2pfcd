@@ -78,11 +78,10 @@ s2c_init(loopdata_t *loopdata)
 {
 	wfile_monitor = 0;
 	bfile_monitor = 0;
+	afile_monitor = 0;
 	pf_reset = 0;
 	v = 0;
 
-	if (v) fprintf(stdout, "%s version %s\n", __progname, VERSION);
-	
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
 		exit(EXIT_FAILURE);
@@ -90,7 +89,6 @@ s2c_init(loopdata_t *loopdata)
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
-	loopdata->priority = 1;
 	loopdata->thr_max = THRMAX;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 
