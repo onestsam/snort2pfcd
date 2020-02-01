@@ -142,6 +142,7 @@ typedef struct _thread_expt_t {
 	int dev;
 	unsigned long t;
 	char logfile[NMBUFSIZ];
+	char nmpfdev[NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
@@ -189,6 +190,7 @@ typedef struct _loopdata_t {
 	char bfile[NMBUFSIZ];
 	char extif[IFNAMSIZ];
 	char logfile[NMBUFSIZ];
+	char nmpfdev[NMBUFSIZ];
 	char alertfile[NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } loopdata_t;
@@ -224,7 +226,7 @@ void s2c_init(loopdata_t *);
 void s2c_thr_init(loopdata_t *);
 void s2c_pf_ioctl(int, unsigned long, void *);
 void s2c_spawn_file_monitor(int *, int, int, loopdata_t *);
-void s2c_spawn_expiretable(int, int, char *);
+void s2c_spawn_expiretable(loopdata_t *);
 void s2c_spawn_block_log(int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutex_init();

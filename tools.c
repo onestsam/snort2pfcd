@@ -147,7 +147,7 @@ s2c_log_init(char *logfile)
 	memset(initmess, 0x00, BUFSIZ);
 	timebuf = time(NULL);
 
-	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
+	sprintf(initmess, "\n<=== %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
 	s2c_write_file(logfile, initmess);
 
 	free(initmess);
@@ -180,7 +180,7 @@ s2c_mutex_init()
 void
 s2c_thr_init(loopdata_t *loopdata){
 
-	s2c_spawn_expiretable(loopdata->dev, loopdata->t, loopdata->logfile);
+	s2c_spawn_expiretable(loopdata);
 	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
 	s2c_spawn_file_monitor(&bfile_monitor, 0, ID_BF, loopdata);
 	s2c_spawn_file_monitor(&afile_monitor, 1, ID_AF, loopdata);
@@ -206,16 +206,17 @@ s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopda
 }
 
 void
-s2c_spawn_expiretable(int dev, int t, char *logfile)
+s2c_spawn_expiretable(loopdata_t *loopdata)
 {
 	thread_expt_t *expt_data = NULL;
 
 	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
 	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
-	expt_data->t = t;
-	expt_data->dev = dev;
-	strlcpy(expt_data->logfile, logfile, NMBUFSIZ);
+	expt_data->t = loopdata->t;
+	expt_data->dev = loopdata->dev;
+	strlcpy(expt_data->logfile, loopdata->logfile, NMBUFSIZ);
+	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, NMBUFSIZ);
 	strlcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 

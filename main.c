@@ -40,15 +40,9 @@ main(int argc, char **argv)
 	extern int optind;
 	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	unsigned long t = 0;
-	char *alertfile = NULL, *nmpfdev = NULL;
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
-	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
-	
-	memset(alertfile, 0x00, NMBUFSIZ);
-	memset(nmpfdev, 0x00, NMBUFSIZ);
 	
 	s2c_init(loopdata);
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
@@ -60,8 +54,8 @@ main(int argc, char **argv)
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
-			case 'd': strlcpy(nmpfdev, optarg, NMBUFSIZ); d = 1; break;
-			case 'a': strlcpy(alertfile, optarg, NMBUFSIZ); a = 1; break;
+			case 'd': strlcpy(loopdata->nmpfdev, optarg, NMBUFSIZ); d = 1; break;
+			case 'a': strlcpy(loopdata->alertfile, optarg, NMBUFSIZ); a = 1; break;
 			case 'w': strlcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
 			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
@@ -87,7 +81,7 @@ main(int argc, char **argv)
 	if (!w) strlcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
 	if (!b) strlcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
 	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
-	if (!d) strlcpy(nmpfdev, PFDEVICE, NMBUFSIZ);
+	if (!d) strlcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);
 	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);
 	if (!l) {
 		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
@@ -98,11 +92,10 @@ main(int argc, char **argv)
 	if(!F) s2c_daemonize();
 	if (q) sleep(q);
 
-        if ((loopdata->dev = open(nmpfdev, O_RDWR)) == -1) {
-                syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
+        if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
+                syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
                 s2c_exit_fail();
         }
-	free(nmpfdev);
 
 	s2c_log_init(loopdata->logfile);
 	s2c_thr_init(loopdata);

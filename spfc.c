@@ -45,11 +45,13 @@ void
 	long min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 	char *tablename = NULL;
+	char *nmpfdev = NULL;
 	pfbl_log_t *pfbl_log = NULL;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
 	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2c_malloc_err();
 	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2c_malloc_err();
+	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) s2c_malloc_err();
 	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) s2c_malloc_err();
 
@@ -57,6 +59,7 @@ void
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
 	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
+	strlcpy(nmpfdev, data->nmpfdev, NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	local_dev = data->dev;
 	free(data);
@@ -98,13 +101,19 @@ void
 			pthread_mutex_lock(&pf_mutex);
 			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
 			pthread_mutex_unlock(&pf_mutex);
+		} else {
+			close(local_dev);
+			if ((local_dev = open(nmpfdev, O_RDWR)) == -1) {
+				syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
+				s2c_exit_fail();
+			}
 		}
 
 		free(del_addrs_list);
 		sleep(age + 1);
 	}
 
-	free(pfbl_log); free(tablename); free(target); free(astats);
+	free(pfbl_log); free(tablename); free(nmpfdev); free(target); free(astats);
 	pthread_exit(NULL);
 }
 
