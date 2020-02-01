@@ -53,7 +53,7 @@ void
 	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) s2c_malloc_err();
 	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) s2c_malloc_err();
 
-	bzero(tablename, PF_TABLE_NAME_SIZE);
+	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
 	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
@@ -154,9 +154,9 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
 
 	memset(&pfbl_log->sa, 0x00, sizeof(pfbl_log->sa));
-	bzero(pfbl_log->message, BUFSIZ);
-	bzero(pfbl_log->local_logip, BUFSIZ);
-	bzero(pfbl_log->hbuf, NI_MAXHOST);
+	memset(pfbl_log->message, 0x00, BUFSIZ);
+	memset(pfbl_log->local_logip, 0x00, BUFSIZ);
+	memset(pfbl_log->hbuf, 0x00, NI_MAXHOST);
 
 	return;
 }
@@ -236,35 +236,39 @@ s2c_pf_ruleadd(int dev, char *tablename)
 }
 
 void
+s2c_pf_tbl_ping(int dev, char *tablename, pftbl_t *pftbl)
+{
+
+	memset(pftbl, 0x00, sizeof(pftbl_t));
+	s2c_pftbl_set(tablename, pftbl);
+	pftbl->io.pfrio_size = 0;
+	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
+	return;
+
+}
+
+void
 s2c_pf_tbladd(int dev, char *tablename)
 {
-	int i = 0, f = 0;
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
 
-	s2c_pftbl_set(tablename, pftbl);
-	pftbl->io.pfrio_size = 0;
-	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
+	s2c_pf_tbl_ping(dev, tablename, pftbl);
 	
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
-	for ( i = 0; i < pftbl->io.pfrio_size; i++)
-		if (!strcmp((&pftbl->table)[i].pfrt_name, tablename)) f = 1;
+	s2c_pftbl_set(tablename, pftbl);
+	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
-		if(!f) {
-			s2c_pftbl_set(tablename, pftbl);
-			pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
-
-			pthread_mutex_lock(&pf_mutex);
-			while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
-				if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
-				sleep(3);
-			}
-			pthread_mutex_unlock(&pf_mutex);
+	pthread_mutex_lock(&pf_mutex);
+	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
+		if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
+			sleep(3);
 		}
+	pthread_mutex_unlock(&pf_mutex);
 
 	free(pftbl);
 	return;

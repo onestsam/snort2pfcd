@@ -112,7 +112,7 @@ s2c_daemonize()
 
 	if ((pidfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	memset(&otherpid, 0x00, sizeof(pid_t));
-	bzero(pidfile, NMBUFSIZ);
+	memset(pidfile, 0x00, NMBUFSIZ);
 
 	memcpy(pidfile, PATH_RUN, NMBUFSIZ);
 	strlcat(pidfile,  __progname, NMBUFSIZ);
@@ -144,7 +144,7 @@ s2c_log_init(char *logfile)
 	s2c_check_file(logfile);
 	if ((initmess = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
 
-	bzero(initmess, BUFSIZ);
+	memset(initmess, 0x00, BUFSIZ);
 	timebuf = time(NULL);
 
 	sprintf(initmess, "\n<======= %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
@@ -164,30 +164,15 @@ s2c_mutex_init()
 	memset(&pf_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&fm_mutex, 0x00, sizeof(pthread_mutex_t));
 
-	if (pthread_mutex_init(&log_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	if (pthread_mutex_init(&log_mutex, NULL) == 0)
+	if (pthread_mutex_init(&dns_mutex, NULL) == 0)
+	if (pthread_mutex_init(&thr_mutex, NULL) == 0)
+	if (pthread_mutex_init(&pf_mutex, NULL) == 0)
+	if (pthread_mutex_init(&fm_mutex, NULL) == 0)
+		return;
 
-	if (pthread_mutex_init(&dns_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
-	if (pthread_mutex_init(&thr_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
-	if (pthread_mutex_init(&pf_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
-
-	if (pthread_mutex_init(&fm_mutex, NULL) != 0) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
-		s2c_exit_fail();
-	}
+	syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+	s2c_exit_fail();
 
 	return;
 }
@@ -196,14 +181,15 @@ void
 s2c_thr_init(loopdata_t *loopdata){
 
 	s2c_spawn_expiretable(loopdata->dev, loopdata->t, loopdata->logfile);
-	s2c_spawn_file_monitor(&wfile_monitor, loopdata->wfile);
-	s2c_spawn_file_monitor(&bfile_monitor, loopdata->bfile);
+	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
+	s2c_spawn_file_monitor(&bfile_monitor, 0, ID_BF, loopdata);
+	s2c_spawn_file_monitor(&afile_monitor, 1, ID_AF, loopdata);
 
 	return;
 }
 
 void
-s2c_spawn_file_monitor(int *notifaddr, char *filename)
+s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata)
 {
 	thread_fm_t *fm_data = NULL;
 
@@ -211,7 +197,9 @@ s2c_spawn_file_monitor(int *notifaddr, char *filename)
 	memset(fm_data, 0x00, sizeof(thread_fm_t));
 
 	fm_data->file_monitor = notifaddr;
-	strlcpy(fm_data->file, filename, NMBUFSIZ);
+	fm_data->fileread = fileread;
+	fm_data->fid = fid;
+	memcpy(&fm_data->loopdata, loopdata, sizeof(loopdata_t));
 	s2c_spawn_thread(s2c_kevent_file_monitor, fm_data);
 
 	return;

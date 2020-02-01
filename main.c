@@ -38,7 +38,7 @@ main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
-	int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
+	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	unsigned long t = 0;
 	char *alertfile = NULL, *nmpfdev = NULL;
 	loopdata_t *loopdata = NULL;
@@ -47,8 +47,8 @@ main(int argc, char **argv)
 	if ((alertfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	if ((nmpfdev = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	
-	bzero(alertfile, NMBUFSIZ);
-	bzero(nmpfdev, NMBUFSIZ);
+	memset(alertfile, 0x00, NMBUFSIZ);
+	memset(nmpfdev, 0x00, NMBUFSIZ);
 	
 	s2c_init(loopdata);
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
@@ -86,7 +86,7 @@ main(int argc, char **argv)
 
 	if (!w) strlcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
 	if (!b) strlcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
-	if (!a) strlcpy(alertfile, PATH_ALERT, NMBUFSIZ);
+	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
 	if (!d) strlcpy(nmpfdev, PFDEVICE, NMBUFSIZ);
 	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);
 	if (!l) {
@@ -98,14 +98,17 @@ main(int argc, char **argv)
 	if(!F) s2c_daemonize();
 	if (q) sleep(q);
 
-	loopdata->dev = s2c_pf_open(nmpfdev);
-	loopdata->fd = s2c_kevent_open(alertfile);
+        if ((loopdata->dev = open(nmpfdev, O_RDWR)) == -1) {
+                syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, nmpfdev, LANG_EXIT);
+                s2c_exit_fail();
+        }
+	free(nmpfdev);
 
 	s2c_log_init(loopdata->logfile);
 	s2c_thr_init(loopdata);
 	s2c_kevent_loop(loopdata);
 
-	close(loopdata->dev); close(loopdata->fd);
+	close(loopdata->dev);
 	free(loopdata);
 	closelog();
 	return(0);

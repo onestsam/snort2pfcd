@@ -57,9 +57,14 @@
 /* Params */
 #define THRMAX		100
 #define NMBUFSIZ	128
+#define REGARSIZ	10
 #define EXPTIME		60*60
+#define ID_WF		0
+#define ID_BF		1
+#define ID_AF		2
 #define PFDEVICE "/dev/pf"
 #define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
+/* REG_ADDR from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses */
 
 /* Paths */
 #define PATH_LOG "/var/log/"
@@ -78,6 +83,8 @@
 #define LANG_MAN "see man"
 #define LANG_ARG "argument for"
 #define LANG_NUM "must be a number"
+#define LANG_PF "packet filter"
+#define LANG_BLK "Blocked "
 #define LANG_BENT "blacklist entry"
 #define LANG_WL "is whitelisted"
 #define LANG_DETAILS "for more details"
@@ -144,22 +151,18 @@ typedef struct _thread_log_t {
 	char logfile[NMBUFSIZ];
 } thread_log_t;
 
-typedef struct _thread_fm_t {
-	int *file_monitor;
-	char file[NMBUFSIZ];
-} thread_fm_t;
-
 typedef struct _wbhead_t {
 	struct wlist_head whead;
 	struct blist_head bhead;
 } wbhead_t;
 
 typedef struct _lineproc_t {
+	regex_t expr;
+	regmatch_t resultado[REGARSIZ];
 	char prio[BUFSIZ];
 	char cad[BUFSIZ];
-	char ret[BUFSIZ];
-	regex_t expr;
-	regmatch_t resultado;
+	char ret[REGARSIZ][BUFSIZ];
+	char lastret[BUFSIZ];
 } lineproc_t;
 
 typedef struct _pfbl_log_t {
@@ -176,6 +179,7 @@ typedef struct _loopdata_t {
 	int D;
 	int Z;
 	int fd;
+	int kq;
 	int dev;
 	unsigned long t;
 	int priority;
@@ -185,14 +189,23 @@ typedef struct _loopdata_t {
 	char bfile[NMBUFSIZ];
 	char extif[IFNAMSIZ];
 	char logfile[NMBUFSIZ];
+	char alertfile[NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } loopdata_t;
+
+typedef struct _thread_fm_t {
+	int fid;
+        int fileread;
+        int *file_monitor;
+        loopdata_t loopdata;
+} thread_fm_t;
 
 /* Global vars */
 extern char *__progname;
 int v;
 int s2c_threads;
 int pf_reset;
+int afile_monitor;
 int wfile_monitor;
 int bfile_monitor;
 pthread_mutex_t log_mutex;
@@ -210,7 +223,7 @@ void s2c_malloc_err();
 void s2c_init(loopdata_t *);
 void s2c_thr_init(loopdata_t *);
 void s2c_pf_ioctl(int, unsigned long, void *);
-void s2c_spawn_file_monitor(int *, char *);
+void s2c_spawn_file_monitor(int *, int, int, loopdata_t *);
 void s2c_spawn_expiretable(int, int, char *);
 void s2c_spawn_block_log(int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
@@ -225,6 +238,7 @@ long lmin(long ,long);
 int optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
+void s2c_pf_tbl_ping(int, char *, pftbl_t *);
 void s2c_pf_tbladd(int, char *);
 void s2c_pf_tbldel(int, char *);
 void s2c_pf_ruleadd(int, char *);
@@ -233,7 +247,6 @@ void *s2c_file_monitor(void *);
 void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);
 
-int s2c_parse_ip(lineproc_t *);
 int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);
 void s2c_parse_and_block_bl_clear(struct blist_head *);
@@ -248,11 +261,11 @@ void s2c_parse_load_wl_ifaces(struct ipwlist *);
 void s2c_parse_load_wl(int, char *, char *, lineproc_t *, struct wlist_head *);
 int s2c_parse_search_wl(char *, struct wlist_head *);
 
-int s2c_pf_open(char *);
 int s2c_fd_open(char *);
-int s2c_kqueue_open();
-int s2c_kevent_open(char *);
-int s2c_kevent_read(loopdata_t *, wbhead_t *, lineproc_t *lineproc, int);
+int s2c_kevent_read(loopdata_t *, wbhead_t *, lineproc_t *, int);
+void s2c_kevent_open(int *, int *, char *);
+void s2c_kevent_blf_load(loopdata_t *, lineproc_t *, wbhead_t *);
+void s2c_kevent_wlf_load(loopdata_t *, lineproc_t *, wbhead_t *);
 void s2c_kevent_loop(loopdata_t *);
 void *s2c_kevent_file_monitor(void *arg);
 
