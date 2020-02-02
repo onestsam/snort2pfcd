@@ -180,7 +180,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 void
 s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead)
 {
-	unsigned pb_status = 0, threadcheck = 0;
+	unsigned int pb_status = 0, threadcheck = 0;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) return;
