@@ -54,12 +54,12 @@ main(int argc, char **argv)
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
-			case 'd': strlcpy(loopdata->nmpfdev, optarg, NMBUFSIZ); d = 1; break;
-			case 'a': strlcpy(loopdata->alertfile, optarg, NMBUFSIZ); a = 1; break;
-			case 'w': strlcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
-			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
-			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
-			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
+			case 'd': memcpy(loopdata->nmpfdev, optarg, NMBUFSIZ); d = 1; break;
+			case 'a': memcpy(loopdata->alertfile, optarg, NMBUFSIZ); a = 1; break;
+			case 'w': memcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
+			case 'b': memcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
+			case 'e': memcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
+			case 'l': memcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
 			case 't': if ((t = optnum("t", optarg)) == -1) usage(); break;
 			case 'q': if ((q = optnum("q", optarg)) == -1) usage(); break;
 			case 'p':
@@ -78,13 +78,13 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (!w) strlcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
-	if (!b) strlcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
-	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
-	if (!d) strlcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);
-	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);
+	if (!w) memcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
+	if (!b) memcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
+	if (!a) memcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
+	if (!d) memcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);
+	if (!e) memcpy(loopdata->extif, "all", IFNAMSIZ);
 	if (!l) {
-		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
+		memcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
 		strlcat(loopdata->logfile,  __progname, NMBUFSIZ);
 		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
 	}

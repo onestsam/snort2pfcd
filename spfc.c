@@ -56,9 +56,9 @@ void
 
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
-	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
-	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
-	strlcpy(nmpfdev, data->nmpfdev, NMBUFSIZ);
+	memcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
+	memcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
+	memcpy(nmpfdev, data->nmpfdev, NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	local_dev = data->dev;
 	free(data);
@@ -157,7 +157,7 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 	
 	pfbl_log->sa.sa_family = AF_INET;
 	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->local_logip, sizeof(struct sockaddr_in)))
-		strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+		memcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
 
 	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_UNBLOCKED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
@@ -194,13 +194,13 @@ void
 			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
 			if (gni_error != 0)
-				strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+				memcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 			pthread_mutex_unlock(&dns_mutex);
 
 		} else
-			strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+			memcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
 	} else
-		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
+		memcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);

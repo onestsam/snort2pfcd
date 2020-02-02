@@ -91,7 +91,7 @@ s2c_init(loopdata_t *loopdata)
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
 	loopdata->thr_max = THRMAX;
-	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
+	memcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 
 	s2c_mutex_init();
 
@@ -216,9 +216,9 @@ s2c_spawn_expiretable(loopdata_t *loopdata)
 
 	expt_data->t = loopdata->t;
 	expt_data->dev = loopdata->dev;
-	strlcpy(expt_data->logfile, loopdata->logfile, NMBUFSIZ);
-	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, NMBUFSIZ);
-	strlcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
+	memcpy(expt_data->logfile, loopdata->logfile, NMBUFSIZ);
+	memcpy(expt_data->nmpfdev, loopdata->nmpfdev, NMBUFSIZ);
+	memcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	return;
@@ -234,8 +234,8 @@ s2c_spawn_block_log(int D, char *logip, char *logfile)
 	memset(log_data, 0x00, sizeof(thread_log_t));
 
 	log_data->D = D;
-	strlcpy(log_data->logfile, logfile, NMBUFSIZ);
-	strlcpy(log_data->logip, logip, BUFSIZ);
+	memcpy(log_data->logfile, logfile, NMBUFSIZ);
+	memcpy(log_data->logip, logip, BUFSIZ);
 	s2c_spawn_thread(s2c_pf_block_log, log_data);
 
 	return;
