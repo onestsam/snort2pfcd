@@ -56,9 +56,9 @@ void
 
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
-	memcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
-	memcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
-	memcpy(nmpfdev, data->nmpfdev, NMBUFSIZ);
+	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
+	strlcpy(nmpfdev, data->nmpfdev, NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	local_dev = data->dev;
 	free(data);
@@ -66,7 +66,7 @@ void
 	while (1) {
 		memset(target, 0x00, sizeof(struct pfr_table));
 		memset(astats, 0x00, sizeof(struct pfr_astats));
-		memcpy(target->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		strlcpy(target->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 		oldest_entry = time(NULL);
 		min_timestamp = oldest_entry - age;
 
@@ -130,7 +130,7 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2c_malloc_err();
 	memset(pfbl, 0x00, sizeof(pfbl_t));
 	
-	memcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	strlcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pfbl->addr.pfra_ip4addr.s_addr);
 
 	pfbl->addr.pfra_af  = AF_INET;
@@ -157,7 +157,7 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 	
 	pfbl_log->sa.sa_family = AF_INET;
 	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->local_logip, sizeof(struct sockaddr_in)))
-		memcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+		strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
 
 	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_UNBLOCKED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
@@ -182,8 +182,8 @@ void
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
 	D = data->D;
-	memcpy(pfbl_log->local_logip, data->logip, BUFSIZ);
-	memcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
+	strlcpy(pfbl_log->local_logip, data->logip, BUFSIZ);
+	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
 	free(data);
 
 	timebuf = time(NULL);
@@ -194,13 +194,13 @@ void
 			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
 			if (gni_error != 0)
-				memcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+				strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 			pthread_mutex_unlock(&dns_mutex);
 
 		} else
-			memcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+			strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
 	} else
-		memcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
+		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
@@ -234,7 +234,7 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	pfrla->io_rule.rule.action = PF_DROP;
 	pfrla->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
 	pfrla->io_rule.rule.rule_flag = PFRULE_RETURN;
-	memcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
+	strlcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
 
 	s2c_pf_ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule);
 	s2c_pf_ioctl(dev, DIOCBEGINADDRS, &pfrla->io_paddr);
@@ -319,7 +319,7 @@ void
 s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
 {
 	memset(pftbl, 0x00, sizeof(pftbl_t));
-	memcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 	pftbl->io.pfrio_buffer = &pftbl->table; 
 	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
 	pftbl->io.pfrio_size   = 1; 
@@ -331,7 +331,7 @@ void
 s2c_ipb_set(char *ret, struct ipblist *ipb)
 {
 	memset(ipb, 0x00, sizeof(struct ipblist));
-	memcpy(ipb->baddr, ret, BUFSIZ);
+	strlcpy(ipb->baddr, ret, BUFSIZ);
 	ipb->t = time(NULL);
 	ipb->repeat_offenses = 0;
 

@@ -52,9 +52,9 @@ void
 
 	if ((local_fn = (char *)malloc(NMBUFSIZ * sizeof(char))) == NULL) s2c_malloc_err();
 
-	if (fid == ID_AF) memcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
-	if (fid == ID_BF) memcpy(local_fn, loopdata->bfile, NMBUFSIZ);
-	if (fid == ID_WF) memcpy(local_fn, loopdata->wfile, NMBUFSIZ);
+	if (fid == ID_AF) strlcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
+	if (fid == ID_BF) strlcpy(local_fn, loopdata->bfile, NMBUFSIZ);
+	if (fid == ID_WF) strlcpy(local_fn, loopdata->wfile, NMBUFSIZ);
 
 	s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MON, local_fn);

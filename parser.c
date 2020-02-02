@@ -101,7 +101,7 @@ s2c_parse_and_block_bl_static_clear(int dev, char *tablename)
 	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
 	s2c_pf_tbldel(dev, tablename);
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	memcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
 
 	return;
 }
@@ -169,7 +169,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 				memcpy(lineproc->ret[i], lineproc->cad + lineproc->resultado[i + 1].rm_so, len);
 				lineproc->ret[i][len]='\0';
 			} else {
-				memcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
+				strlcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
 				return(1);
 			}
 		}
@@ -301,7 +301,7 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *b
 	fclose(blfile);
 
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	memcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
 
 	return;
 }
@@ -328,7 +328,7 @@ s2c_parse_load_wl(int Z, char *extif, char *wfile, lineproc_t *lineproc, struct 
 		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		ifr->ifr_addr.sa_family = AF_INET;
-		memcpy(ifr->ifr_name, extif, IFNAMSIZ);
+		strlcpy(ifr->ifr_name, extif, IFNAMSIZ);
 
 		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
