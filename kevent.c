@@ -79,6 +79,9 @@ void
 			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
+			s2c_kevent_wlf_load(loopdata, lineproc, wbhead);
+			s2c_kevent_blf_load(loopdata, lineproc, wbhead);
+
 			this_time = last_time = time(NULL);
 			pf_reset_check = 0;
 		}
@@ -138,11 +141,8 @@ void
 			}
 		}
 
-		if (fr) {
-			s2c_kevent_wlf_load(loopdata, lineproc, wbhead);
-			s2c_kevent_blf_load(loopdata, lineproc, wbhead);
+		if (fr)
 			s2c_parse_and_block_bl_clear(&wbhead->bhead);
-		}
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
 	}
 
@@ -222,7 +222,6 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
 	while (1) {
-
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
 		if (pf_tbl_state_current < pf_tbl_state_init) {
