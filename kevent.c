@@ -184,7 +184,7 @@ s2c_kevent_open(int *kq, int *fd, char *file)
 	}
 
 	memset(&change, 0x00, sizeof(struct kevent));
-	EV_SET(&change, *fd, EVFILT_VNODE | EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXTEND | NOTE_WRITE, 0, 0);
+	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
 	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
@@ -229,8 +229,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 			pthread_mutex_lock(&pf_mutex);
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
-			s2c_write_file(loopdata->alertfile, " ");
-			syslog(LOG_ERR | LOG_DAEMON, "%s", "pf reload detected.");
+			s2c_write_file(loopdata->alertfile, "");
 		} 
 		pf_tbl_state_init = pf_tbl_state_current;
 
