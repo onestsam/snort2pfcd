@@ -153,6 +153,7 @@ void
 	free(local_fn);
 	close(loopdata->kq);
 	close(loopdata->fd);
+
 	pthread_exit(NULL);
 }
 
@@ -199,6 +200,7 @@ s2c_kevent_wlf_load(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 	s2c_check_file(loopdata->wfile);
 	s2c_parse_and_block_wl_clear(&wbhead->whead);
 	s2c_parse_load_wl(loopdata->Z, loopdata->extif, loopdata->wfile, lineproc, &wbhead->whead);
+
 	return;
 }
 
@@ -208,6 +210,7 @@ s2c_kevent_blf_load(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 	s2c_check_file(loopdata->bfile);
 	s2c_parse_and_block_bl_static_clear(loopdata->dev, loopdata->tablename);
 	s2c_parse_load_bl_static(loopdata->dev, lineproc, loopdata->tablename, loopdata->bfile, &wbhead->whead);
+
 	return;
 }
 
@@ -221,6 +224,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
 	while (1) {
+		sleep(5);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
 		if (pf_tbl_state_current < pf_tbl_state_init) {
@@ -230,11 +234,10 @@ s2c_kevent_loop(loopdata_t *loopdata)
 			s2c_write_file(loopdata->alertfile, "");
 		} 
 		pf_tbl_state_init = pf_tbl_state_current;
-
-	sleep(5);
 	}
 
 	free(pftbl);
+
 	return;
 }
 
