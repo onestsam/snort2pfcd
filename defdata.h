@@ -63,7 +63,7 @@
 #define ID_BF		1
 #define ID_AF		2
 #define PFDEVICE "/dev/pf"
-#define REG_ADDR "(.*)"
+#define REG_ADDR "([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})|(([a-f0-9:]+:+)+[a-f0-9]+)"
 /* REG_ADDR from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses */
 
 /* Paths */

@@ -219,8 +219,6 @@ s2c_parse_load_wl_file(lineproc_t *lineproc, char *wfile, struct ipwlist *ipw1)
 	struct ipwlist *ipw2 = NULL;
 	FILE *file = NULL;
 	
-	memset(lineproc, 0x00, sizeof(lineproc_t));
-
 	if ((file = fopen(wfile, "r")) == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, wfile, LANG_WARN);
 		return;
@@ -287,7 +285,6 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *b
 	}
 
 	flockfile(blfile);
-	memset(lineproc, 0x00, sizeof(lineproc_t));
 	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
 	s2c_pf_ruleadd(dev, tablename);
 
