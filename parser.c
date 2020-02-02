@@ -157,16 +157,16 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 int
 s2c_parse_ip(lineproc_t *lineproc)
 {
-	unsigned int i = 0, len = 0;
+	int i = 0, len = 0;
+	regmatch_t resultado[REGARSIZ];
 
-	memset((regmatch_t*)lineproc->resultado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	memset((regmatch_t*)resultado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 
-	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, lineproc->resultado, 0) == 0) {
+	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, resultado, 0) == 0) {
 		for (i = 0; i < REGARSIZ; i++){
-			len = lineproc->resultado[i + 1].rm_eo - lineproc->resultado[i + 1].rm_so;
-
+			len = resultado[i].rm_eo - resultado[i].rm_so;
 			if(len){
-				memcpy(lineproc->ret[i], lineproc->cad + lineproc->resultado[i + 1].rm_so, len);
+				memcpy(lineproc->ret[i], (lineproc->cad + resultado[i].rm_so), len);
 				lineproc->ret[i][len]='\0';
 			} else {
 				strlcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
@@ -174,6 +174,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 			}
 		}
 	}
+
 	return(0);
 }
 
@@ -183,7 +184,10 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 	int pb_status = 0, threadcheck = 0;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
-	if (!s2c_parse_ip(lineproc)) return;
+	if (!s2c_parse_ip(lineproc)) {
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_NO_REG);
+		return;
+	}
 
 	if (!LIST_EMPTY(&wbhead->whead))
 		if (s2c_parse_search_wl(lineproc->lastret, &wbhead->whead)) return;

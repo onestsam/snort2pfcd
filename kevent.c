@@ -63,18 +63,17 @@ void
 		if (loopdata->t > 0) age = loopdata->t;
 		if ((wbhead = (wbhead_t *)malloc(sizeof(wbhead_t))) == NULL) s2c_malloc_err();
 		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-
-		memset((regex_t*)&lineproc->expr, 0x00, sizeof(regex_t));
-		if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) != 0) {
-			syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
-			s2c_exit_fail();
-		}
 	}
 
 	while (1) {
 		if (fr) {
 			memset(wbhead, 0x00, sizeof(wbhead_t));
 			memset(lineproc, 0x00, sizeof(lineproc_t));
+
+			if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) != 0) {
+				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
+				s2c_exit_fail();
+			}
 
 			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
@@ -247,12 +246,14 @@ s2c_kevent_read(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, in
 	do  {
 		for (i = 0; i < BUFSIZ; i++) {
 			if((r = read(loopdata->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
-			if (lineproc->cad[i] == '\n') break;
+			if (lineproc->cad[i] == '\n') {
+				lineproc->cad[i] = '\0';
+				break;
+			}
 		}
 
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", "read", lineproc->cad);
 		s2c_parse_and_block(loopdata, lineproc, wbhead);
-		syslog(LOG_ERR | LOG_DAEMON, "%s", lineproc->lastret);
-		memset(lineproc, 0x00, sizeof(lineproc_t));
 		total += i;
 
 	} while (i > 0 && total < nbytes);

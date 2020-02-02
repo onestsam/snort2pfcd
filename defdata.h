@@ -63,7 +63,7 @@
 #define ID_BF		1
 #define ID_AF		2
 #define PFDEVICE "/dev/pf"
-#define REG_ADDR "(((2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)\\.){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9][0-9]?)(/(3[012]|[12]?[0-9]))?)"
+#define REG_ADDR "(.*)"
 /* REG_ADDR from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses */
 
 /* Paths */
@@ -89,6 +89,7 @@
 #define LANG_BENT "blacklist entry"
 #define LANG_WL "is whitelisted"
 #define LANG_DETAILS "for more details"
+#define LANG_NO_REG "no regex match found"
 #define LANG_NO_DAEMON "cannot daemonize"
 #define LANG_MALLOC_ERROR "malloc error"
 #define LANG_STATE_CHANGE "state change detected in"
@@ -161,7 +162,6 @@ typedef struct _wbhead_t {
 
 typedef struct _lineproc_t {
 	regex_t expr;
-	regmatch_t resultado[REGARSIZ];
 	char prio[BUFSIZ];
 	char cad[BUFSIZ];
 	char ret[REGARSIZ][BUFSIZ];
