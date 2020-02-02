@@ -32,7 +32,6 @@
 
 #include "defdata.h"
 
-
 int
 main(int argc, char **argv)
 {
@@ -45,6 +44,7 @@ main(int argc, char **argv)
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
 	
 	s2c_init(loopdata);
+
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
 

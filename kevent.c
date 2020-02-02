@@ -249,6 +249,7 @@ s2c_kevent_read(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, in
 			if((r = read(loopdata->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
 			if (lineproc->cad[i] == '\n') break;
 		}
+
 		s2c_parse_and_block(loopdata, lineproc, wbhead);
 		syslog(LOG_ERR | LOG_DAEMON, "%s", lineproc->lastret);
 		memset(lineproc, 0x00, sizeof(lineproc_t));

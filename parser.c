@@ -32,7 +32,6 @@
 
 #include "defdata.h"
 
-
 int
 s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 {
@@ -40,6 +39,7 @@ s2c_parse_and_block_bl(char *ret, struct blist_head *blist)
 
 	if (blist->lh_first == NULL){
 		if ((ipb = (struct ipblist*)malloc(sizeof(struct ipblist))) == NULL) s2c_malloc_err();
+
 		s2c_ipb_set(ret, ipb);
 		LIST_INIT(blist);
 		LIST_INSERT_HEAD(blist, ipb, elem);
@@ -102,6 +102,7 @@ s2c_parse_and_block_bl_static_clear(int dev, char *tablename)
 	s2c_pf_tbldel(dev, tablename);
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
 	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+
 	return;
 }
 
@@ -133,8 +134,8 @@ s2c_parse_line(char *buf, FILE* wfile)
 	} while (!feof(wfile) && !isspace(next_ch));
 
 	if (i >= BUFSIZ) return (-1);
-
 	buf[i] = '\0';
+
 	return(1);
 }
 
@@ -163,6 +164,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, lineproc->resultado, 0) == 0) {
 		for (i = 0; i < REGARSIZ; i++){
 			len = lineproc->resultado[i + 1].rm_eo - lineproc->resultado[i + 1].rm_so;
+
 			if(len){
 				memcpy(lineproc->ret[i], lineproc->cad + lineproc->resultado[i + 1].rm_so, len);
 				lineproc->ret[i][len]='\0';
@@ -187,6 +189,7 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 		if (s2c_parse_search_wl(lineproc->lastret, &wbhead->whead)) return;
 
 	if ((pb_status = s2c_parse_and_block_bl(lineproc->lastret, &wbhead->bhead)) == loopdata->repeat_offenses) {
+
 		pthread_mutex_lock(&thr_mutex);
 		s2c_threads++;
 		threadcheck = s2c_threads;
@@ -194,6 +197,7 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 
 		if(threadcheck < loopdata->thr_max)
 			s2c_spawn_block_log(loopdata->D, lineproc->lastret, loopdata->logfile);
+
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->lastret);
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_BLK, lineproc->lastret);
 
@@ -201,6 +205,7 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
 		s2c_exit_fail();
 	}
+
 	return;
 }
 
@@ -233,6 +238,7 @@ s2c_parse_load_wl_file(lineproc_t *lineproc, char *wfile, struct ipwlist *ipw1)
 
 	funlockfile(file);
 	fclose(file);
+
 	return;
 }
 
@@ -262,6 +268,7 @@ s2c_parse_load_wl_ifaces(struct ipwlist *ipw1)
 	}
 
 	freeifaddrs(ifaddr);
+
 	return;
 }
 
@@ -282,6 +289,7 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *b
 
 	while (s2c_parse_line(lineproc->cad, blfile))
 		if (s2c_parse_ip(lineproc)) {
+
 			if (!LIST_EMPTY(whead))
 				if (s2c_parse_search_wl(lineproc->lastret, whead))
 					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->lastret, LANG_WL, LANG_WARN);
@@ -362,5 +370,6 @@ s2c_parse_search_wl(char *ip, struct wlist_head *wl)
 		}
 
 	cidr_free(ipcidr);
+
 	return(f);
 }

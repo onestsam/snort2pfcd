@@ -33,7 +33,6 @@
 #include "defdata.h"
 #include "ioctl_helpers.h"
 
-
 void
 *s2c_pf_expiretable(void *arg)
 {
@@ -108,7 +107,12 @@ void
 		sleep(age + 1);
 	}
 
-	free(pfbl_log); free(tablename); free(nmpfdev); free(target); free(astats);
+	free(pfbl_log);
+	free(tablename);
+	free(nmpfdev);
+	free(target);
+	free(astats);
+
 	pthread_exit(NULL);
 }
 
@@ -140,6 +144,7 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	s2c_pf_ioctl(dev, DIOCRADDADDRS, &pfbl->io);
 		
 	free(pfbl);
+
 	return;
 }
 
@@ -188,11 +193,14 @@ void
 
 			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
-			if (gni_error != 0) strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
+			if (gni_error != 0)
+				strlcpy(pfbl_log->hbuf, gai_strerror(gni_error), NI_MAXHOST);
 			pthread_mutex_unlock(&dns_mutex);
 
-		} else { strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST); }
-	} else { strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST); }
+		} else
+			strlcpy(pfbl_log->hbuf, LANG_LOGTHR_ERROR, NI_MAXHOST);
+	} else
+		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 
 	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
@@ -236,19 +244,18 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	s2c_pf_ioctl(dev, DIOCCHANGERULE, &pfrla->io_rule);
 
 	free(pfrla);
+
 	return;
 }
 
 int
 s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
 {
-
 	s2c_pftbl_set(tablename, pftbl);
 	pftbl->io.pfrio_size = 0;
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
 	return(pftbl->io.pfrio_size);
-
 }
 
 void
@@ -257,6 +264,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
+	memset(pftbl, 0x00, sizeof(pftbl_t));
 
 	s2c_pf_tbl_get(dev, tablename, pftbl);
 
@@ -276,6 +284,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_TBLADD, tablename);
 
 	free(pftbl);
+
 	return;
 }
 
@@ -289,13 +298,13 @@ s2c_pf_tbldel(int dev, char *tablename)
 	s2c_pf_ioctl(dev, DIOCRDELTABLES, &pftbl->io);
 
 	free(pftbl);
+
 	return;
 }
 
 void
 s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
 {
-
 	pthread_mutex_lock(&pf_mutex);
 	if (ioctl(dev, request, pf_io_arg) != 0) {
 		if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);

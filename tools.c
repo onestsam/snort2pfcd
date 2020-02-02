@@ -33,7 +33,6 @@
 #include "defdata.h"
 #include "version.h"
 
-
 void
 s2c_check_file(char *namefile)
 {
@@ -49,6 +48,7 @@ s2c_check_file(char *namefile)
 	}
 
 	free(info);
+
 	return;
 }
 
@@ -70,6 +70,7 @@ s2c_write_file(char *namefile, char *message)
 	fclose(lfile);
 
 	pthread_mutex_unlock(&log_mutex);
+
 	return;
 }
 
@@ -130,6 +131,7 @@ s2c_daemonize()
 
 	pidfile_write(pfh);
 	free(pidfile);
+
 	return;
 }
 
@@ -140,15 +142,16 @@ s2c_log_init(char *logfile)
 	char *initmess = NULL;
 
 	s2c_check_file(logfile);
+
 	if ((initmess = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-
 	memset(initmess, 0x00, BUFSIZ);
-	timebuf = time(NULL);
 
+	timebuf = time(NULL);
 	sprintf(initmess, "\n<=== %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
 	s2c_write_file(logfile, initmess);
 
 	free(initmess);
+
 	return;
 }
 
@@ -176,8 +179,8 @@ s2c_mutex_init()
 }
 
 void
-s2c_thr_init(loopdata_t *loopdata){
-
+s2c_thr_init(loopdata_t *loopdata)
+{
 	s2c_spawn_expiretable(loopdata);
 	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
 	s2c_spawn_file_monitor(&bfile_monitor, 0, ID_BF, loopdata);
@@ -262,6 +265,7 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
 
 	free(yarn);
+
 	return;
 }
 
@@ -270,6 +274,8 @@ s2c_malloc_err()
 {
 	syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 	s2c_exit_fail();
+
+	return;
 }
 
 void
@@ -278,10 +284,13 @@ s2c_exit_fail()
 	s2c_mutex_destroy();
 	closelog();
 	exit(EXIT_FAILURE);
+
+	return;
 }
 
 void
-s2c_mutex_destroy(){
+s2c_mutex_destroy()
+{
 	int s2c_threads_check = 0;
 	
 	pthread_mutex_lock(&thr_mutex);
@@ -295,6 +304,7 @@ s2c_mutex_destroy(){
 		pthread_mutex_destroy(&pf_mutex);
 		pthread_mutex_destroy(&fm_mutex);
 	}
+
 	return;
 }
 
@@ -307,7 +317,7 @@ optnum(char *opt, char *targ)
 	if (!targ || ((l=strtol(targ, &endp, 0)),(endp && *endp)))
 		fprintf(stderr, "%s -%s %s.\n", LANG_ARG, opt, LANG_NUM);
 
-	return (int)l;
+	return((int)l);
 }
 
 void
@@ -316,6 +326,8 @@ usage()
 	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	s2c_exit_fail();
+
+	return;
 }
 
 void
@@ -325,6 +337,8 @@ sighandle()
 	s2c_mutex_destroy();
 	closelog();
 	exit(EXIT_SUCCESS);
+
+	return;
 }
  
 long
