@@ -239,15 +239,15 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	return;
 }
 
-void
-s2c_pf_tbl_ping(int dev, char *tablename, pftbl_t *pftbl)
+int
+s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
 {
 
-	memset(pftbl, 0x00, sizeof(pftbl_t));
 	s2c_pftbl_set(tablename, pftbl);
 	pftbl->io.pfrio_size = 0;
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
-	return;
+
+	return(pftbl->io.pfrio_size);
 
 }
 
@@ -258,12 +258,12 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
 
-	s2c_pf_tbl_ping(dev, tablename, pftbl);
-	
+	s2c_pf_tbl_get(dev, tablename, pftbl);
+
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
-
+	
 	s2c_pftbl_set(tablename, pftbl);
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
@@ -273,7 +273,7 @@ s2c_pf_tbladd(int dev, char *tablename)
 			sleep(3);
 		}
 	pthread_mutex_unlock(&pf_mutex);
-	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_TBLADD);
+	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_TBLADD, tablename);
 
 	free(pftbl);
 	return;

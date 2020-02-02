@@ -79,6 +79,7 @@
 #define LANG_WARN "warning"
 #define LANG_RELOAD "reloading"
 #define LANG_START "started"
+#define LANG_MON "monitoring"
 #define LANG_USE "usage"
 #define LANG_MAN "see man"
 #define LANG_ARG "argument for"
@@ -93,7 +94,7 @@
 #define LANG_STATE_CHANGE "state change detected in"
 #define LANG_INTDB "!! internal database error !!"
 #define LANG_CON_EST "connection with pf established"
-#define LANG_TBLADD "tables added"
+#define LANG_TBLADD "table added"
 #define LANG_IOCTL_WAIT "attempting to re-establish connection with pf"
 #define LANG_IOCTL_ERROR "unable to connect to pf"
 #define LANG_IFADDR_ERROR "ifaddr error"
@@ -241,7 +242,7 @@ long lmin(long ,long);
 int optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
-void s2c_pf_tbl_ping(int, char *, pftbl_t *);
+int s2c_pf_tbl_get(int, char *, pftbl_t *);
 void s2c_pf_tbladd(int, char *);
 void s2c_pf_tbldel(int, char *);
 void s2c_pf_ruleadd(int, char *);

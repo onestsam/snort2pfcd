@@ -36,6 +36,7 @@ void
 *s2c_kevent_file_monitor(void *arg){
 	thread_fm_t *data = (thread_fm_t *)arg;
 	struct kevent trigger;
+	char *local_fn;
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 	loopdata_t *loopdata = NULL;
 	unsigned long age = EXPTIME, last_time = 0, this_time = 0;
@@ -49,9 +50,14 @@ void
 	fm = data->file_monitor;
 	free(data);
 
-	if (fid == ID_AF) s2c_kevent_open(&loopdata->kq, &loopdata->fd, loopdata->alertfile);
-	if (fid == ID_BF) s2c_kevent_open(&loopdata->kq, &loopdata->fd, loopdata->bfile);
-	if (fid == ID_WF) s2c_kevent_open(&loopdata->kq, &loopdata->fd, loopdata->wfile);
+	if ((local_fn = (char *)malloc(NMBUFSIZ * sizeof(char))) == NULL) s2c_malloc_err();
+
+	if (fid == ID_AF) memcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
+	if (fid == ID_BF) memcpy(local_fn, loopdata->bfile, NMBUFSIZ);
+	if (fid == ID_WF) memcpy(local_fn, loopdata->wfile, NMBUFSIZ);
+
+	s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
+	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MON, local_fn);
 
 	if(fr) {
 		if (loopdata->t > 0) age = loopdata->t;
@@ -145,6 +151,7 @@ void
 		free(lineproc);
 	}
 
+	free(local_fn);
 	close(loopdata->kq);
 	close(loopdata->fd);
 	pthread_exit(NULL);
@@ -208,24 +215,24 @@ s2c_kevent_blf_load(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 void
 s2c_kevent_loop(loopdata_t *loopdata)
 {
-	int pf_reset_check = 0;
+	unsigned int pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
+	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
 	while (1) {
 
-		s2c_pf_tbl_ping(loopdata->dev, loopdata->tablename, pftbl);
+		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
-		pthread_mutex_lock(&pf_mutex);
-		pf_reset_check = pf_reset;
-		pf_reset = 0;
-		pthread_mutex_unlock(&pf_mutex);
-
-		if(pf_reset_check) {
-			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
-			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
-		}
+		if (pf_tbl_state_current < pf_tbl_state_init) {
+			pthread_mutex_lock(&pf_mutex);
+			pf_reset = 1;
+			pthread_mutex_unlock(&pf_mutex);
+			s2c_write_file(loopdata->alertfile, " ");
+			syslog(LOG_ERR | LOG_DAEMON, "%s", "pf reload detected.");
+		} 
+		pf_tbl_state_init = pf_tbl_state_current;
 
 	sleep(5);
 	}
