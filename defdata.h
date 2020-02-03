@@ -113,6 +113,7 @@
 #define LANG_ERR_ROOT "error: must be root to run"
 #define LANG_ERR_REGEX "error compiling regex expr"
 #define LANG_KQ_ERROR "kqueue init error"
+#define LANG_KE_READ "kevent read"
 #define LANG_KE_REQ_ERROR "kevent request error"
 #define LANG_KE_READ_ERROR "kevent read error"
 #define LANG_KE_ERROR "unable to set kevent structure"

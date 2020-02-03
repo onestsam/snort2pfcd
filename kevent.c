@@ -255,7 +255,7 @@ s2c_kevent_read(loopdata_t *loopdata, wbhead_t *wbhead, lineproc_t *lineproc, in
 			}
 		}
 
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", "read", lineproc->cad);
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ, lineproc->cad);
 		s2c_parse_and_block(loopdata, lineproc, wbhead);
 		total += i;
 
