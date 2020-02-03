@@ -231,7 +231,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 			pthread_mutex_lock(&pf_mutex);
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
-			s2c_write_file(loopdata->alertfile, "");
+			s2c_write_file(loopdata->alertfile, " ");
 		} 
 		pf_tbl_state_init = pf_tbl_state_current;
 	}
