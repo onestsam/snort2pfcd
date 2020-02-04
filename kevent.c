@@ -179,7 +179,7 @@ s2c_kevent_open(int *kq, int *fd, char *file)
         }
 
 	if ((*fd = s2c_fd_open(file)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s alertfile - %s", LANG_NO_OPEN, LANG_EXIT);
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, file, LANG_EXIT);
 		s2c_exit_fail();
 	}
 

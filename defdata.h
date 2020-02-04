@@ -87,6 +87,7 @@
 #define LANG_NUM "must be a number"
 #define LANG_PF "packet filter"
 #define LANG_BLK "blocked"
+#define LANG_PRIO "priority"
 #define LANG_BENT "blacklist entry"
 #define LANG_WL "is whitelisted"
 #define LANG_DETAILS "for more details"
@@ -164,7 +165,6 @@ typedef struct _wbhead_t {
 
 typedef struct _lineproc_t {
 	regex_t expr;
-	char prio[BUFSIZ];
 	char cad[BUFSIZ];
 	char ret[REGARSIZ][BUFSIZ];
 	char lastret[BUFSIZ];

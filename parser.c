@@ -142,13 +142,14 @@ s2c_parse_line(char *buf, FILE* wfile)
 int
 s2c_parse_priority(int priority, lineproc_t *lineproc)
 {
-	char *p = NULL;
+	char *p = NULL, c;
 
-	if ((p = strstr(lineproc->cad, "Priority:"))) {
-		memcpy(lineproc->prio, p, 12);
+	if ((p = strstr(lineproc->cad, "Prio"))) {
+		c = p[10];
 
-		if (isdigit(lineproc->prio[10]))
-			if (priority >= (lineproc->prio[10] - 48)) return(1);
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", LANG_PRIO, c);
+		if (isdigit(c))
+			if (priority >= (c - 48)) return(1);
 	}
 
 	return(0);
@@ -157,8 +158,9 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 int
 s2c_parse_ip(lineproc_t *lineproc)
 {
-	int i = 0, len = 0;
+	int i = 0, len = 0, len1 = 0;
 	regmatch_t resultado[REGARSIZ];
+	regmatch_t resultado1[REGARSIZ];
 
 	memset((regmatch_t*)resultado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 
@@ -169,7 +171,13 @@ s2c_parse_ip(lineproc_t *lineproc)
 				memcpy(lineproc->ret[i], (lineproc->cad + resultado[i].rm_so), len);
 				lineproc->ret[i][len]='\0';
 			} else {
-				strlcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
+				if (regexec(&lineproc->expr, (lineproc->cad + resultado[i - 1].rm_eo + 8), REGARSIZ, resultado1, 0) == 0) {
+					len1 = resultado1[0].rm_eo - resultado1[0].rm_so;
+					memcpy(lineproc->lastret, ((lineproc->cad + resultado[i - 1].rm_eo + 8) + resultado1[0].rm_so), len1);
+					lineproc->lastret[len1]='\0';
+					if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", "found", lineproc->lastret);
+				} else
+					strlcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
 				return(1);
 			}
 		}
