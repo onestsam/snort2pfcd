@@ -55,72 +55,74 @@
 #include <ifaddrs.h>
 
 /* Params */
-#define THRMAX		100
-#define NMBUFSIZ	128
-#define REGARSIZ	10
-#define EXPTIME		60*60
-#define ID_WF		0
-#define ID_BF		1
-#define ID_AF		2
-#define PFDEVICE "/dev/pf"
+#define THRMAX			100
+#define NMBUFSIZ		128
+#define REGARSIZ		10
+#define EXPTIME			60*60
+#define ID_WF			0
+#define ID_BF			1
+#define ID_AF			2
+#define REG_FUDGE		8
 
-#define REG_ADDR "([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
+#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
 /* REG_ADDR from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses */
 
 /* Paths */
-#define PATH_LOG "/var/log/"
-#define PATH_RUN "/var/run/"
-#define PATH_RESOLV "/etc/resolv.conf"
-#define PATH_ALERT "/var/log/snort/alert"
-#define PATH_WHITELIST "/usr/local/etc/snort/rules/iplists/default.whitelist"
-#define PATH_BLACKLIST "/usr/local/etc/snort/rules/iplists/default.blacklist"
+#define PFDEVICE		"/dev/pf"
+#define PATH_LOG		"/var/log/"
+#define PATH_RUN		"/var/run/"
+#define PATH_RESOLV		"/etc/resolv.conf"
+#define PATH_ALERT		"/var/log/snort/alert"
+#define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
+#define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
 
 /* Language */
-#define LANG_EXIT "exiting"
-#define LANG_WARN "warning"
-#define LANG_RELOAD "reloading"
-#define LANG_START "started"
-#define LANG_MON "monitoring"
-#define LANG_USE "usage"
-#define LANG_MAN "see man"
-#define LANG_ARG "argument for"
-#define LANG_NUM "must be a number"
-#define LANG_PF "packet filter"
-#define LANG_BLK "blocked"
-#define LANG_PRIO "priority"
-#define LANG_BENT "blacklist entry"
-#define LANG_WL "is whitelisted"
-#define LANG_DETAILS "for more details"
-#define LANG_NO_REG "no regex match found"
-#define LANG_NO_DAEMON "cannot daemonize"
-#define LANG_MALLOC_ERROR "malloc error"
-#define LANG_STATE_CHANGE "state change detected in"
-#define LANG_INTDB "!! internal database error !!"
-#define LANG_CON_EST "connection with pf established"
-#define LANG_TBLADD "table added"
-#define LANG_IOCTL_WAIT "attempting to re-establish connection with pf"
-#define LANG_IOCTL_ERROR "unable to connect to pf"
-#define LANG_IFADDR_ERROR "ifaddr error"
-#define LANG_MUTEX_ERROR "unable to init mutex"
-#define LANG_NO_OPEN "unable to open"
-#define LANG_RECEXIT "exit signal received - exiting"
-#define LANG_DAEMON_RUNNING "daemon already running"
-#define LANG_NO_PID "cannot open or create pidfile"
-#define LANG_INIT_THR "unable to init detached thread attributes"
-#define LANG_SET_THR "unable to set detached thread attributes"
-#define LANG_LAUNCH_THR "unable to launch detached thread attributes"
-#define LANG_NOT_WHITELISTED "not whitelisted, added to block table"
-#define LANG_UNBLOCKED "block-time expired, removed from block table"
-#define LANG_ERR_ROOT "error: must be root to run"
-#define LANG_ERR_REGEX "error compiling regex expr"
-#define LANG_KQ_ERROR "kqueue init error"
-#define LANG_KE_READ "kevent read"
-#define LANG_KE_REQ_ERROR "kevent request error"
-#define LANG_KE_READ_ERROR "kevent read error"
-#define LANG_KE_ERROR "unable to set kevent structure"
-#define LANG_FILE_ERROR "file error: file is a directory"
-#define LANG_LOGTHR_ERROR "!! internal log thread error !!"
-#define LANG_DNS_DISABLED "DNS lookup disabled"
+#define LANG_EXIT		"exiting"
+#define LANG_WARN		"warning"
+#define LANG_RELOAD		"reloading"
+#define LANG_START		"started"
+#define LANG_MON		"monitoring"
+#define LANG_USE		"usage"
+#define LANG_FOUND		"found"
+#define LANG_MAN		"see man"
+#define LANG_ARG		"argument for"
+#define LANG_NUM		"must be a number"
+#define LANG_PF			"packet filter"
+#define LANG_BLK		"blocked"
+#define LANG_PRIO		"priority"
+#define LANG_BENT		"blacklist entry"
+#define LANG_WL			"is whitelisted"
+#define LANG_DETAILS		"for more details"
+#define LANG_NO_REG		"no regex match found"
+#define LANG_NO_DAEMON		"cannot daemonize"
+#define LANG_MALLOC_ERROR	"malloc error"
+#define LANG_STATE_CHANGE	"state change detected in"
+#define LANG_INTDB		"!! internal database error !!"
+#define LANG_CON_EST		"connection with pf established"
+#define LANG_TBLADD		"table added"
+#define LANG_IOCTL_WAIT		"attempting to re-establish connection with pf"
+#define LANG_IOCTL_ERROR	"unable to connect to pf"
+#define LANG_IFADDR_ERROR	"ifaddr error"
+#define LANG_MUTEX_ERROR	"unable to init mutex"
+#define LANG_NO_OPEN		"unable to open"
+#define LANG_RECEXIT		"exit signal received - exiting"
+#define LANG_DAEMON_RUNNING	"daemon already running"
+#define LANG_NO_PID		"cannot open or create pidfile"
+#define LANG_INIT_THR		"unable to init detached thread attributes"
+#define LANG_SET_THR		"unable to set detached thread attributes"
+#define LANG_LAUNCH_THR		"unable to launch detached thread attributes"
+#define LANG_NOT_WHITELISTED	"not whitelisted, added to block table"
+#define LANG_UNBLOCKED		"block-time expired, removed from block table"
+#define LANG_ERR_ROOT		"error: must be root to run"
+#define LANG_ERR_REGEX		"error compiling regex expr"
+#define LANG_KQ_ERROR		"kqueue init error"
+#define LANG_KE_READ		"kevent read"
+#define LANG_KE_REQ_ERROR	"kevent request error"
+#define LANG_KE_READ_ERROR	"kevent read error"
+#define LANG_KE_ERROR		"unable to set kevent structure"
+#define LANG_FILE_ERROR		"file error: file is a directory"
+#define LANG_LOGTHR_ERROR	"!! internal log thread error !!"
+#define LANG_DNS_DISABLED	"DNS lookup disabled"
 
 /* Macros */
 LIST_HEAD(wlist_head, ipwlist);
@@ -166,8 +168,9 @@ typedef struct _wbhead_t {
 typedef struct _lineproc_t {
 	regex_t expr;
 	char cad[BUFSIZ];
-	char ret[REGARSIZ][BUFSIZ];
 	char lastret[BUFSIZ];
+	char ret0[REGARSIZ][BUFSIZ];
+	char ret1[REGARSIZ][BUFSIZ];
 } lineproc_t;
 
 typedef struct _pfbl_log_t {

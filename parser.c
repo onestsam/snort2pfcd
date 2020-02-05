@@ -158,27 +158,41 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 int
 s2c_parse_ip(lineproc_t *lineproc)
 {
-	int i = 0, len = 0, len1 = 0;
-	regmatch_t resultado[REGARSIZ];
-	regmatch_t resultado1[REGARSIZ];
+	int i = 0, j = 0, len0 = 0, len1 = 0, len2 = 0, len3 = 0;
+	regmatch_t rado0[REGARSIZ], rado1[REGARSIZ];
 
-	memset((regmatch_t*)resultado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	memset((regmatch_t*)rado0, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	memset((char *)lineproc->ret0, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
+	memset((char *)lineproc->ret1, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
 
-	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, resultado, 0) == 0) {
-		for (i = 0; i < REGARSIZ; i++){
-			len = resultado[i].rm_eo - resultado[i].rm_so;
-			if(len){
-				memcpy(lineproc->ret[i], (lineproc->cad + resultado[i].rm_so), len);
-				lineproc->ret[i][len]='\0';
+	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, rado0, 0) == 0) {
+		for (i = 0; i < REGARSIZ; i++) {
+			len0 = rado0[i].rm_eo - rado0[i].rm_so;
+			if(len0) {
+				memcpy(lineproc->ret0[i], (lineproc->cad + rado0[i].rm_so), len0);
+				lineproc->ret0[i][len0]='\0';
+				len1 = len0;
 			} else {
-				if (regexec(&lineproc->expr, (lineproc->cad + resultado[i - 1].rm_eo + 8), REGARSIZ, resultado1, 0) == 0) {
-					len1 = resultado1[0].rm_eo - resultado1[0].rm_so;
-					memcpy(lineproc->lastret, ((lineproc->cad + resultado[i - 1].rm_eo + 8) + resultado1[0].rm_so), len1);
-					lineproc->lastret[len1]='\0';
-					if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", "found", lineproc->lastret);
-				} else
-					strlcpy(lineproc->lastret, lineproc->ret[i - 1], sizeof(lineproc->lastret));
-				return(1);
+				if (regexec(&lineproc->expr, (lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE), REGARSIZ, rado1, 0) == 0) {
+					for (j = 0; j < REGARSIZ; j++) {
+						len2 = rado1[j].rm_eo - rado1[j].rm_so;
+						if(len2) {
+							memcpy(lineproc->ret1[j], ((lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE) + rado1[j].rm_so), len2);
+							lineproc->ret1[j][len2] = '\0';
+							len3 = len2;
+						} else {
+							memcpy(lineproc->lastret, ((lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE) + rado1[j - 1].rm_so), len3);
+							lineproc->lastret[len3] = '\0';
+							if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->lastret);
+							return(1);
+						}
+					}
+				} else {
+					memcpy(lineproc->lastret, (lineproc->cad + rado0[i - 1].rm_so), len1);
+					lineproc->lastret[len1] = '\0';
+				}
+			return(1);
 			}
 		}
 	}
