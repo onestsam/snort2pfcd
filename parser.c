@@ -209,6 +209,7 @@ void
 s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead)
 {
 	int pb_status = 0, threadcheck = 0;
+	CIDR *ipcidr = NULL;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) {
@@ -216,8 +217,14 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 		return;
 	}
 
-	if (!LIST_EMPTY(&wbhead->whead))
-		if (s2c_parse_search_wl(lineproc->lastret, &wbhead->whead)) return;
+	if (!LIST_EMPTY(&wbhead->whead)) {
+		if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
+		if (s2c_parse_search_wl(lineproc->lastret, &wbhead->whead, ipcidr)) {
+			cidr_free(ipcidr);
+			return;
+		}
+	cidr_free(ipcidr);
+	}
 
 	if ((pb_status = s2c_parse_and_block_bl(lineproc->lastret, &wbhead->bhead)) == loopdata->repeat_offenses) {
 
@@ -305,6 +312,7 @@ void
 s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *bfile, struct wlist_head *whead)
 {
 	FILE *blfile = NULL;
+	CIDR *ipcidr = NULL;
 
 	if ((blfile = fopen(bfile, "r")) == NULL) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, bfile, LANG_WARN);
@@ -315,15 +323,17 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *b
 	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
 	s2c_pf_ruleadd(dev, tablename);
 
+	if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
 	while (s2c_parse_line(lineproc->cad, blfile))
 		if (s2c_parse_ip(lineproc)) {
 
 			if (!LIST_EMPTY(whead))
-				if (s2c_parse_search_wl(lineproc->lastret, whead))
+				if (s2c_parse_search_wl(lineproc->lastret, whead, ipcidr))
 					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->lastret, LANG_WL, LANG_WARN);
 
 			s2c_pf_block(dev, tablename, lineproc->lastret);
 		}
+	cidr_free(ipcidr);
 
 	funlockfile(blfile);
 	fclose(blfile);
@@ -383,21 +393,17 @@ s2c_parse_load_wl(int Z, char *extif, char *wfile, lineproc_t *lineproc, struct 
 }
 
 int
-s2c_parse_search_wl(char *ip, struct wlist_head *wl)
+s2c_parse_search_wl(char *ip, struct wlist_head *wl, CIDR *ipcidr)
 {
 	struct ipwlist *aux2 = NULL;
-	CIDR *ipcidr = cidr_alloc();
 	int f = 0;
 
-	if (ipcidr == NULL) s2c_malloc_err();
 	ipcidr = cidr_from_str(ip);
 
 	for (aux2 = wl->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
 		if (!cidr_contains(&aux2->waddr, ipcidr)) { 
 			f = 1; break;
 		}
-
-	cidr_free(ipcidr);
 
 	return(f);
 }

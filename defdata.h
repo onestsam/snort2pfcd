@@ -266,7 +266,7 @@ int s2c_parse_and_block_bl(char *, struct blist_head *);
 void s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
 void s2c_parse_load_wl_ifaces(struct ipwlist *);
 void s2c_parse_load_wl(int, char *, char *, lineproc_t *, struct wlist_head *);
-int s2c_parse_search_wl(char *, struct wlist_head *);
+int s2c_parse_search_wl(char *, struct wlist_head *, CIDR *ipcidr);
 
 int s2c_fd_open(char *);
 int s2c_kevent_read(loopdata_t *, wbhead_t *, lineproc_t *, int);
