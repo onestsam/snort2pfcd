@@ -234,21 +234,16 @@ s2c_kevent_loop(loopdata_t *loopdata)
 
 		pthread_mutex_lock(&fm_mutex);
 
-		if (wfile_monitor) {
+		if (wfile_monitor)
 			pf_reset_check = 1;
-			wfile_monitor = 0;
-		}
 
-		if (bfile_monitor) {
+		if (bfile_monitor)
 			pf_reset_check = 1;
-			bfile_monitor = 0;
-		}
 		
 		pthread_mutex_unlock(&fm_mutex);
 
-		if (pf_tbl_state_current < pf_tbl_state_init) {
+		if (pf_tbl_state_current < pf_tbl_state_init)
 			pf_reset_check = 1;
-		} 
 
 		if (pf_reset_check) {
 			pf_reset_check = 0;
