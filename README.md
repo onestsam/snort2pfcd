@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.2
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Wed Feb  5 20:59:09 2020 -->
+<!-- CreationDate: Wed Feb  5 21:00:44 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -9,13 +9,6 @@ v2.2
 <meta name="generator" content="groff -Thtml, see www.gnu.org">
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <meta name="Content-Style" content="text/css">
-<style type="text/css">
-       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
-       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
-       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
-       h1      { text-align: center }
-</style>
-<title></title>
 </head>
 <body>
 
