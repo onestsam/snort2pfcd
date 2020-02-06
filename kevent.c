@@ -222,7 +222,7 @@ s2c_kevent_blf_load(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 void
 s2c_kevent_loop(loopdata_t *loopdata)
 {
-	unsigned int pf_tbl_state_init = 0, pf_tbl_state_current = 0;
+	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
@@ -232,12 +232,32 @@ s2c_kevent_loop(loopdata_t *loopdata)
 		sleep(5);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
 
+		pthread_mutex_lock(&fm_mutex);
+
+		if (wfile_monitor) {
+			pf_reset_check = 1;
+			wfile_monitor = 0;
+		}
+
+		if (bfile_monitor) {
+			pf_reset_check = 1;
+			bfile_monitor = 0;
+		}
+		
+		pthread_mutex_unlock(&fm_mutex);
+
 		if (pf_tbl_state_current < pf_tbl_state_init) {
+			pf_reset_check = 1;
+		} 
+
+		if (pf_reset_check) {
+			pf_reset_check = 0;
 			pthread_mutex_lock(&pf_mutex);
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
 			s2c_write_file(loopdata->alertfile, " ");
-		} 
+		}
+
 		pf_tbl_state_init = pf_tbl_state_current;
 	}
 
