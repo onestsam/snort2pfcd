@@ -78,8 +78,13 @@ void
 			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
-			s2c_kevent_wlf_load(loopdata, lineproc, wbhead);
-			s2c_kevent_blf_load(loopdata, lineproc, wbhead);
+			if(!loopdata->W) {
+				s2c_kevent_wlf_load(loopdata, lineproc, wbhead);
+			}
+
+			if(!loopdata->B) {
+				s2c_kevent_blf_load(loopdata, lineproc, wbhead);
+			}
 
 			this_time = last_time = time(NULL);
 			pf_reset_check = 0;

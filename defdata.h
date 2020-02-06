@@ -64,10 +64,7 @@
 #define ID_AF			2
 #define REG_FUDGE		8
 
-#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
-/* REG_ADDR from https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses */
-
-/* Paths */
+/* Paths & regex */
 #define PFDEVICE		"/dev/pf"
 #define PATH_LOG		"/var/log/"
 #define PATH_RUN		"/var/run/"
@@ -75,6 +72,7 @@
 #define PATH_ALERT		"/var/log/snort/alert"
 #define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
 #define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
+#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
 
 /* Language */
 #define LANG_EXIT		"exiting"
@@ -247,7 +245,6 @@ long lmin(long ,long);
 int optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
-int s2c_pf_tbl_get(int, char *, pftbl_t *);
 void s2c_pf_tbladd(int, char *);
 void s2c_pf_tbldel(int, char *);
 void s2c_pf_ruleadd(int, char *);
@@ -255,6 +252,7 @@ void s2c_pf_unblock_log(pfbl_log_t *);
 void *s2c_file_monitor(void *);
 void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);
+int s2c_pf_tbl_get(int, char *, pftbl_t *);
 
 int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);

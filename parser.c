@@ -162,21 +162,26 @@ s2c_parse_ip(lineproc_t *lineproc)
 	regmatch_t rado0[REGARSIZ], rado1[REGARSIZ];
 
 	memset((regmatch_t*)rado0, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-	memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 	memset((char *)lineproc->ret0, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
-	memset((char *)lineproc->ret1, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
 
 	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, rado0, 0) == 0) {
+
 		for (i = 0; i < REGARSIZ; i++) {
 			len0 = rado0[i].rm_eo - rado0[i].rm_so;
+
 			if(len0) {
 				memcpy(lineproc->ret0[i], (lineproc->cad + rado0[i].rm_so), len0);
 				lineproc->ret0[i][len0]='\0';
 				len1 = len0;
 			} else {
+				memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+				memset((char *)lineproc->ret1, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
+
 				if (regexec(&lineproc->expr, (lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE), REGARSIZ, rado1, 0) == 0) {
+
 					for (j = 0; j < REGARSIZ; j++) {
 						len2 = rado1[j].rm_eo - rado1[j].rm_so;
+
 						if(len2) {
 							memcpy(lineproc->ret1[j], ((lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE) + rado1[j].rm_so), len2);
 							lineproc->ret1[j][len2] = '\0';
