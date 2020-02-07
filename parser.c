@@ -181,47 +181,35 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 int
 s2c_parse_ip(lineproc_t *lineproc)
 {
-	int i = 0, j = 0, len0 = 0, len1 = 0, len2 = 0, len3 = 0;
+	int len0 = 0, len1 = 0;
 	regmatch_t rado0[REGARSIZ], rado1[REGARSIZ];
 
 	memset((regmatch_t*)rado0, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-	memset((char *)lineproc->ret0, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
 
 	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, rado0, 0) == 0) {
 
-		for (i = 0; i < REGARSIZ; i++) {
-			len0 = rado0[i].rm_eo - rado0[i].rm_so;
+		len0 = rado0[0].rm_eo - rado0[0].rm_so;
 
-			if(len0) {
-				memcpy(lineproc->ret0[i], (lineproc->cad + rado0[i].rm_so), len0);
-				lineproc->ret0[i][len0]='\0';
-				len1 = len0;
-			} else {
-				memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-				memset((char *)lineproc->ret1, 0x00, (BUFSIZ * REGARSIZ * sizeof(char)));
+		if(len0) {
+			memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
+			memcpy(lineproc->ret, (lineproc->cad + rado0[0].rm_so), len0);
+			lineproc->ret[len0]='\0';
 
-				if (regexec(&lineproc->expr, (lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE), REGARSIZ, rado1, 0) == 0) {
+			memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 
-					for (j = 0; j < REGARSIZ; j++) {
-						len2 = rado1[j].rm_eo - rado1[j].rm_so;
+			if (regexec(&lineproc->expr, (lineproc->cad + rado0[0].rm_eo + REG_FUDGE), REGARSIZ, rado1, 0) == 0) {
 
-						if(len2) {
-							memcpy(lineproc->ret1[j], ((lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE) + rado1[j].rm_so), len2);
-							lineproc->ret1[j][len2] = '\0';
-							len3 = len2;
-						} else {
-							memcpy(lineproc->lastret, ((lineproc->cad + rado0[i - 1].rm_eo + REG_FUDGE) + rado1[j - 1].rm_so), len3);
-							lineproc->lastret[len3] = '\0';
-							if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->lastret);
-							return(1);
-						}
-					}
-				} else {
-					memcpy(lineproc->lastret, (lineproc->cad + rado0[i - 1].rm_so), len1);
-					lineproc->lastret[len1] = '\0';
+				len1 = rado1[0].rm_eo - rado1[0].rm_so;
+
+				if(len1) {
+					memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
+					memcpy(lineproc->ret, ((lineproc->cad + rado0[0].rm_eo + REG_FUDGE) + rado1[0].rm_so), len1);
+					lineproc->ret[len1] = '\0';
+					if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->ret);
+					return(1);
 				}
-			return(1);
 			}
+		return(1);
 		}
 	}
 
@@ -242,14 +230,14 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 
 	if (!LIST_EMPTY(&wbhead->whead)) {
 		if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
-		if (s2c_parse_search_wl(lineproc->lastret, &wbhead->whead, ipcidr)) {
+		if (s2c_parse_search_wl(lineproc->ret, &wbhead->whead, ipcidr)) {
 			cidr_free(ipcidr);
 			return;
 		}
 	cidr_free(ipcidr);
 	}
 
-	if ((pb_status = s2c_parse_and_block_bl(lineproc->lastret, &wbhead->bhead)) == loopdata->repeat_offenses) {
+	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &wbhead->bhead)) == loopdata->repeat_offenses) {
 
 		pthread_mutex_lock(&thr_mutex);
 		s2c_threads++;
@@ -257,10 +245,10 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc, wbhead_t *wbhead
 		pthread_mutex_unlock(&thr_mutex);
 
 		if(threadcheck < loopdata->thr_max)
-			s2c_spawn_block_log(loopdata->D, lineproc->lastret, loopdata->logfile);
+			s2c_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
 
-		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->lastret);
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_BLK, lineproc->lastret);
+		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_BLK, lineproc->ret);
 
 	} else if (pb_status == -1) {
 		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
@@ -288,7 +276,7 @@ s2c_parse_load_wl_file(lineproc_t *lineproc, char *wfile, struct ipwlist *ipw1)
 
 			if ((ipw2 = (struct ipwlist *)malloc(sizeof(struct ipwlist))) == NULL) s2c_malloc_err();
 			memset(ipw2, 0x00, sizeof(struct ipwlist));
-			ipw2->waddr = *cidr_from_str(lineproc->lastret);
+			ipw2->waddr = *cidr_from_str(lineproc->ret);
 
 			LIST_INSERT_AFTER(ipw1, ipw2, elem);
 			ipw1 = ipw2;
@@ -351,10 +339,10 @@ s2c_parse_load_bl_static(int dev, lineproc_t *lineproc, char *tablename, char *b
 		if (s2c_parse_ip(lineproc)) {
 
 			if (!LIST_EMPTY(whead))
-				if (s2c_parse_search_wl(lineproc->lastret, whead, ipcidr))
-					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->lastret, LANG_WL, LANG_WARN);
+				if (s2c_parse_search_wl(lineproc->ret, whead, ipcidr))
+					syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
 
-			s2c_pf_block(dev, tablename, lineproc->lastret);
+			s2c_pf_block(dev, tablename, lineproc->ret);
 		}
 	cidr_free(ipcidr);
 

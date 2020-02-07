@@ -80,7 +80,7 @@
 /* Params */
 #define THRMAX			100
 #define NMBUFSIZ		128
-#define REGARSIZ		10
+#define REGARSIZ		3
 #define EXPTIME			60*60
 #define ID_WF			0
 #define ID_BF			1
@@ -95,7 +95,7 @@
 #define PATH_ALERT		"/var/log/snort/alert"
 #define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
 #define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
-#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
+#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})(\\/[0-9]{1,2})?"
 
 /* Language */
 #define LANG_EXIT		"exiting"
@@ -190,9 +190,7 @@ typedef struct _wbhead_t {
 typedef struct _lineproc_t {
 	regex_t expr;
 	char cad[BUFSIZ];
-	char lastret[BUFSIZ];
-	char ret0[REGARSIZ][BUFSIZ];
-	char ret1[REGARSIZ][BUFSIZ];
+	char ret[BUFSIZ];
 } lineproc_t;
 
 typedef struct _pfbl_log_t {
