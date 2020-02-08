@@ -81,11 +81,11 @@
 #define THRMAX			100
 #define NMBUFSIZ		128
 #define REGARSIZ		3
+#define RETARSIZ		10
 #define EXPTIME			60*60
 #define ID_WF			0
 #define ID_BF			1
 #define ID_AF			2
-#define REG_FUDGE		8
 
 /* Paths & regex */
 #define PFDEVICE		"/dev/pf"

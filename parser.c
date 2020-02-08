@@ -181,39 +181,30 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 int
 s2c_parse_ip(lineproc_t *lineproc)
 {
-	int len0 = 0, len1 = 0;
-	regmatch_t rado0[REGARSIZ], rado1[REGARSIZ];
+	int len = 0, i = 0;
+	char *regpos = NULL;
+	regmatch_t rado[REGARSIZ];
 
-	memset((regmatch_t*)rado0, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	memset((regmatch_t*)rado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
+	regpos = lineproc->cad;
 
-	if (regexec(&lineproc->expr, lineproc->cad, REGARSIZ, rado0, 0) == 0) {
+	for (i = 0; (regexec(&lineproc->expr, regpos, REGARSIZ, rado, 0) == 0); i++) {
 
-		len0 = rado0[0].rm_eo - rado0[0].rm_so;
+		len = (rado[0].rm_eo - rado[0].rm_so);
 
-		if(len0) {
+		if(len) {
 			memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
-			memcpy(lineproc->ret, (lineproc->cad + rado0[0].rm_so), len0);
-			lineproc->ret[len0]='\0';
-
-			memset((regmatch_t*)rado1, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-
-			if (regexec(&lineproc->expr, (lineproc->cad + rado0[0].rm_eo + REG_FUDGE), REGARSIZ, rado1, 0) == 0) {
-
-				len1 = rado1[0].rm_eo - rado1[0].rm_so;
-
-				if(len1) {
-					memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
-					memcpy(lineproc->ret, ((lineproc->cad + rado0[0].rm_eo + REG_FUDGE) + rado1[0].rm_so), len1);
-					lineproc->ret[len1] = '\0';
-					if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->ret);
-					return(1);
-				}
-			}
-		return(1);
+			memcpy(lineproc->ret, (regpos + rado[0].rm_so), len);
+			lineproc->ret[len]='\0';
+			regpos = (regpos + rado[0].rm_eo);
+			memset((regmatch_t*)rado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 		}
 	}
 
-	return(0);
+	if (i > 1)
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->ret);
+
+	return(i);
 }
 
 void
