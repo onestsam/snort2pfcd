@@ -84,6 +84,8 @@ void
 	if(fr) {
 		if (loopdata->t > 0) age = loopdata->t;
 		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
+		if(!loopdata->W) s2c_check_file(loopdata->wfile);
+		if(!loopdata->B) s2c_check_file(loopdata->bfile);
 	}
 
 	while (1) {
@@ -98,13 +100,18 @@ void
 			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
+			pthread_mutex_lock(&fm_mutex);
+
 			if(!loopdata->W) {
-				s2c_kevent_wlf_load(loopdata, lineproc);
+				s2c_kevent_wlf_reload(loopdata, lineproc);
+				wfile_monitor = 0;
+			}
+			if(!loopdata->B) {
+				s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
+				bfile_monitor = 0;
 			}
 
-			if(!loopdata->B) {
-				s2c_kevent_blf_load(loopdata, lineproc);
-			}
+			pthread_mutex_unlock(&fm_mutex);
 
 			this_time = last_time = time(NULL);
 			pf_reset_check = 0;
@@ -134,19 +141,20 @@ void
 					pthread_mutex_lock(&fm_mutex);
 
 					if(wfile_monitor) {
-						wfile_monitor = 0;
 						if(!loopdata->W) {
-							s2c_kevent_wlf_load(loopdata, lineproc);
+							s2c_kevent_wlf_reload(loopdata, lineproc);
 							if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->wfile, LANG_RELOAD);
 						}
+						wfile_monitor = 0;
 					}
 
 					if(bfile_monitor) {
-						bfile_monitor = 0;
 						if(!loopdata->B) {
-							s2c_kevent_blf_load(loopdata, lineproc);
+							s2c_parse_and_block_bl_static_clear(loopdata->dev);
+							s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
 							if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
 						}
+						bfile_monitor = 0;
 					}
 
 					pthread_mutex_unlock(&fm_mutex);
@@ -170,8 +178,7 @@ void
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
 	}
 
-	if (fr)
-		free(lineproc);
+	if (fr) free(lineproc);
 
 	free(local_fn);
 	close(loopdata->kq);
@@ -218,22 +225,11 @@ s2c_kevent_open(int *kq, int *fd, char *file)
 }
 
 void
-s2c_kevent_wlf_load(loopdata_t *loopdata, lineproc_t *lineproc)
+s2c_kevent_wlf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
 {
-	s2c_check_file(loopdata->wfile);
 	s2c_parse_and_block_list_clear(&loopdata->wbhead.whead);
 	s2c_parse_load_wl(loopdata->Z, loopdata->dev, loopdata->extif, loopdata->wfile, lineproc, &loopdata->wbhead.whead);
 	if (v) s2c_parse_print_list(&loopdata->wbhead.whead);
-
-	return;
-}
-
-void
-s2c_kevent_blf_load(loopdata_t *loopdata, lineproc_t *lineproc)
-{
-	s2c_check_file(loopdata->bfile);
-	s2c_parse_and_block_bl_static_clear(loopdata->dev);
-	s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
 
 	return;
 }

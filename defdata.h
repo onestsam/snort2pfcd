@@ -290,8 +290,7 @@ int s2c_parse_search_list(char *, struct ulist_head *, CIDR *ipcidr);
 int s2c_fd_open(char *);
 int s2c_kevent_read(loopdata_t *, lineproc_t *, int);
 void s2c_kevent_open(int *, int *, char *);
-void s2c_kevent_blf_load(loopdata_t *, lineproc_t *);
-void s2c_kevent_wlf_load(loopdata_t *, lineproc_t *);
+void s2c_kevent_wlf_reload(loopdata_t *, lineproc_t *);
 void s2c_kevent_loop(loopdata_t *);
 void *s2c_kevent_file_monitor(void *arg);
 
