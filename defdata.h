@@ -81,7 +81,6 @@
 #define THRMAX			100
 #define NMBUFSIZ		128
 #define REGARSIZ		3
-#define RETARSIZ		10
 #define EXPTIME			60*60
 #define ID_WF			0
 #define ID_BF			1
@@ -147,20 +146,16 @@
 #define LANG_DNS_DISABLED	"DNS lookup disabled"
 
 /* Macros */
-LIST_HEAD(wlist_head, ipwlist);
-LIST_HEAD(blist_head, ipblist);
+LIST_HEAD(ulist_head, ipulist);
 
 /* Global structs */
-struct ipwlist {
-	CIDR waddr;
-	LIST_ENTRY(ipwlist) elem;
-};
 
-struct ipblist {
-	unsigned long t;
-	int repeat_offenses;
-	char baddr[BUFSIZ];
-	LIST_ENTRY(ipblist) elem;
+struct ipulist {
+        unsigned long t;
+        int repeat_offenses;
+	CIDR ciaddr;
+        char chaddr[BUFSIZ];
+        LIST_ENTRY(ipulist) elem;
 };
 
 typedef struct _pftbl_t {
@@ -183,8 +178,8 @@ typedef struct _thread_log_t {
 } thread_log_t;
 
 typedef struct _wbhead_t {
-	struct wlist_head whead;
-	struct blist_head bhead;
+	struct ulist_head whead;
+	struct ulist_head bhead;
 } wbhead_t;
 
 typedef struct _lineproc_t {
@@ -209,10 +204,11 @@ typedef struct _loopdata_t {
 	int fd;
 	int kq;
 	int dev;
-	unsigned long t;
-	int priority;
 	int thr_max;
+	int priority;
 	int repeat_offenses;
+	unsigned long t;
+	wbhead_t wbhead;
 	char wfile[NMBUFSIZ];
 	char bfile[NMBUFSIZ];
 	char extif[IFNAMSIZ];
@@ -262,7 +258,6 @@ void s2c_log_init(char *);
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
 void s2c_pftbl_set(char *, pftbl_t *);
-void s2c_ipb_set(char *, struct ipblist *);
 long lmin(long ,long);
 int optnum(char *, char *);
 
@@ -276,26 +271,27 @@ void *s2c_pf_block_log(void *);
 void *s2c_pf_expiretable(void *);
 int s2c_pf_tbl_get(int, char *, pftbl_t *);
 
+void s2c_parse_ipu_set(char *, struct ipulist *);
 int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);
-void s2c_parse_and_block_bl_clear(struct blist_head *);
-void s2c_parse_and_block_wl_clear(struct wlist_head *);
-void s2c_parse_and_block_bl_static_clear(int, char *);
-void s2c_parse_and_block_bl_del(unsigned long, unsigned long, struct blist_head *);
-void s2c_parse_and_block(loopdata_t *, lineproc_t *, wbhead_t *);
-void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct wlist_head *);
-int s2c_parse_and_block_bl(char *, struct blist_head *);
-void s2c_parse_load_wl_file(lineproc_t *, char *, struct ipwlist *);
-void s2c_parse_load_wl_ifaces(struct ipwlist *);
-void s2c_parse_load_wl(int, char *, char *, lineproc_t *, struct wlist_head *);
-void s2c_parse_print_wl(struct wlist_head *);
-int s2c_parse_search_wl(char *, struct wlist_head *, CIDR *ipcidr);
+void s2c_parse_add_list(struct ipulist *, struct ifaddrs *);
+void s2c_parse_and_block_list_clear(struct ulist_head *);
+void s2c_parse_and_block_bl_static_clear(int);
+void s2c_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
+void s2c_parse_and_block(loopdata_t *, lineproc_t *);
+void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
+int s2c_parse_and_block_bl(char *, struct ulist_head *);
+void s2c_parse_load_file(int, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
+void s2c_parse_load_ifaces(struct ipulist *);
+void s2c_parse_load_wl(int, int, char *, char *, lineproc_t *, struct ulist_head *);
+void s2c_parse_print_list(struct ulist_head *);
+int s2c_parse_search_list(char *, struct ulist_head *, CIDR *ipcidr);
 
 int s2c_fd_open(char *);
-int s2c_kevent_read(loopdata_t *, wbhead_t *, lineproc_t *, int);
+int s2c_kevent_read(loopdata_t *, lineproc_t *, int);
 void s2c_kevent_open(int *, int *, char *);
-void s2c_kevent_blf_load(loopdata_t *, lineproc_t *, wbhead_t *);
-void s2c_kevent_wlf_load(loopdata_t *, lineproc_t *, wbhead_t *);
+void s2c_kevent_blf_load(loopdata_t *, lineproc_t *);
+void s2c_kevent_wlf_load(loopdata_t *, lineproc_t *);
 void s2c_kevent_loop(loopdata_t *);
 void *s2c_kevent_file_monitor(void *arg);
 
