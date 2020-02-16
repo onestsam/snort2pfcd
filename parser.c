@@ -252,6 +252,14 @@ s2c_parse_load_file(int dev, lineproc_t *lineproc, char *ufile, struct ulist_hea
 
 	flockfile(file);
 
+	if (id == ID_BF) {
+		if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
+		if ((tablename = (char *)malloc(PF_TABLE_NAME_SIZE*sizeof(char))) == NULL) s2c_malloc_err();
+		memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
+		strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
+		strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
+	}
+
 	while (s2c_parse_line(lineproc->cad, file)) {
 		if (s2c_parse_ip(lineproc)) {
 
@@ -263,23 +271,19 @@ s2c_parse_load_file(int dev, lineproc_t *lineproc, char *ufile, struct ulist_hea
 			}
 
 			if (id == ID_BF) {
-				if (!LIST_EMPTY(head)) {
-					if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
+				if (!LIST_EMPTY(head))
 					if (s2c_parse_search_list(lineproc->ret, head, ipcidr))
 						syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
-					cidr_free(ipcidr);
-				}
 
-			if ((tablename = (char *)malloc(PF_TABLE_NAME_SIZE*sizeof(char))) == NULL) s2c_malloc_err();
-			memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-
-			strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
-			strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
-			s2c_pf_ruleadd(dev, tablename);
-			s2c_pf_block(dev, tablename, lineproc->ret);
-			free(tablename);
+				s2c_pf_ruleadd(dev, tablename);
+				s2c_pf_block(dev, tablename, lineproc->ret);
 			}
 		}
+	}
+
+	if (id == ID_BF) {
+		cidr_free(ipcidr);
+		free(tablename);
 	}
 
 	funlockfile(file);
