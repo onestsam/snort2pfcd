@@ -153,14 +153,13 @@ s2c_parse_line(char *buf, FILE* wfile)
 int
 s2c_parse_priority(int priority, lineproc_t *lineproc)
 {
-	char *p = NULL, c;
+	char *p = NULL;
 
-	if ((p = strstr(lineproc->cad, "Prio"))) {
-		c = p[10];
-
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", LANG_PRIO, c);
-		if (isdigit(c))
-			if (priority >= (c - 48)) return(1);
+	if ((p = strstr(lineproc->cad, "y: "))) {
+		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", LANG_PRIO, p[3]);
+		if (isdigit(p[3]))
+			if ((p[3] - 48) >= priority)
+				return(1);
 	}
 
 	return(0);

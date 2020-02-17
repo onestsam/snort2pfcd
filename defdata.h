@@ -78,6 +78,8 @@
 #include <ifaddrs.h>
 
 /* Params */
+
+#define REPEATO			0
 #define THRMAX			100
 #define NMBUFSIZ		128
 #define REGARSIZ		3
@@ -85,6 +87,12 @@
 #define ID_WF			0
 #define ID_BF			1
 #define ID_AF			2
+
+/* snort priorities */
+#define HIGH			4
+#define MEDIUM			3
+#define LOW			2
+#define VERYLOW			1
 
 /* Paths & regex */
 #define PFDEVICE		"/dev/pf"
@@ -105,8 +113,6 @@
 #define LANG_USE		"usage"
 #define LANG_FOUND		"found"
 #define LANG_MAN		"see man"
-#define LANG_ARG		"argument for"
-#define LANG_NUM		"must be a number"
 #define LANG_PF			"packet filter"
 #define LANG_BLK		"blocked"
 #define LANG_PRIO		"priority"
@@ -259,7 +265,6 @@ void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
 void s2c_pftbl_set(char *, pftbl_t *);
 long lmin(long ,long);
-int optnum(char *, char *);
 
 void s2c_pf_block(int, char *, char *);
 void s2c_pf_tbladd(int, char *);

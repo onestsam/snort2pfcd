@@ -113,7 +113,9 @@ s2c_init(loopdata_t *loopdata)
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
+	loopdata->priority = HIGH;
 	loopdata->thr_max = THRMAX;
+	loopdata->repeat_offenses = REPEATO;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 
 	s2c_mutex_init();
@@ -241,7 +243,7 @@ s2c_spawn_expiretable(loopdata_t *loopdata)
 	expt_data->dev = loopdata->dev;
 	strlcpy(expt_data->logfile, loopdata->logfile, NMBUFSIZ);
 	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, NMBUFSIZ);
-	strlcpy(expt_data->tablename, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(expt_data->tablename, loopdata->tablename, PF_TABLE_NAME_SIZE);
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	return;
@@ -331,18 +333,6 @@ s2c_mutex_destroy()
 	return;
 }
 
-int
-optnum(char *opt, char *targ)
-{
-	char* endp = NULL;
-	long l = -1;
-        
-	if (!targ || ((l=strtol(targ, &endp, 0)),(endp && *endp)))
-		fprintf(stderr, "%s -%s %s.\n", LANG_ARG, opt, LANG_NUM);
-
-	return((int)l);
-}
-
 void
 usage()
 {
@@ -363,7 +353,7 @@ sighandle()
 
 	return;
 }
- 
+
 long
 lmin(long a,long b) {
 	return (a < b)?a:b;

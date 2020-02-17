@@ -61,11 +61,9 @@ main(int argc, char **argv)
 	extern char *optarg;
 	extern int optind;
 	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
-	unsigned long t = 0;
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
-	
 	s2c_init(loopdata);
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
@@ -83,16 +81,11 @@ main(int argc, char **argv)
 			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
 			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
-			case 't': if ((t = optnum("t", optarg)) == -1) usage(); break;
-			case 'q': if ((q = optnum("q", optarg)) == -1) usage(); break;
-			case 'p':
-				if ((loopdata->priority = optnum("p", optarg)) == -1) usage(); 
-				if (!loopdata->priority) loopdata->priority = 1; break;
-			case 'm':
-				if ((loopdata->thr_max = optnum("m", optarg)) == -1) usage();
-				if (!loopdata->thr_max) loopdata->thr_max = THRMAX; break;
-			case 'r': 
-				if ((loopdata->repeat_offenses = optnum("r", optarg)) == -1) usage(); break;
+			case 't': if (!(loopdata->t = strtol(optarg,NULL,0))) usage(); break;
+			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) usage(); break;
+			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) usage(); break;
+			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) usage(); break;
+			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) usage(); break;
 			case 'h': usage();
 			case '?': usage();
 			default: usage();
