@@ -78,7 +78,6 @@ void
 	if (fid == ID_BF) strlcpy(local_fn, loopdata->bfile, NMBUFSIZ);
 	if (fid == ID_WF) strlcpy(local_fn, loopdata->wfile, NMBUFSIZ);
 
-	s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
 	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MON, local_fn);
 
 	if(fr) {
@@ -106,6 +105,7 @@ void
 				s2c_kevent_wlf_reload(loopdata, lineproc);
 				wfile_monitor = 0;
 			}
+
 			if(!loopdata->B) {
 				s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
 				bfile_monitor = 0;
@@ -128,6 +128,7 @@ void
 				}
 			}
 
+			s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
 			memset(&trigger, 0x00, sizeof(struct kevent));
 			if (kevent(loopdata->kq, NULL, 0, &trigger, 1, NULL) == -1) {
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
@@ -171,6 +172,7 @@ void
 				pf_reset = 0;
 				pthread_mutex_unlock(&pf_mutex);
 			}
+		close(loopdata->kq);
 		}
 
 		if (fr)
@@ -181,7 +183,6 @@ void
 	if (fr) free(lineproc);
 
 	free(local_fn);
-	close(loopdata->kq);
 	close(loopdata->fd);
 
 	pthread_exit(NULL);
