@@ -206,6 +206,9 @@ s2c_mutex_init()
 void
 s2c_thr_init(loopdata_t *loopdata)
 {
+	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_PRIB, loopdata->priority);
+	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_THRS, loopdata->thr_max);
+
 	s2c_spawn_expiretable(loopdata);
 	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
 	s2c_spawn_file_monitor(&bfile_monitor, 0, ID_BF, loopdata);
