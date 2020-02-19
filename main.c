@@ -105,7 +105,7 @@ main(int argc, char **argv)
 		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
 	}
 
-	if(!F) s2c_daemonize();
+	if(!F) s2c_daemonize(loopdata);
 	if (q) sleep(q);
 
         if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
@@ -113,7 +113,7 @@ main(int argc, char **argv)
                 s2c_exit_fail();
         }
 
-	s2c_log_init(loopdata->logfile);
+	s2c_log_init(loopdata);
 	s2c_thr_init(loopdata);
 	s2c_kevent_loop(loopdata);
 

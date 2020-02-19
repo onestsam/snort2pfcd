@@ -106,17 +106,19 @@ s2c_init(loopdata_t *loopdata)
 	pf_reset = 0;
 	v = 0;
 
-	if (getuid() != 0) {
-		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, __progname, LANG_EXIT);
-		exit(EXIT_FAILURE);
-	}
-
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
-	loopdata->priority = HIGH;
+	loopdata->priority = S2C_SP_HIGH;
 	loopdata->thr_max = THRMAX;
 	loopdata->repeat_offenses = REPEATO;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
+	strlcat(loopdata->tablename_static, "_static", PF_TABLE_NAME_SIZE);
+
+	if (getuid() != 0) {
+		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
 
 	s2c_mutex_init();
 
@@ -128,54 +130,47 @@ s2c_init(loopdata_t *loopdata)
 }
 
 void
-s2c_daemonize()
+s2c_daemonize(loopdata_t *loopdata)
 {
 	struct pidfh *pfh = NULL;
 	pid_t otherpid;
-	char *pidfile = NULL;
 
-	if ((pidfile = (char *)malloc(sizeof(char)*NMBUFSIZ)) == NULL) s2c_malloc_err();
 	memset(&otherpid, 0x00, sizeof(pid_t));
-	memset(pidfile, 0x00, NMBUFSIZ);
+	memset(loopdata->randombuf, 0x00, BUFSIZ);
 
-	strlcpy(pidfile, PATH_RUN, NMBUFSIZ);
-	strlcat(pidfile,  __progname, NMBUFSIZ);
-	strlcat(pidfile, ".pid", NMBUFSIZ);
+	strlcpy(loopdata->randombuf, PATH_RUN, BUFSIZ);
+	strlcat(loopdata->randombuf,  __progname, BUFSIZ);
+	strlcat(loopdata->randombuf, ".pid", BUFSIZ);
 	
-	if ((pfh = pidfile_open(pidfile, 0600, &otherpid)) == NULL)
+	if ((pfh = pidfile_open(loopdata->randombuf, 0600, &otherpid)) == NULL)
 		fprintf(stderr, "%s", LANG_NO_PID);
 
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "%s", LANG_NO_DAEMON);
 		pidfile_remove(pfh);
-		exit(EXIT_FAILURE);
+		s2c_exit_fail();
 	} else {
-		openlog(__progname, LOG_CONS | LOG_PID, LOG_DAEMON);
-		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", __progname, LANG_START, getpid());
+		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
 	}
 
 	pidfile_write(pfh);
-	free(pidfile);
 
 	return;
 }
 
 void
-s2c_log_init(char *logfile)
+s2c_log_init(loopdata_t *loopdata)
 {
 	long timebuf = 0;
-	char *initmess = NULL;
 
-	s2c_check_file(logfile);
+	s2c_check_file(loopdata->logfile);
 
-	if ((initmess = (char *)malloc(sizeof(char)*BUFSIZ)) == NULL) s2c_malloc_err();
-	memset(initmess, 0x00, BUFSIZ);
+	memset(loopdata->randombuf, 0x00, BUFSIZ);
 
 	timebuf = time(NULL);
-	sprintf(initmess, "\n<=== %s %s %s \n", __progname, LANG_START, asctime(localtime(&timebuf)));
-	s2c_write_file(logfile, initmess);
-
-	free(initmess);
+	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
+	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 
 	return;
 }

@@ -59,7 +59,7 @@ void
 *s2c_kevent_file_monitor(void *arg){
 	thread_fm_t *data = (thread_fm_t *)arg;
 	struct kevent trigger;
-	char *local_fn;
+	char local_fn[NMBUFSIZ];
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 	loopdata_t *loopdata = NULL;
 	unsigned long age = EXPTIME, last_time = 0, this_time = 0;
@@ -71,8 +71,6 @@ void
 	fr = data->fileread;
 	fm = data->file_monitor;
 	free(data);
-
-	if ((local_fn = (char *)malloc(NMBUFSIZ * sizeof(char))) == NULL) s2c_malloc_err();
 
 	if (fid == ID_AF) strlcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
 	if (fid == ID_BF) strlcpy(local_fn, loopdata->bfile, NMBUFSIZ);
@@ -107,7 +105,7 @@ void
 			}
 
 			if(!loopdata->B) {
-				s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
+				s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
 				bfile_monitor = 0;
 			}
 
@@ -151,8 +149,8 @@ void
 
 					if(bfile_monitor) {
 						if(!loopdata->B) {
-							s2c_parse_and_block_bl_static_clear(loopdata->dev);
-							s2c_parse_load_file(loopdata->dev, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
+							s2c_pf_tbldel(loopdata->dev, loopdata->tablename_static);
+							s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
 							if (v) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
 						}
 						bfile_monitor = 0;
@@ -229,7 +227,7 @@ void
 s2c_kevent_wlf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
 {
 	s2c_parse_and_block_list_clear(&loopdata->wbhead.whead);
-	s2c_parse_load_wl(loopdata->Z, loopdata->dev, loopdata->extif, loopdata->wfile, lineproc, &loopdata->wbhead.whead);
+	s2c_parse_load_wl(loopdata, loopdata->wfile, lineproc, &loopdata->wbhead.whead);
 	if (v) s2c_parse_print_list(&loopdata->wbhead.whead);
 
 	return;
@@ -239,14 +237,13 @@ void
 s2c_kevent_loop(loopdata_t *loopdata)
 {
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
-	pftbl_t *pftbl = NULL;
+	pftbl_t pftbl;
 
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
-	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
+	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
 		sleep(10);
-		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, pftbl);
+		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);
 
@@ -271,8 +268,6 @@ s2c_kevent_loop(loopdata_t *loopdata)
 
 		pf_tbl_state_init = pf_tbl_state_current;
 	}
-
-	free(pftbl);
 
 	return;
 }

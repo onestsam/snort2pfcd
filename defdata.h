@@ -89,10 +89,10 @@
 #define ID_AF			2
 
 /* snort priorities */
-#define HIGH			4
-#define MEDIUM			3
-#define LOW			2
-#define VERYLOW			1
+#define S2C_SP_HIGH		4
+#define S2C_SP_MEDIUM		3
+#define S2C_SP_LOW		2
+#define S2C_SP_VERYLOW		1
 
 /* Paths & regex */
 #define PFDEVICE		"/dev/pf"
@@ -223,7 +223,9 @@ typedef struct _loopdata_t {
 	char logfile[NMBUFSIZ];
 	char nmpfdev[NMBUFSIZ];
 	char alertfile[NMBUFSIZ];
+	char randombuf[BUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
+	char tablename_static[PF_TABLE_NAME_SIZE];
 } loopdata_t;
 
 typedef struct _thread_fm_t {
@@ -250,10 +252,10 @@ pthread_mutex_t fm_mutex;
 /* Function defs */
 void usage();
 void sighandle();
-void s2c_daemonize();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_init(loopdata_t *);
+void s2c_daemonize(loopdata_t *);
 void s2c_thr_init(loopdata_t *);
 void s2c_pf_ioctl(int, unsigned long, void *);
 void s2c_spawn_file_monitor(int *, int, int, loopdata_t *);
@@ -262,7 +264,7 @@ void s2c_spawn_block_log(int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutex_init();
 void s2c_mutex_destroy();
-void s2c_log_init(char *);
+void s2c_log_init(loopdata_t *);
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
 void s2c_pftbl_set(char *, pftbl_t *);
@@ -283,16 +285,15 @@ int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);
 void s2c_parse_add_list(struct ipulist *, struct ifaddrs *);
 void s2c_parse_and_block_list_clear(struct ulist_head *);
-void s2c_parse_and_block_bl_static_clear(int);
 void s2c_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
 void s2c_parse_and_block(loopdata_t *, lineproc_t *);
 void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
 int s2c_parse_and_block_bl(char *, struct ulist_head *);
-void s2c_parse_load_file(int, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
+void s2c_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
 void s2c_parse_load_ifaces(struct ipulist *);
-void s2c_parse_load_wl(int, int, char *, char *, lineproc_t *, struct ulist_head *);
+void s2c_parse_load_wl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
 void s2c_parse_print_list(struct ulist_head *);
-int s2c_parse_search_list(char *, struct ulist_head *, CIDR *ipcidr);
+int s2c_parse_search_list(char *, struct ulist_head *);
 
 int s2c_fd_open(char *);
 int s2c_kevent_read(loopdata_t *, lineproc_t *, int);

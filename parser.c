@@ -103,21 +103,6 @@ s2c_parse_and_block_list_clear(struct ulist_head *head)
 }
 
 void
-s2c_parse_and_block_bl_static_clear(int dev)
-{
-	char *tablename;
-
-	if ((tablename = (char *)malloc(PF_TABLE_NAME_SIZE*sizeof(char))) == NULL) s2c_malloc_err();
-	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
-	strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
-	s2c_pf_tbldel(dev, tablename);
-	free(tablename);
-
-	return;
-}
-
-void
 s2c_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, struct ulist_head *head)
 {
 	struct ipulist *aux2 = NULL;
@@ -198,7 +183,6 @@ void
 s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 {
 	int pb_status = 0, threadcheck = 0;
-	CIDR *ipcidr = NULL;
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) {
@@ -207,12 +191,8 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 	}
 
 	if (!LIST_EMPTY(&loopdata->wbhead.whead)) {
-		if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
-		if (s2c_parse_search_list(lineproc->ret, &loopdata->wbhead.whead, ipcidr)) {
-			cidr_free(ipcidr);
+		if (s2c_parse_search_list(lineproc->ret, &loopdata->wbhead.whead))
 			return;
-		}
-	cidr_free(ipcidr);
 	}
 
 	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &loopdata->wbhead.bhead)) == loopdata->repeat_offenses) {
@@ -237,12 +217,10 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 }
 
 void
-s2c_parse_load_file(int dev, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id)
+s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id)
 {
 	struct ipulist *ipu2 = NULL;
-	CIDR *ipcidr = NULL;
 	FILE *file = NULL;
-	char *tablename = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
 		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, ufile, LANG_WARN);
@@ -250,14 +228,6 @@ s2c_parse_load_file(int dev, lineproc_t *lineproc, char *ufile, struct ulist_hea
 	}
 
 	flockfile(file);
-
-	if (id == ID_BF) {
-		if ((ipcidr = cidr_alloc()) == NULL) s2c_malloc_err();
-		if ((tablename = (char *)malloc(PF_TABLE_NAME_SIZE*sizeof(char))) == NULL) s2c_malloc_err();
-		memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-		strlcpy(tablename, __progname, PF_TABLE_NAME_SIZE);
-		strlcat(tablename, "_static", PF_TABLE_NAME_SIZE);
-	}
 
 	while (s2c_parse_line(lineproc->cad, file)) {
 		if (s2c_parse_ip(lineproc)) {
@@ -271,18 +241,13 @@ s2c_parse_load_file(int dev, lineproc_t *lineproc, char *ufile, struct ulist_hea
 
 			if (id == ID_BF) {
 				if (!LIST_EMPTY(head))
-					if (s2c_parse_search_list(lineproc->ret, head, ipcidr))
+					if (s2c_parse_search_list(lineproc->ret, head))
 						syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
 
-				s2c_pf_ruleadd(dev, tablename);
-				s2c_pf_block(dev, tablename, lineproc->ret);
+				s2c_pf_ruleadd(loopdata->dev, loopdata->tablename_static);
+				s2c_pf_block(loopdata->dev, loopdata->tablename_static, lineproc->ret);
 			}
 		}
-	}
-
-	if (id == ID_BF) {
-		cidr_free(ipcidr);
-		free(tablename);
 	}
 
 	funlockfile(file);
@@ -330,7 +295,7 @@ s2c_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa)
 }
 
 void
-s2c_parse_load_wl(int Z, int dev, char *extif, char *wfile, lineproc_t *lineproc, struct ulist_head *head)
+s2c_parse_load_wl(loopdata_t *loopdata, char *wfile, lineproc_t *lineproc, struct ulist_head *head)
 {
 	struct ipulist *ipu1 = NULL;
 	struct ifreq *ifr = NULL;
@@ -343,7 +308,7 @@ s2c_parse_load_wl(int Z, int dev, char *extif, char *wfile, lineproc_t *lineproc
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipu1, elem);
 
-	if (!strcmp(extif, "all")) s2c_parse_load_ifaces(ipu1);
+	if (!strcmp(loopdata->extif, "all")) s2c_parse_load_ifaces(ipu1);
 	else {
 
 		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) s2c_malloc_err();
@@ -351,11 +316,11 @@ s2c_parse_load_wl(int Z, int dev, char *extif, char *wfile, lineproc_t *lineproc
 		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		ifr->ifr_addr.sa_family = AF_INET;
-		strlcpy(ifr->ifr_name, extif, IFNAMSIZ);
+		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
 		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
-			syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, extif, LANG_EXIT);
+			syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, loopdata->extif, LANG_EXIT);
 			s2c_exit_fail();
 		}
 		pthread_mutex_unlock(&pf_mutex);
@@ -366,8 +331,8 @@ s2c_parse_load_wl(int Z, int dev, char *extif, char *wfile, lineproc_t *lineproc
 	s2c_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
 	}
 
-	if (!Z) s2c_parse_load_file(dev, lineproc, PATH_RESOLV, head, ipu1, ID_WF);
-	s2c_parse_load_file(dev, lineproc, wfile, head, ipu1, ID_WF);
+	if (!loopdata->Z) s2c_parse_load_file(loopdata, lineproc, PATH_RESOLV, head, ipu1, ID_WF);
+	s2c_parse_load_file(loopdata, lineproc, wfile, head, ipu1, ID_WF);
 
 	return;
 }
@@ -386,15 +351,16 @@ s2c_parse_print_list(struct ulist_head *head)
 }
 
 int
-s2c_parse_search_list(char *ip, struct ulist_head *head, CIDR *ipcidr)
+s2c_parse_search_list(char *ip, struct ulist_head *head)
 {
 	struct ipulist *aux2 = NULL;
+	CIDR ipcidr;
 	int f = 0;
 
-	ipcidr = cidr_from_str(ip);
+	ipcidr = *cidr_from_str(ip);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		if (!cidr_contains(&aux2->ciaddr, ipcidr)) { 
+		if (!cidr_contains(&aux2->ciaddr, &ipcidr)) { 
 			f = 1; break;
 		}
 
