@@ -257,6 +257,7 @@ void s2c_malloc_err();
 void s2c_init(loopdata_t *);
 void s2c_daemonize(loopdata_t *);
 void s2c_thr_init(loopdata_t *);
+void s2c_get_optargs(int, char **, loopdata_t *);
 void s2c_pf_ioctl(int, unsigned long, void *);
 void s2c_spawn_file_monitor(int *, int, int, loopdata_t *);
 void s2c_spawn_expiretable(loopdata_t *);

@@ -58,17 +58,64 @@
 int
 main(int argc, char **argv)
 {
-	extern char *optarg;
-	extern int optind;
-	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
+
 	s2c_init(loopdata);
+	s2c_get_optargs(argc, argv, loopdata);
+
+	s2c_log_init(loopdata);
+	s2c_thr_init(loopdata);
+	s2c_kevent_loop(loopdata);
+
+	close(loopdata->dev);
+	free(loopdata);
+	closelog();
+	return(0);
+}
+
+void
+s2c_init(loopdata_t *loopdata)
+{
+	wfile_monitor = 0;
+	bfile_monitor = 0;
+	afile_monitor = 0;
+	pf_reset = 0;
+	v = 0;
+
+	memset(loopdata, 0x00, sizeof(loopdata_t));
+
+	loopdata->priority = S2C_SP_HIGH;
+	loopdata->thr_max = THRMAX;
+	loopdata->repeat_offenses = REPEATO;
+	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
+	strlcat(loopdata->tablename_static, "_static", PF_TABLE_NAME_SIZE);
+
+	if (getuid() != 0) {
+		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
+		exit(EXIT_FAILURE);
+	}
+
+	s2c_mutex_init();
+
+	signal(SIGHUP,  sighandle);
+	signal(SIGTERM, sighandle);
+	signal(SIGINT,  sighandle);
+
+	return;
+}
+
+void
+s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
+{
+	extern char *optarg;
+	extern int optind;
+	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
-
 			case 'v': v = 1; break;
 			case 'F': F = 1; break;
 			case 'W': loopdata->W = 1; break;
@@ -90,7 +137,7 @@ main(int argc, char **argv)
 			case '?': usage();
 			default: usage();
 		}
-	
+
 	argc -= optind;
 	argv += optind;
 
@@ -108,17 +155,56 @@ main(int argc, char **argv)
 	if(!F) s2c_daemonize(loopdata);
 	if (q) sleep(q);
 
-        if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-                syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
-                s2c_exit_fail();
-        }
+	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
+		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
+		s2c_exit_fail();
+	}
 
-	s2c_log_init(loopdata);
-	s2c_thr_init(loopdata);
-	s2c_kevent_loop(loopdata);
+	return;
+}
 
-	close(loopdata->dev);
-	free(loopdata);
-	closelog();
-	return(0);
+void
+s2c_daemonize(loopdata_t *loopdata)
+{
+	struct pidfh *pfh = NULL;
+	pid_t otherpid;
+
+	memset(&otherpid, 0x00, sizeof(pid_t));
+	memset(loopdata->randombuf, 0x00, BUFSIZ);
+
+	strlcpy(loopdata->randombuf, PATH_RUN, BUFSIZ);
+	strlcat(loopdata->randombuf,  __progname, BUFSIZ);
+	strlcat(loopdata->randombuf, ".pid", BUFSIZ);
+
+	if ((pfh = pidfile_open(loopdata->randombuf, 0600, &otherpid)) == NULL)
+		fprintf(stderr, "%s", LANG_NO_PID);
+
+	if (daemon(0, 0) == -1) {
+		fprintf(stderr, "%s", LANG_NO_DAEMON);
+		pidfile_remove(pfh);
+		s2c_exit_fail();
+	} else {
+		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
+	}
+
+	pidfile_write(pfh);
+
+	return;
+}
+
+void
+s2c_log_init(loopdata_t *loopdata)
+{
+	long timebuf = 0;
+
+	s2c_check_file(loopdata->logfile);
+
+	memset(loopdata->randombuf, 0x00, BUFSIZ);
+
+	timebuf = time(NULL);
+	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
+	s2c_write_file(loopdata->logfile, loopdata->randombuf);
+
+	return;
 }
