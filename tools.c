@@ -227,6 +227,7 @@ void
 s2c_exit_fail()
 {
 	s2c_mutex_destroy();
+	pidfile_remove(pfh);
 	closelog();
 	exit(EXIT_FAILURE);
 

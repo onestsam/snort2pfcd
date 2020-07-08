@@ -58,14 +58,16 @@
 void
 *s2c_kevent_file_monitor(void *arg){
 	thread_fm_t *data = (thread_fm_t *)arg;
-	struct kevent trigger;
+	struct kevent *trigger = NULL;
 	char local_fn[NMBUFSIZ];
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 	loopdata_t *loopdata = NULL;
 	unsigned long age = EXPTIME, last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
 
+	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) s2c_malloc_err();
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
+	memset(loopdata, 0x00, sizeof(loopdata_t));
 	memcpy(loopdata, &data->loopdata, sizeof(loopdata_t));
 	fid = data->fid;
 	fr = data->fileread;
@@ -127,14 +129,14 @@ void
 			}
 
 			s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
-			memset(&trigger, 0x00, sizeof(struct kevent));
-			if (kevent(loopdata->kq, NULL, 0, &trigger, 1, NULL) == -1) {
+//			memset(trigger, 0x00, sizeof(struct kevent));
+			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) {
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 				s2c_exit_fail();
 
 			} else {
 				if(fr) {
-					if (s2c_kevent_read(loopdata, lineproc, trigger.data) == -1)
+					if (s2c_kevent_read(loopdata, lineproc, trigger->data) == -1)
 						syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
@@ -242,7 +244,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
-		sleep(10);
+//		sleep(10);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);

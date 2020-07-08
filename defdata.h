@@ -237,6 +237,7 @@ typedef struct _thread_fm_t {
 
 /* Global vars */
 extern char *__progname;
+struct pidfh *pfh;
 int v;
 int s2c_threads;
 int pf_reset;
@@ -255,6 +256,7 @@ void sighandle();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_init(loopdata_t *);
+void s2c_pre_init(loopdata_t *);
 void s2c_daemonize(loopdata_t *);
 void s2c_thr_init(loopdata_t *);
 void s2c_get_optargs(int, char **, loopdata_t *);
