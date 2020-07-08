@@ -129,7 +129,7 @@ void
 			}
 
 			s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
-//			memset(trigger, 0x00, sizeof(struct kevent));
+			memset(trigger, 0x00, sizeof(struct kevent));
 			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) {
 				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
 				s2c_exit_fail();
@@ -244,7 +244,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
-//		sleep(10);
+		sleep(10);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);
