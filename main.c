@@ -208,7 +208,8 @@ s2c_log_init(loopdata_t *loopdata)
 
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
 
-	timebuf = 2345; //time(NULL);
+	timebuf = time(NULL);
+	/* timebuf = 1234; //for lldb */
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
 	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 
