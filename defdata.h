@@ -239,6 +239,7 @@ typedef struct _thread_fm_t {
 extern char *__progname;
 struct pidfh *pfh;
 int v;
+int C;
 int s2c_threads;
 int pf_reset;
 int afile_monitor;
@@ -253,6 +254,7 @@ pthread_mutex_t fm_mutex;
 /* Function defs */
 void usage();
 void sighandle();
+void s2c_pre_exit();
 void s2c_exit_fail();
 void s2c_malloc_err();
 void s2c_init(loopdata_t *);

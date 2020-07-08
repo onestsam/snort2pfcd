@@ -378,7 +378,8 @@ s2c_parse_ipu_set(char *ret, struct ipulist *ipu)
 	strlcpy(ipu->chaddr, ret, BUFSIZ);
 	ciaddr_l = *cidr_from_str(ret);
 	memcpy(&ipu->ciaddr, &ciaddr_l, sizeof(CIDR));
-	ipu->t = time(NULL);
+	if (!C) ipu->t = time(NULL);
+	else ipu->t = 0;
 	ipu->repeat_offenses = 0;
 
 	return;

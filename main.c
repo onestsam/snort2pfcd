@@ -70,8 +70,7 @@ main(int argc, char **argv)
 
 	close(loopdata->dev);
 	free(loopdata);
-	pidfile_remove(pfh);
-	closelog();
+	s2c_pre_exit();
 
 	return(0);
 }
@@ -84,6 +83,7 @@ s2c_pre_init(loopdata_t *loopdata)
 	afile_monitor = 0;
 	pf_reset = 0;
 	v = 0;
+	C = 0;
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
@@ -155,10 +155,11 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 	extern int optind;
 	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 
-	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWDFBZb:a:l:e:t:d:h")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
 			case 'v': v = 1; break;
 			case 'F': F = 1; break;
+			case 'C': C = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
@@ -208,8 +209,8 @@ s2c_log_init(loopdata_t *loopdata)
 
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
 
-	timebuf = time(NULL);
-	/* timebuf = 1234; //for lldb */
+	if (!C) timebuf = time(NULL);
+	else timebuf = 0;
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
 	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 

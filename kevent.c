@@ -244,7 +244,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
-		sleep(10);
+		if (!C) sleep(10);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);

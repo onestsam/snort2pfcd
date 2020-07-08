@@ -52,7 +52,7 @@
 .\"POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\"
-.Dd Feb 1, 2020
+.Dd Aug 1, 2020
 .Dt SNORT2PFCD 8
 .Sh NAME
 .Nm snort2pfcd
@@ -64,6 +64,7 @@
 .Op Fl b Ar Blacklist_File
 .Op Fl W
 .Op Fl B
+.Op Fl C
 .Op Fl D
 .Op Fl F
 .Op Fl Z
@@ -97,6 +98,8 @@ If set, will prevent loading of any whitelist file.
 blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
 .It Fl B 
 If set, will prevent loading of the snort blacklist file.
+.It Fl C
+If set, will enable debug mode for gdb, lldb, etc.
 .It Fl D
 If set, will disable the DNS lookup functionality.
 .It Fl F

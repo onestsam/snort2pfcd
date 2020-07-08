@@ -224,11 +224,19 @@ s2c_malloc_err()
 }
 
 void
-s2c_exit_fail()
+s2c_pre_exit()
 {
 	s2c_mutex_destroy();
 	pidfile_remove(pfh);
 	closelog();
+
+	return;
+}
+
+void
+s2c_exit_fail()
+{
+	s2c_pre_exit();
 	exit(EXIT_FAILURE);
 
 	return;
@@ -257,7 +265,7 @@ s2c_mutex_destroy()
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	s2c_exit_fail();
 
@@ -268,8 +276,7 @@ void
 sighandle()
 {
 	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
-	s2c_mutex_destroy();
-	closelog();
+	s2c_pre_exit();
 	exit(EXIT_SUCCESS);
 
 	return;

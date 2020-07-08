@@ -1,7 +1,7 @@
 # snort2pfcd
-v2.5
+v2.6
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Tue Jul  7 23:27:52 2020 -->
+<!-- CreationDate: Wed Jul  8 01:34:19 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -30,8 +30,8 @@ alerts via packet filter firewall tables.</p>
 [<b>&minus;e&nbsp;</b><i>External_Interface</i>]
 [<b>&minus;w&nbsp;</b><i>Whitelist_File</i>]
 [<b>&minus;b&nbsp;</b><i>Blacklist_File</i>]
-[<b>&minus;W</b>] [<b>&minus;B</b>] [<b>&minus;D</b>]
-[<b>&minus;F</b>] [<b>&minus;Z</b>]
+[<b>&minus;W</b>] [<b>&minus;B</b>] [<b>&minus;C</b>]
+[<b>&minus;D</b>] [<b>&minus;F</b>] [<b>&minus;Z</b>]
 [<b>&minus;l&nbsp;</b><i>Log_File</i>]
 [<b>&minus;a&nbsp;</b><i>Alert_File</i>]
 [<b>&minus;p&nbsp;</b><i>Priority</i>]
@@ -86,6 +86,11 @@ prevent loading of any whitelist file.</p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
 prevent loading of the snort blacklist file.</p>
+
+<p style="margin-top: 1em"><b>&minus;C</b></p>
+
+<p style="margin-left:17%; margin-top: 1em">If set, will
+enable debug mode for gdb, lldb, etc.</p>
 
 <p style="margin-top: 1em"><b>&minus;D</b></p>
 
@@ -300,7 +305,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">Feb&nbsp;1,
+<p style="margin-left:6%; margin-top: 1em">Aug&nbsp;1,
 2020</p>
 <hr>
 </body>
