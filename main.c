@@ -94,6 +94,9 @@ s2c_pre_init(loopdata_t *loopdata)
 	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
 	strlcat(loopdata->tablename_static, "_static", PF_TABLE_NAME_SIZE);
 
+        if (!C) loopdata->timebuf = time(NULL);
+        else loopdata->timebuf = 0;
+
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
 		exit(EXIT_FAILURE);
@@ -203,16 +206,11 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 void
 s2c_log_init(loopdata_t *loopdata)
 {
-	long timebuf = 0;
-
 	s2c_check_file(loopdata->logfile);
 
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
 
-	if (!C) timebuf = time(NULL);
-	else timebuf = 0;
-
-	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
+	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&loopdata->timebuf)));
 	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 
 	return;

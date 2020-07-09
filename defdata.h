@@ -215,6 +215,7 @@ typedef struct _loopdata_t {
 	int thr_max;
 	int priority;
 	int repeat_offenses;
+	long timebuf;
 	unsigned long t;
 	wbhead_t wbhead;
 	char wfile[NMBUFSIZ];

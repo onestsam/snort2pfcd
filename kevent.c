@@ -113,8 +113,7 @@ void
 
 			pthread_mutex_unlock(&fm_mutex);
 
-			if (!C) this_time = last_time = time(NULL);
-			else this_time = last_time = 0;
+			this_time = last_time = loopdata->timebuf;
 			pf_reset_check = 0;
 		}
 
