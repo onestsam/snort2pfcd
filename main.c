@@ -159,7 +159,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 		switch(ch) {
 			case 'v': v = 1; break;
 			case 'F': F = 1; break;
-			case 'C': C = 1; break;
+			case 'C': C = 1; F = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
@@ -211,6 +211,7 @@ s2c_log_init(loopdata_t *loopdata)
 
 	if (!C) timebuf = time(NULL);
 	else timebuf = 0;
+
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&timebuf)));
 	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 

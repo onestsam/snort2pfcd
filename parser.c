@@ -173,12 +173,10 @@ s2c_parse_ip(lineproc_t *lineproc)
 		}
 	}
 
-	if (i > 1) {
+	if (i > 1)
 		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_FOUND, lineproc->ret);
-		return(1);
-	}
 
-	return(0);
+	return(i);
 }
 
 void
@@ -372,12 +370,9 @@ s2c_parse_search_list(char *ip, struct ulist_head *head)
 void
 s2c_parse_ipu_set(char *ret, struct ipulist *ipu)
 {
-	CIDR ciaddr_l;
-
 	memset(ipu, 0x00, sizeof(struct ipulist));
 	strlcpy(ipu->chaddr, ret, BUFSIZ);
-	ciaddr_l = *cidr_from_str(ret);
-	memcpy(&ipu->ciaddr, &ciaddr_l, sizeof(CIDR));
+	ipu->ciaddr = *cidr_from_str(ret);
 	if (!C) ipu->t = time(NULL);
 	else ipu->t = 0;
 	ipu->repeat_offenses = 0;

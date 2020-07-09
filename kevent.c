@@ -113,14 +113,16 @@ void
 
 			pthread_mutex_unlock(&fm_mutex);
 
-			this_time = last_time = time(NULL);
+			if (!C) this_time = last_time = time(NULL);
+			else this_time = last_time = 0;
 			pf_reset_check = 0;
 		}
 
 		while (!pf_reset_check) {
 
 			if (fr) {
-				this_time = time(NULL);
+				if (!C) this_time = time(NULL);
+				else this_time = 1;
 
 				if ((last_time + age) < (this_time + 1)) {
 					last_time = this_time;
@@ -244,7 +246,6 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
-		if (!C) sleep(10);
 		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);
@@ -259,6 +260,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 
 		if (pf_tbl_state_current < pf_tbl_state_init)
 			pf_reset_check = 1;
+		pf_tbl_state_init = pf_tbl_state_current;
 
 		if (pf_reset_check) {
 			pf_reset_check = 0;
@@ -266,9 +268,8 @@ s2c_kevent_loop(loopdata_t *loopdata)
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
 			s2c_write_file(loopdata->alertfile, " ");
-		}
-
-		pf_tbl_state_init = pf_tbl_state_current;
+		} else
+			if (!C) sleep(10);
 	}
 
 	return;

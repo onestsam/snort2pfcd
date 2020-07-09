@@ -102,7 +102,7 @@
 #define PATH_ALERT		"/var/log/snort/alert"
 #define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
 #define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
-#define REG_ADDR		"([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})(\\/[0-9]{1,2})?"
+#define REG_ADDR		"(([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})(\\/[0-9]{1,2})?)"
 
 /* Language */
 #define LANG_EXIT		"exiting"
