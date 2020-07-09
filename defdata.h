@@ -103,6 +103,7 @@
 #define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
 #define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
 #define REG_ADDR		"(([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})(\\/[0-9]{1,2})?)"
+#define REG_ADDR_VIP		"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
 
 /* Language */
 #define LANG_EXIT		"exiting"
@@ -192,6 +193,7 @@ typedef struct _wbhead_t {
 
 typedef struct _lineproc_t {
 	regex_t expr;
+	regex_t expr_v;
 	char cad[BUFSIZ];
 	char ret[BUFSIZ];
 } lineproc_t;
