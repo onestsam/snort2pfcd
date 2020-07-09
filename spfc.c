@@ -90,7 +90,8 @@ void
 		memset(target, 0x00, sizeof(struct pfr_table));
 		memset(astats, 0x00, sizeof(struct pfr_astats));
 		strlcpy(target->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
-		oldest_entry = time(NULL);
+		if (!C) oldest_entry = time(NULL);
+		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
 		pthread_mutex_lock(&pf_mutex);
@@ -176,7 +177,7 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 {
 	long timebuf = 0;
 
-	timebuf = time(NULL);
+	if (!C) timebuf = time(NULL);
 	
 	pfbl_log->sa.sa_family = AF_INET;
 	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->local_logip, sizeof(struct sockaddr_in)))
@@ -209,7 +210,9 @@ void
 	strlcpy(pfbl_log->local_logfile, data->logfile, NMBUFSIZ);
 	free(data);
 
-	timebuf = time(NULL);
+	if (!C) timebuf = time(NULL);
+	else timebuf = 0;
+
 	if(!D) {
 		pfbl_log->sa.sa_family = AF_INET;
 		if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
