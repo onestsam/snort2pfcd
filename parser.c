@@ -156,7 +156,6 @@ s2c_parse_ip(lineproc_t *lineproc)
 	int len = 0, i = 0;
 	char *regpos = NULL;
 	regmatch_t rado[REGARSIZ];
-	regmatch_t rado_v[REGARSIZ];
 
 	memset((regmatch_t*)rado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 	regpos = lineproc->cad;
@@ -174,13 +173,7 @@ s2c_parse_ip(lineproc_t *lineproc)
 		}
 	}
 
-	if (i) {
-		memset((regmatch_t*)rado_v, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-		if (regexec(&lineproc->expr_v, lineproc->ret, REGARSIZ, rado_v, 0) == 0)
-			return(i);
-	}
-
-	return(0);
+	return(i);
 }
 
 void

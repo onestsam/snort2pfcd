@@ -96,11 +96,6 @@ void
 				s2c_exit_fail();
 			}
 
-			if (regcomp(&lineproc->expr_v, REG_ADDR_VIP, REG_EXTENDED) != 0) {
-				syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
-				s2c_exit_fail();
-			}
-
 			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
 
