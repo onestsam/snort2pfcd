@@ -1,7 +1,7 @@
 # snort2pfcd
-v2.6
+v2.7
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Fri Jul 10 00:02:01 2020 -->
+<!-- CreationDate: Sun Jul 12 21:17:39 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -28,8 +28,8 @@ alerts via packet filter firewall tables.</p>
 
 <p style="margin-left:21%;"><b>snort2pfcd</b>
 [<b>&minus;e&nbsp;</b><i>External_Interface</i>]
-[<b>&minus;w&nbsp;</b><i>Whitelist_File</i>]
-[<b>&minus;b&nbsp;</b><i>Blacklist_File</i>]
+[<b>&minus;w&nbsp;</b><i>Passlist_File</i>]
+[<b>&minus;b&nbsp;</b><i>Blocklist_File</i>]
 [<b>&minus;W</b>] [<b>&minus;B</b>] [<b>&minus;C</b>]
 [<b>&minus;D</b>] [<b>&minus;F</b>] [<b>&minus;Z</b>]
 [<b>&minus;l&nbsp;</b><i>Log_File</i>]
@@ -50,8 +50,8 @@ priority using packet filter table entries for a specified
 period of time. A whitelist is specified to exclude local
 and trusted ip addresses from being blocked.
 <b>snort2pfcd</b> also preloads the community maintained and
-supplied snort blacklist by default. The whitelist and
-blacklist files are monitored and <b>snort2pfcd</b>
+supplied snort blocklist by default. The passlist and
+blocklist files are monitored and <b>snort2pfcd</b>
 automatically reloads and updates the tables when changes
 are made to these files.</p>
 
@@ -62,30 +62,30 @@ as follows:</p>
 <i>External_Interface</i></p>
 
 <p style="margin-left:17%;">external interface e.g. eth0 or
-&quot;all&quot; to whitelist all interfaces, default is to
-whitelist all interfaces.</p>
+&quot;all&quot; to passlist all interfaces, default is to
+passlist all interfaces.</p>
 
 <p style="margin-top: 1em"><b>&minus;w</b>
-<i>Whitelist_File</i></p>
+<i>Passlist_File</i></p>
 
-<p style="margin-left:17%;">whitelist file, default is
+<p style="margin-left:17%;">passlist file, default is
 /usr/local/etc/snort/rules/iplists/default.whitelist.</p>
 
 <p style="margin-top: 1em"><b>&minus;W</b></p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
-prevent loading of any whitelist file.</p>
+prevent loading of any passlist file.</p>
 
 <p style="margin-top: 1em"><b>&minus;b</b>
-<i>Blacklist_File</i></p>
+<i>Blocklist_File</i></p>
 
-<p style="margin-left:17%;">blacklist file, default is
+<p style="margin-left:17%;">blocklist file, default is
 /usr/local/etc/snort/rules/iplists/default.blacklist.</p>
 
 <p style="margin-top: 1em"><b>&minus;B</b></p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
-prevent loading of the snort blacklist file.</p>
+prevent loading of the snort blocklist file.</p>
 
 <p style="margin-top: 1em"><b>&minus;C</b></p>
 
@@ -105,7 +105,7 @@ mode. If set, will not daemonize.</p>
 <p style="margin-top: 1em"><b>&minus;Z</b></p>
 
 <p style="margin-left:17%; margin-top: 1em">If set, will
-prevent the whitelisting of entries in the /etc/resolv.conf
+prevent the passlisting of entries in the /etc/resolv.conf
 file.</p>
 
 <p style="margin-top: 1em"><b>&minus;l</b>
@@ -211,18 +211,18 @@ the DNS name in the <b>snort2pfcd</b> block log. Should the
 user decide that the offending address is trustworthy, the
 user can add the address, or alternatively, research and add
 the entire CIDR address block assigned to that network
-entity, to the whitelist. Whitelisted addresses or CIDR
+entity, to the passlist. Passlisted addresses or CIDR
 address blocks generating a snort alert will not be added to
 the packet filter block table.</p>
 
 
 <p style="margin-left:6%; margin-top: 1em"><b>snort2pfcd</b>
-also loads the snort community supplied blacklist file into
+also loads the snort community supplied blocklist file into
 a separate packet filter block table by default. Table
 entries are named &quot;snort2pfcd&quot; for dynamic entries
 which can be viewed with &quot;pfctl -t snort2pfcd -T
 show&quot;. Static entries loaded from the community
-provided snort blacklist are populated within the
+provided snort blocklist are populated within the
 &quot;snort2pfcd_static&quot; table which can be viewed with
 &quot;pfctl -t snort2pfcd_static -T show&quot;.</p>
 
@@ -230,21 +230,21 @@ provided snort blacklist are populated within the
 should <b>snort2pfcd</b> need to be restarted.
 <b>snort2pfcd</b> will repopulate its packet filter tables
 if the packet filter is restarted. <b>snort2pfcd</b> also
-monitors the whitelist and blacklist files for changes.
+monitors the passlist and blocklist files for changes.
 Changes applied to these files are automatically reloaded
 and applied to the running <b>snort2pfcd</b> processes.</p>
 
 <p style="margin-top: 1em"><b>FILES <br>
-Whitelist</b></p>
+Passlist</b></p>
 
-<p style="margin-left:6%;">Whitelist entries can be single
+<p style="margin-left:6%;">Passlist entries can be single
 ip addressess (e.g. 192.168.0.1) or blocks of addresses in
 CIDR format (e.g. 192.168.0.0/24). Each entry should be on a
 separate line.</p>
 
-<p style="margin-top: 1em"><b>Blacklist</b></p>
+<p style="margin-top: 1em"><b>Blocklist</b></p>
 
-<p style="margin-left:6%;">Blacklist entries provided by
+<p style="margin-left:6%;">Blocklist entries provided by
 the snort community contain a list of single ip addresses
 and <b>snort2pfcd</b> will only accept entries in this
 format (e.g. 192.168.0.1). Each entry should be on a
@@ -261,25 +261,25 @@ spooler like barnyard2 to output the text alerts from the
 snort unified2 binary output.</p>
 
 <p style="margin-left:6%; margin-top: 1em">By default, the
-user-supplied whitelist is prepended with the addresses of
+user-supplied passlist is prepended with the addresses of
 all of the local interfaces as the handling of these
 addresses are usually specified by more complex packet
 filter rules and simply blocking these addresses can cause
 problems with certain configurations.</p>
 
 <p style="margin-left:6%; margin-top: 1em">The
-user-supplied whitelist can also be prepended with the
+user-supplied passlist can also be prepended with the
 address of the external interface only for paranoid
-configurations. Lo0 is always whitelisted.</p>
+configurations. Lo0 is always passlisted.</p>
 
 
 <p style="margin-left:6%; margin-top: 1em"><b>snort2pfcd</b>
-also automatically whitelists addresses found within the
+also automatically passlists addresses found within the
 /etc/resolv.conf file as these addresses should also be
 handled by specific packet filter rules.</p>
 
 <p style="margin-left:6%; margin-top: 1em">A static
-blacklist table is also maintained and populated within the
+blocklist table is also maintained and populated within the
 packet filter firewall with the addresses found within the
 /usr/local/etc/snort/rules/iplists/default.blacklist file.
 These addresses can be supplied by the user or automatically

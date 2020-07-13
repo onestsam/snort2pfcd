@@ -124,7 +124,6 @@ void
 			pthread_mutex_lock(&pf_mutex);
 			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
 			pthread_mutex_unlock(&pf_mutex);
-		} else {
 		}
 
 		free(del_addrs_list);

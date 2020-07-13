@@ -186,8 +186,8 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 	argc -= optind;
 	argv += optind;
 
-	if (!w) strlcpy(loopdata->wfile, PATH_WHITELIST, NMBUFSIZ);
-	if (!b) strlcpy(loopdata->bfile, PATH_BLACKLIST, NMBUFSIZ);
+	if (!w) strlcpy(loopdata->wfile, PATH_PASSLIST, NMBUFSIZ);
+	if (!b) strlcpy(loopdata->bfile, PATH_BLOCKLIST, NMBUFSIZ);
 	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
 	if (!d) strlcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);
 	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);

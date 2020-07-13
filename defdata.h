@@ -100,8 +100,8 @@
 #define PATH_RUN		"/var/run/"
 #define PATH_RESOLV		"/etc/resolv.conf"
 #define PATH_ALERT		"/var/log/snort/alert"
-#define PATH_WHITELIST		"/usr/local/etc/snort/rules/iplists/default.whitelist"
-#define PATH_BLACKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
+#define PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
+#define PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
 #define REG_ADDR 		"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
 /* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
 
@@ -119,9 +119,9 @@
 #define LANG_PRIB		"priority blocked at or above"
 #define LANG_THRS		"max dns request threads"
 #define LANG_PRIO		"found priority"
-#define LANG_BENT		"blacklist entry"
-#define LANG_WLL		"Whitelist:"
-#define LANG_WL			"is whitelisted"
+#define LANG_BENT		"blocklist entry"
+#define LANG_WLL		"Passlist:"
+#define LANG_WL			"is passlisted"
 #define LANG_DETAILS		"for more details"
 #define LANG_NO_REG		"no regex match found"
 #define LANG_NO_DAEMON		"cannot daemonize"
@@ -141,7 +141,7 @@
 #define LANG_INIT_THR		"unable to init detached thread attributes"
 #define LANG_SET_THR		"unable to set detached thread attributes"
 #define LANG_LAUNCH_THR		"unable to launch detached thread attributes"
-#define LANG_NOT_WHITELISTED	"not whitelisted, added to block table"
+#define LANG_NOT_WHITELISTED	"not passlisted, added to block table"
 #define LANG_UNBLOCKED		"block-time expired, removed from block table"
 #define LANG_ERR_ROOT		"error: must be root to run"
 #define LANG_ERR_REGEX		"error compiling regex expr"
@@ -215,10 +215,10 @@ typedef struct _loopdata_t {
 	int dev;
 	int thr_max;
 	int priority;
-	int repeat_offenses;
 	long timebuf;
 	unsigned long t;
 	wbhead_t wbhead;
+	int repeat_offenses;
 	char wfile[NMBUFSIZ];
 	char bfile[NMBUFSIZ];
 	char extif[IFNAMSIZ];

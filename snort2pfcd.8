@@ -60,8 +60,8 @@
 .Sh SYNOPSIS
 .Nm snort2pfcd
 .Op Fl e Ar External_Interface
-.Op Fl w Ar Whitelist_File
-.Op Fl b Ar Blacklist_File
+.Op Fl w Ar Passlist_File
+.Op Fl b Ar Blocklist_File
 .Op Fl W
 .Op Fl B
 .Op Fl C
@@ -82,22 +82,22 @@
 .Nm
 monitors snort alert output and blocks ip addresses for a given snort priority using packet filter table entries for a specified period of time. A whitelist is specified to exclude local and trusted ip addresses from being blocked. 
 .Nm
-also preloads the community maintained and supplied snort blacklist by default. The whitelist and blacklist files are monitored and
+also preloads the community maintained and supplied snort blocklist by default. The passlist and blocklist files are monitored and
 .Nm
 automatically reloads and updates the tables when changes are made to these files. 
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
 .It Fl e Ar External_Interface
-external interface e.g. eth0 or "all" to whitelist all interfaces, default is to whitelist all interfaces.
-.It Fl w Ar Whitelist_File
-whitelist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
+external interface e.g. eth0 or "all" to passlist all interfaces, default is to passlist all interfaces.
+.It Fl w Ar Passlist_File
+passlist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
 .It Fl W
-If set, will prevent loading of any whitelist file.
-.It Fl b Ar Blacklist_File
-blacklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
+If set, will prevent loading of any passlist file.
+.It Fl b Ar Blocklist_File
+blocklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
 .It Fl B 
-If set, will prevent loading of the snort blacklist file.
+If set, will prevent loading of the snort blocklist file.
 .It Fl C
 If set, will enable debug mode for gdb, lldb, etc.
 .It Fl D
@@ -105,7 +105,7 @@ If set, will disable the DNS lookup functionality.
 .It Fl F
 Foreground mode. If set, will not daemonize.
 .It Fl Z
-If set, will prevent the whitelisting of entries in the /etc/resolv.conf file.
+If set, will prevent the passlisting of entries in the /etc/resolv.conf file.
 .It Fl l Ar Log_File
 log file location, default is /var/log/snort2pfcd.log.
 .It Fl a Ar Alert_File
@@ -144,10 +144,10 @@ Differentiating between benign and malicious network traffic is difficult and, u
 .Nm
 will automatically resolve the offending ip address and display the DNS name in the 
 .Nm
-block log. Should the user decide that the offending address is trustworthy, the user can add the address, or alternatively, research and add the entire CIDR address block assigned to that network entity, to the whitelist. Whitelisted addresses or CIDR address blocks generating a snort alert will not be added to the packet filter block table.
+block log. Should the user decide that the offending address is trustworthy, the user can add the address, or alternatively, research and add the entire CIDR address block assigned to that network entity, to the passlist. Passlisted addresses or CIDR address blocks generating a snort alert will not be added to the packet filter block table.
 .Pp
 .Nm
-also loads the snort community supplied blacklist file into a separate packet filter block table by default. Table entries are named "snort2pfcd" for dynamic entries which can be viewed with "pfctl -t snort2pfcd -T show". Static entries loaded from the community provided snort blacklist are populated within the "snort2pfcd_static" table which can be viewed with "pfctl -t snort2pfcd_static -T show".
+also loads the snort community supplied blocklist file into a separate packet filter block table by default. Table entries are named "snort2pfcd" for dynamic entries which can be viewed with "pfctl -t snort2pfcd -T show". Static entries loaded from the community provided snort blocklist are populated within the "snort2pfcd_static" table which can be viewed with "pfctl -t snort2pfcd_static -T show".
 .Pp
 At no time should
 .Nm
@@ -155,17 +155,17 @@ need to be restarted.
 .Nm
 will repopulate its packet filter tables if the packet filter is restarted. 
 .Nm
-also monitors the whitelist and blacklist files for changes. Changes applied to these files are automatically reloaded and applied to the running
+also monitors the passlist and blocklist files for changes. Changes applied to these files are automatically reloaded and applied to the running
 .Nm
 processes.
 .Sh FILES
-.Sh Whitelist
+.Sh Passlist
 .Pp
-Whitelist entries can be single ip addressess (e.g. 192.168.0.1) or blocks of addresses in CIDR format (e.g. 192.168.0.0/24). Each entry should be on a separate line.
+Passlist entries can be single ip addressess (e.g. 192.168.0.1) or blocks of addresses in CIDR format (e.g. 192.168.0.0/24). Each entry should be on a separate line.
 .Pp
-.Sh Blacklist
+.Sh Blocklist
 .Pp
-Blacklist entries provided by the snort community contain a list of single ip addresses and 
+Blocklist entries provided by the snort community contain a list of single ip addresses and 
 .Nm
 will only accept entries in this format (e.g. 192.168.0.1). Each entry should be on a separate line.
 .Sh NOTES
@@ -173,14 +173,14 @@ While
 .Nm
 will parse the default snort alert file, this can produce less than real-time blocking given the burden being placed on snort especially over an active, fast or low-latency connection. The author would strongly recommend using a spooler like barnyard2 to output the text alerts from the snort unified2 binary output.
 .Pp
-By default, the user-supplied whitelist is prepended with the addresses of all of the local interfaces as the handling of these addresses are usually specified by more complex packet filter rules and simply blocking these addresses can cause problems with certain configurations.
+By default, the user-supplied passlist is prepended with the addresses of all of the local interfaces as the handling of these addresses are usually specified by more complex packet filter rules and simply blocking these addresses can cause problems with certain configurations.
 .Pp
-The user-supplied whitelist can also be prepended with the address of the external interface only for paranoid configurations. Lo0 is always whitelisted.
+The user-supplied passlist can also be prepended with the address of the external interface only for paranoid configurations. Lo0 is always passlisted.
 .Pp
 .Nm
-also automatically whitelists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific packet filter rules.
+also automatically passlists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific packet filter rules.
 .Pp
-A static blacklist table is also maintained and populated within the packet filter firewall with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
+A static blocklist table is also maintained and populated within the packet filter firewall with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
 .Sh CREDITS
 This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions. Blocking functionality based on pfctl and pftabled functions by Armin Wolfermann.
 .Sh SEE ALSO
