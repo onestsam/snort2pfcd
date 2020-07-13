@@ -141,7 +141,10 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 	char *p = NULL;
 
 	if ((p = strstr(lineproc->cad, "y: "))) {
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", LANG_PRIO, p[3]);
+		if (v) {
+			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", LANG_PRIO, p[3]);
+			else fprintf(stderr, "%s - %c", LANG_PRIO, p[3]);
+		}
 		if (isdigit(p[3]))
 			if ((p[3] - 48) >= priority)
 				return(1);
@@ -183,7 +186,10 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 
 	if (!s2c_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2c_parse_ip(lineproc)) {
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_NO_REG);
+		if (v) {
+			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_NO_REG);
+			else fprintf(stderr, "%s", LANG_NO_REG);
+		}
 		return;
 	}
 
@@ -203,10 +209,14 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 			s2c_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
 
 		s2c_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
-		if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_BLK, lineproc->ret);
+		if (v) {
+			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_BLK, lineproc->ret);
+			else fprintf(stderr, "%s - %s", LANG_BLK, lineproc->ret);
+		}
 
 	} else if (pb_status == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INTDB, LANG_EXIT);
+		else fprintf(stderr, "%s - %s", LANG_INTDB, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -220,7 +230,8 @@ s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, str
 	FILE *file = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, ufile, LANG_WARN);
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, ufile, LANG_WARN);
+		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, ufile, LANG_WARN);
 		return;
 	}
 
@@ -238,8 +249,10 @@ s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, str
 
 			if (id == ID_BF) {
 				if (!LIST_EMPTY(head))
-					if (s2c_parse_search_list(lineproc->ret, head))
-						syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
+					if (s2c_parse_search_list(lineproc->ret, head)) {
+						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
+						else fprintf(stderr, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
+					}
 
 				s2c_pf_ruleadd(loopdata->dev, loopdata->tablename_static);
 				s2c_pf_block(loopdata->dev, loopdata->tablename_static, lineproc->ret);
@@ -259,7 +272,8 @@ s2c_parse_load_ifaces(struct ipulist *ipu1)
 	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s -%s", LANG_IFADDR_ERROR, LANG_EXIT);
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s -%s", LANG_IFADDR_ERROR, LANG_EXIT);
+		else fprintf(stderr, "%s -%s", LANG_IFADDR_ERROR, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -317,7 +331,8 @@ s2c_parse_load_wl(loopdata_t *loopdata, char *wfile, lineproc_t *lineproc, struc
 
 		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
-			syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, loopdata->extif, LANG_EXIT);
+			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, loopdata->extif, LANG_EXIT);
+			else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, loopdata->extif, LANG_EXIT);
 			s2c_exit_fail();
 		}
 		pthread_mutex_unlock(&pf_mutex);
@@ -339,10 +354,12 @@ s2c_parse_print_list(struct ulist_head *head)
 {
 	struct ipulist *aux2 = NULL;
 
-	syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_WLL);
+	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_WLL);
+	else fprintf(stderr, "%s", LANG_WLL);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		syslog(LOG_DAEMON | LOG_ERR, "%s", aux2->chaddr);
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", aux2->chaddr);
+		else fprintf(stderr, "%s", aux2->chaddr);
 
 	return;
 }

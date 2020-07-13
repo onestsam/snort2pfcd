@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.7
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Sun Jul 12 21:17:39 2020 -->
+<!-- CreationDate: Sun Jul 12 23:25:14 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -47,13 +47,12 @@ alerts via packet filter firewall tables.</p>
 <p style="margin-left:6%;"><b>snort2pfcd</b> monitors snort
 alert output and blocks ip addresses for a given snort
 priority using packet filter table entries for a specified
-period of time. A whitelist is specified to exclude local
-and trusted ip addresses from being blocked.
-<b>snort2pfcd</b> also preloads the community maintained and
-supplied snort blocklist by default. The passlist and
-blocklist files are monitored and <b>snort2pfcd</b>
-automatically reloads and updates the tables when changes
-are made to these files.</p>
+period of time. A passlist is specified to exclude local and
+trusted ip addresses from being blocked. <b>snort2pfcd</b>
+also preloads the community maintained and supplied snort
+blocklist by default. The passlist and blocklist files are
+monitored and <b>snort2pfcd</b> automatically reloads and
+updates the tables when changes are made to these files.</p>
 
 <p style="margin-left:6%; margin-top: 1em">The options are
 as follows:</p>

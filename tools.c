@@ -66,7 +66,8 @@ s2c_check_file(char *namefile)
 	lstat(namefile, info);
 
 	if (info->st_mode & S_IFDIR) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -83,7 +84,8 @@ s2c_write_file(char *namefile, char *message)
 	pthread_mutex_lock(&log_mutex);
 
 	if ((lfile = fopen(namefile, "a")) == NULL) {
-		syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -114,7 +116,8 @@ s2c_mutex_init()
 	if (pthread_mutex_init(&fm_mutex, NULL) == 0)
 		return;
 
-	syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
+	else fprintf(stderr, "%s - %s", LANG_MUTEX_ERROR, LANG_EXIT);
 	s2c_exit_fail();
 
 	return;
@@ -123,8 +126,12 @@ s2c_mutex_init()
 void
 s2c_thr_init(loopdata_t *loopdata)
 {
-	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_PRIB, loopdata->priority);
-	if (v) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_THRS, loopdata->thr_max);
+	if (v) {
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_PRIB, loopdata->priority);
+		else fprintf(stderr, "%s - %d", LANG_PRIB, loopdata->priority);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_THRS, loopdata->thr_max);
+		else fprintf(stderr, "%s - %d", LANG_THRS, loopdata->thr_max);
+	}
 
 	s2c_spawn_expiretable(loopdata);
 	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
@@ -201,13 +208,17 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 	memset(yarn, 0x00, sizeof(twisted_t));
  
 	if (pthread_attr_init(&yarn->attr)) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INIT_THR, LANG_WARN);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_INIT_THR, LANG_WARN);
+		else fprintf(stderr, "%s - %s", LANG_INIT_THR, LANG_WARN);
  
 	} else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_SET_THR, LANG_WARN);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_SET_THR, LANG_WARN);
+		else fprintf(stderr, "%s - %s", LANG_SET_THR, LANG_WARN);
  
-	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data))
-		syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
+	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) {
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
+		else fprintf(stderr, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
+	}
 
 	free(yarn);
 
@@ -217,7 +228,8 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 void
 s2c_malloc_err()
 {
-	syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
+	else fprintf(stderr, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 	s2c_exit_fail();
 
 	return;
@@ -275,7 +287,8 @@ usage()
 void
 sighandle()
 {
-	syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
+	else fprintf(stderr, "%s", LANG_RECEXIT);
 	s2c_pre_exit();
 	exit(EXIT_SUCCESS);
 

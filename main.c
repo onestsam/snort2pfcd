@@ -84,6 +84,7 @@ s2c_pre_init(loopdata_t *loopdata)
 	pf_reset = 0;
 	v = 0;
 	C = 0;
+	F = 0;
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
@@ -112,11 +113,14 @@ s2c_init(loopdata_t *loopdata)
 	signal(SIGTERM, sighandle);
 	signal(SIGINT,  sighandle);
 
-	openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
-	syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
+	if (!F) {
+		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
+	} else fprintf(stderr, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
 
 	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-		syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
 		s2c_exit_fail();
 	}
 
@@ -156,7 +160,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 {
 	extern char *optarg;
 	extern int optind;
-	unsigned int F = 0, ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
+	unsigned int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {

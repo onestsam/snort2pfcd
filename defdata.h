@@ -242,6 +242,7 @@ extern char *__progname;
 struct pidfh *pfh;
 int v;
 int C;
+int F;
 int s2c_threads;
 int pf_reset;
 int afile_monitor;

@@ -302,11 +302,17 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 	pthread_mutex_lock(&pf_mutex);
 	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
-		if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
-			sleep(3);
+		if (v) {
+			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
+			else fprintf(stderr, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
 		}
+			sleep(3);
+	}
 	pthread_mutex_unlock(&pf_mutex);
-	if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_TBLADD, tablename);
+	if (v) {
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_TBLADD, tablename);
+		else fprintf(stderr, "%s - %s", LANG_TBLADD, tablename);
+	}
 
 	free(pftbl);
 
@@ -332,7 +338,10 @@ s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
 {
 	pthread_mutex_lock(&pf_mutex);
 	if (ioctl(dev, request, pf_io_arg) != 0) {
-		if (v) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
+		if (v) {
+			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
+			else fprintf(stderr, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
+		}
 		pf_reset = 1;
 	}
 	pthread_mutex_unlock(&pf_mutex);
