@@ -164,12 +164,12 @@ s2c_parse_pattern(char *pattern, lineproc_t *lineproc)
 
 		memset((regmatch_t*)rado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
 
-		if(regexec(&lineproc->expr, lineproc->cad, REGARSIZ, rado, 0) == 0) {
+		if(regexec(&lineproc->expr, p, REGARSIZ, rado, 0) == 0) {
 			len = (rado[0].rm_eo - rado[0].rm_so);
 
 			if(len) {
 				memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
-				memcpy(lineproc->ret, (lineproc->cad + rado[0].rm_so), len);
+				memcpy(lineproc->ret, (p + rado[0].rm_so), len);
 				lineproc->ret[len]='\0';
 				return(1);
 			}
