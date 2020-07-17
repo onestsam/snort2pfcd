@@ -202,8 +202,9 @@ void
 
 	if (fr) free(lineproc);
 
-	free(local_fn);
 	close(loopdata->fd);
+	free(loopdata);
+	free(local_fn);
 
 	pthread_exit(NULL);
 }
