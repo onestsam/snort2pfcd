@@ -207,7 +207,8 @@ void
 	free(local_fn);
 
 	pthread_exit(NULL);
-}
+
+} /* s2c_kevent_file_monitor */
 
 int
 s2c_fd_open(char *file)
@@ -218,7 +219,8 @@ s2c_fd_open(char *file)
 	if (lseek(fd, 0, SEEK_END) == -1) return(-1);
 
 	return(fd);
-}
+
+} /* s2c_fd_open */
 
 void
 s2c_kevent_open(int *kq, int *fd, char *file)
@@ -247,7 +249,8 @@ s2c_kevent_open(int *kq, int *fd, char *file)
 	}
 
 	return;
-}
+
+} /* s2c_kevent_open */
 
 void
 s2c_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
@@ -257,7 +260,8 @@ s2c_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
 	if (v) s2c_parse_print_list(&loopdata->pbhead.phead);
 
 	return;
-}
+
+} /* s2c_kevent_plf_reload */
 
 void
 s2c_kevent_loop(loopdata_t *loopdata)
@@ -295,7 +299,8 @@ s2c_kevent_loop(loopdata_t *loopdata)
 	}
 
 	return;
-}
+
+} /* s2c_kevent_loop */
 
 int
 s2c_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes)
@@ -321,4 +326,5 @@ s2c_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes)
 	} while (i > 0 && total < nbytes);
 
 	return(total);
-}
+
+} /* s2c_kevent_read */

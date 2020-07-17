@@ -74,7 +74,8 @@ s2c_check_file(char *namefile)
 	free(info);
 
 	return;
-}
+
+} /* s2c_check_file */
 
 void
 s2c_write_file(char *namefile, char *message)
@@ -97,7 +98,8 @@ s2c_write_file(char *namefile, char *message)
 	pthread_mutex_unlock(&log_mutex);
 
 	return;
-}
+
+} /* s2c_write_file */
 
 void
 s2c_mutex_init()
@@ -121,7 +123,8 @@ s2c_mutex_init()
 	s2c_exit_fail();
 
 	return;
-}
+
+} /* s2c_mutex_init */
 
 void
 s2c_thr_init(loopdata_t *loopdata)
@@ -139,7 +142,8 @@ s2c_thr_init(loopdata_t *loopdata)
 	s2c_spawn_file_monitor(&afile_monitor, MONITOR_READ, ID_AF, loopdata);
 
 	return;
-}
+
+} /* s2c_thr_init */
 
 void
 s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata)
@@ -156,7 +160,8 @@ s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopda
 	s2c_spawn_thread(s2c_kevent_file_monitor, fm_data);
 
 	return;
-}
+
+} /* s2c_spawn_file_monitor */
 
 void
 s2c_spawn_expiretable(loopdata_t *loopdata)
@@ -174,7 +179,8 @@ s2c_spawn_expiretable(loopdata_t *loopdata)
 	s2c_spawn_thread(s2c_pf_expiretable, expt_data);
 
 	return;
-}
+
+} /* s2c_spawn_expiretable */
 
 void
 s2c_spawn_block_log(int D, char *logip, char *logfile)
@@ -191,7 +197,8 @@ s2c_spawn_block_log(int D, char *logip, char *logfile)
 	s2c_spawn_thread(s2c_pf_block_log, log_data);
 
 	return;
-}
+
+} /* s2c_spawn_block_log */
 
 void
 s2c_spawn_thread(void *(*func) (void *), void *data)
@@ -223,7 +230,8 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 	free(yarn);
 
 	return;
-}
+
+} /* s2c_spawn_thread */
 
 void
 s2c_malloc_err()
@@ -233,7 +241,8 @@ s2c_malloc_err()
 	s2c_exit_fail();
 
 	return;
-}
+
+} /* s2c_malloc_err */
 
 void
 s2c_pre_exit()
@@ -243,7 +252,8 @@ s2c_pre_exit()
 	closelog();
 
 	return;
-}
+
+} /* s2c_pre_exit */
 
 void
 s2c_exit_fail()
@@ -252,7 +262,8 @@ s2c_exit_fail()
 	exit(EXIT_FAILURE);
 
 	return;
-}
+
+} /* s2c_exit_fail */
 
 void
 s2c_mutex_destroy()
@@ -272,20 +283,22 @@ s2c_mutex_destroy()
 	}
 
 	return;
-}
+
+} /* s2c_mutex_destroy */
 
 void
-usage()
+s2c_usage()
 {
 	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	s2c_exit_fail();
 
 	return;
-}
+
+} /* s2c_usage */
 
 void
-sighandle()
+s2c_sighandle()
 {
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
 	else fprintf(stderr, "%s", LANG_RECEXIT);
@@ -293,9 +306,12 @@ sighandle()
 	exit(EXIT_SUCCESS);
 
 	return;
-}
+
+} /* s2c_sighandle */
 
 long
-lmin(long a,long b) {
+s2c_lmin(long a,long b)
+{
 	return (a < b)?a:b;
-}
+
+} /* s2c_lmin */

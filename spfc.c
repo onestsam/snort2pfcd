@@ -104,7 +104,7 @@ void
 
 			for (i = 0; i < astats_count; i++) {
 				if (astats[i].pfras_tzero <= min_timestamp) del_addrs_count++;
-				else oldest_entry = lmin(oldest_entry, astats[i].pfras_tzero);
+				else oldest_entry = s2c_lmin(oldest_entry, astats[i].pfras_tzero);
 			}
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2c_malloc_err();	
@@ -137,7 +137,8 @@ void
 	free(astats);
 
 	pthread_exit(NULL);
-}
+
+} /* s2c_pf_expiretable */
 
 void
 s2c_pf_block(int dev, char *tablename, char *ip) 
@@ -169,7 +170,8 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 	free(pfbl);
 
 	return;
-}
+
+} /* s2c_pf_block */
 
 void
 s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
@@ -191,7 +193,8 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 	memset(pfbl_log->hbuf, 0x00, NI_MAXHOST);
 
 	return;
-}
+
+} /* s2c_pf_unblock_log */
 
 void
 *s2c_pf_block_log(void *arg)
@@ -237,7 +240,8 @@ void
 	pthread_mutex_unlock(&thr_mutex);
 
 	pthread_exit(NULL);
-}
+
+} /* s2c_pf_block_log */
 
 void
 s2c_pf_ruleadd(int dev, char *tablename)
@@ -271,7 +275,8 @@ s2c_pf_ruleadd(int dev, char *tablename)
 	free(pfrla);
 
 	return;
-}
+
+} /* s2c_pf_ruleadd */
 
 int
 s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
@@ -281,7 +286,8 @@ s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
 
 	return(pftbl->io.pfrio_size);
-}
+
+} /* s2c_pf_tbl_get */
 
 void
 s2c_pf_tbladd(int dev, char *tablename)
@@ -317,7 +323,8 @@ s2c_pf_tbladd(int dev, char *tablename)
 	free(pftbl);
 
 	return;
-}
+
+} /* s2c_pf_tbladd */
 
 void
 s2c_pf_tbldel(int dev, char *tablename)
@@ -331,7 +338,8 @@ s2c_pf_tbldel(int dev, char *tablename)
 	free(pftbl);
 
 	return;
-}
+
+} /* s2c_pf_tbldel */
 
 void
 s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
@@ -347,7 +355,8 @@ s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
 	pthread_mutex_unlock(&pf_mutex);
 
 	return;
-}
+
+} /* s2c_pf_ioctl */
 
 void
 s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
@@ -359,5 +368,5 @@ s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
 	pftbl->io.pfrio_size   = 1; 
 
 	return;
-}
 
+} /* s2c_pftbl_set */

@@ -73,7 +73,8 @@ main(int argc, char **argv)
 	s2c_pre_exit();
 
 	return(0);
-}
+
+} /* main */
 
 void
 s2c_pre_init(loopdata_t *loopdata)
@@ -101,7 +102,8 @@ s2c_pre_init(loopdata_t *loopdata)
 	}
 
 	return;
-}
+
+} /* s2c_pre_init */
 
 void
 s2c_init(loopdata_t *loopdata)
@@ -125,15 +127,16 @@ s2c_init(loopdata_t *loopdata)
 		s2c_exit_fail();
 	}
 
-	signal(SIGHUP,  sighandle);
-	signal(SIGTERM, sighandle);
-	signal(SIGINT,  sighandle);
+	signal(SIGHUP,  s2c_sighandle);
+	signal(SIGTERM, s2c_sighandle);
+	signal(SIGINT,  s2c_sighandle);
 
 	s2c_mutex_init();
 	s2c_thr_init(loopdata);
 
 	return;
-}
+
+} /* s2c_init */
 
 void
 s2c_daemonize(loopdata_t *loopdata)
@@ -157,7 +160,8 @@ s2c_daemonize(loopdata_t *loopdata)
 	pidfile_write(pfh);
 
 	return;
-}
+
+} /* s2c_daemonize */
 
 void
 s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
@@ -181,14 +185,14 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
 			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
-			case 't': if (!(loopdata->t = strtol(optarg,NULL,0))) usage(); break;
-			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) usage(); break;
-			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) usage(); break;
-			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) usage(); break;
-			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) usage(); break;
-			case 'h': usage();
-			case '?': usage();
-			default: usage();
+			case 't': if (!(loopdata->t = strtol(optarg,NULL,0))) s2c_usage(); break;
+			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
+			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
+			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
+			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
+			case 'h': s2c_usage();
+			case '?': s2c_usage();
+			default: s2c_usage();
 		}
 
 	argc -= optind;
@@ -209,5 +213,5 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 	if (q) sleep(q);
 
 	return;
-}
 
+} /* s2c_get_optargs */

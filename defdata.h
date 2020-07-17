@@ -78,7 +78,6 @@
 #include <ifaddrs.h>
 
 /* Params */
-
 #define REPEATO			0
 #define THRMAX			100
 #define NMBUFSIZ		128
@@ -160,7 +159,6 @@
 LIST_HEAD(ulist_head, ipulist);
 
 /* Global structs */
-
 struct ipulist {
         unsigned long t;
         int repeat_offenses;
@@ -257,8 +255,8 @@ pthread_mutex_t pf_mutex;
 pthread_mutex_t fm_mutex;
 
 /* Function defs */
-void usage();
-void sighandle();
+void s2c_usage();
+void s2c_sighandle();
 void s2c_pre_exit();
 void s2c_exit_fail();
 void s2c_malloc_err();
@@ -277,7 +275,7 @@ void s2c_mutex_destroy();
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
 void s2c_pftbl_set(char *, pftbl_t *);
-long lmin(long ,long);
+long s2c_lmin(long ,long);
 
 void s2c_pf_block(int, char *, char *);
 void s2c_pf_tbladd(int, char *);

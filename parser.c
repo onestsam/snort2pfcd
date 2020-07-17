@@ -83,8 +83,9 @@ s2c_parse_and_block_bl(char *ret, struct ulist_head *head)
 		}
 	}
 
-	return(-1);	
-}
+	return(-1);
+
+} /* s2c_parse_and_block_bl */
 
 void
 s2c_parse_and_block_list_clear(struct ulist_head *head)
@@ -100,7 +101,8 @@ s2c_parse_and_block_list_clear(struct ulist_head *head)
 	}
 
 	return;
-}
+
+} /* s2c_parse_and_block_list_clear */
 
 void
 s2c_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, struct ulist_head *head)
@@ -114,7 +116,8 @@ s2c_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, str
 		}
 
 	return;
-}
+
+} /* s2c_parse_and_block_list_timeout */
 
 int
 s2c_parse_line(char *buf, FILE* pfile)
@@ -133,7 +136,8 @@ s2c_parse_line(char *buf, FILE* pfile)
 	buf[i] = '\0';
 
 	return(1);
-}
+
+} /* s2c_parse_line */
 
 int
 s2c_parse_priority(int priority, lineproc_t *lineproc)
@@ -151,7 +155,8 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 	}
 
 	return(0);
-}
+
+} /* s2c_parse_priority */
 
 int
 s2c_parse_ip(lineproc_t *lineproc)
@@ -177,7 +182,8 @@ s2c_parse_ip(lineproc_t *lineproc)
 	}
 
 	return(i);
-}
+
+} /* s2c_parse_ip */
 
 void
 s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
@@ -221,7 +227,8 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 	}
 
 	return;
-}
+
+} /* s2c_parse_and_block */
 
 void
 s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id)
@@ -264,7 +271,8 @@ s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, str
 	fclose(file);
 
 	return;
-}
+
+} /* s2c_parse_load_file */
 
 void
 s2c_parse_load_ifaces(struct ipulist *ipu1)
@@ -286,7 +294,8 @@ s2c_parse_load_ifaces(struct ipulist *ipu1)
 	freeifaddrs(ifaddr);
 
 	return;
-}
+
+} /* s2c_parse_load_ifaces */
 
 void
 s2c_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa)
@@ -303,7 +312,8 @@ s2c_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa)
 	ipu1 = ipu2;
 
 	return;
-}
+
+} /* s2c_parse_add_list */
 
 void
 s2c_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head)
@@ -347,7 +357,8 @@ s2c_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struc
 	s2c_parse_load_file(loopdata, lineproc, pfile, head, ipu1, ID_PF);
 
 	return;
-}
+
+} /* s2c_parse_load_pl */
 
 void
 s2c_parse_print_list(struct ulist_head *head)
@@ -362,7 +373,8 @@ s2c_parse_print_list(struct ulist_head *head)
 		else fprintf(stderr, "%s", aux2->chaddr);
 
 	return;
-}
+
+} /* s2c_parse_print_list */
 
 int
 s2c_parse_search_list(char *ip, struct ulist_head *head)
@@ -379,7 +391,8 @@ s2c_parse_search_list(char *ip, struct ulist_head *head)
 		}
 
 	return(f);
-}
+
+} /* s2c_parse_search_list */
 
 void
 s2c_parse_ipu_set(char *ret, struct ipulist *ipu)
@@ -392,4 +405,5 @@ s2c_parse_ipu_set(char *ret, struct ipulist *ipu)
 	ipu->repeat_offenses = 0;
 
 	return;
-}
+
+} /* s2c_parse_ipu_set */
