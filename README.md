@@ -1,7 +1,7 @@
 # snort2pfcd
-v2.7
+v2.8
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Thu Jul 16 22:49:55 2020 -->
+<!-- CreationDate: Fri Jul 17 00:41:40 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>

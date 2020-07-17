@@ -134,9 +134,9 @@ s2c_thr_init(loopdata_t *loopdata)
 	}
 
 	s2c_spawn_expiretable(loopdata);
-	s2c_spawn_file_monitor(&wfile_monitor, 0, ID_WF, loopdata);
-	s2c_spawn_file_monitor(&bfile_monitor, 0, ID_BF, loopdata);
-	s2c_spawn_file_monitor(&afile_monitor, 1, ID_AF, loopdata);
+	s2c_spawn_file_monitor(&pfile_monitor, MONITOR_ONLY, ID_PF, loopdata);
+	s2c_spawn_file_monitor(&bfile_monitor, MONITOR_ONLY, ID_BF, loopdata);
+	s2c_spawn_file_monitor(&afile_monitor, MONITOR_READ, ID_AF, loopdata);
 
 	return;
 }
@@ -277,7 +277,7 @@ s2c_mutex_destroy()
 void
 usage()
 {
-	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w wfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
+	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	s2c_exit_fail();
 

@@ -76,7 +76,7 @@ void
 
 	if (fid == ID_AF) strlcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
 	if (fid == ID_BF) strlcpy(local_fn, loopdata->bfile, NMBUFSIZ);
-	if (fid == ID_WF) strlcpy(local_fn, loopdata->wfile, NMBUFSIZ);
+	if (fid == ID_PF) strlcpy(local_fn, loopdata->pfile, NMBUFSIZ);
 
 	if (v) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MON, local_fn);
@@ -86,7 +86,7 @@ void
 	if(fr) {
 		if (loopdata->t > 0) age = loopdata->t;
 		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-		if(!loopdata->W) s2c_check_file(loopdata->wfile);
+		if(!loopdata->W) s2c_check_file(loopdata->pfile);
 		if(!loopdata->B) s2c_check_file(loopdata->bfile);
 	}
 
@@ -109,12 +109,12 @@ void
 			pthread_mutex_lock(&fm_mutex);
 
 			if(!loopdata->W) {
-				s2c_kevent_wlf_reload(loopdata, lineproc);
-				wfile_monitor = 0;
+				s2c_kevent_plf_reload(loopdata, lineproc);
+				pfile_monitor = 0;
 			}
 
 			if(!loopdata->B) {
-				s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
+				s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, ID_BF);
 				bfile_monitor = 0;
 			}
 
@@ -132,7 +132,7 @@ void
 
 				if ((last_time + age) < (this_time + 1)) {
 					last_time = this_time;
-					s2c_parse_and_block_list_timeout(age, this_time, &loopdata->wbhead.bhead);
+					s2c_parse_and_block_list_timeout(age, this_time, &loopdata->pbhead.bhead);
 				}
 			}
 
@@ -152,21 +152,21 @@ void
 
 					pthread_mutex_lock(&fm_mutex);
 
-					if(wfile_monitor) {
+					if(pfile_monitor) {
 						if(!loopdata->W) {
-							s2c_kevent_wlf_reload(loopdata, lineproc);
+							s2c_kevent_plf_reload(loopdata, lineproc);
 							if (v) {
-								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->wfile, LANG_RELOAD);
-								else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, loopdata->wfile, LANG_RELOAD);
+								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->pfile, LANG_RELOAD);
+								else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, loopdata->pfile, LANG_RELOAD);
 							}
 						}
-						wfile_monitor = 0;
+						pfile_monitor = 0;
 					}
 
 					if(bfile_monitor) {
 						if(!loopdata->B) {
 							s2c_pf_tbldel(loopdata->dev, loopdata->tablename_static);
-							s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->wbhead.whead, NULL, ID_BF);
+							s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, ID_BF);
 							if (v) {
 								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
 								else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
@@ -193,7 +193,7 @@ void
 		}
 
 		if (fr)
-			s2c_parse_and_block_list_clear(&loopdata->wbhead.bhead);
+			s2c_parse_and_block_list_clear(&loopdata->pbhead.bhead);
 		if (v) {
 			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
 			else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
@@ -250,11 +250,11 @@ s2c_kevent_open(int *kq, int *fd, char *file)
 }
 
 void
-s2c_kevent_wlf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
+s2c_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc)
 {
-	s2c_parse_and_block_list_clear(&loopdata->wbhead.whead);
-	s2c_parse_load_wl(loopdata, loopdata->wfile, lineproc, &loopdata->wbhead.whead);
-	if (v) s2c_parse_print_list(&loopdata->wbhead.whead);
+	s2c_parse_and_block_list_clear(&loopdata->pbhead.phead);
+	s2c_parse_load_pl(loopdata, loopdata->pfile, lineproc, &loopdata->pbhead.phead);
+	if (v) s2c_parse_print_list(&loopdata->pbhead.phead);
 
 	return;
 }
@@ -272,7 +272,7 @@ s2c_kevent_loop(loopdata_t *loopdata)
 
 		pthread_mutex_lock(&fm_mutex);
 
-		if (wfile_monitor)
+		if (pfile_monitor)
 			pf_reset_check = 1;
 
 		if (bfile_monitor)

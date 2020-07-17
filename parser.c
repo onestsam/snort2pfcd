@@ -117,17 +117,17 @@ s2c_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, str
 }
 
 int
-s2c_parse_line(char *buf, FILE* wfile)
+s2c_parse_line(char *buf, FILE* pfile)
 {
 	static char next_ch = ' ';
 	int i = 0;
 
-	if (feof(wfile)) return (0);                                
+	if (feof(pfile)) return (0);                                
 
 	do {
-		next_ch = fgetc(wfile);
+		next_ch = fgetc(pfile);
 		if (i < BUFSIZ) buf[i++] = next_ch;
-	} while (!feof(wfile) && !isspace(next_ch));
+	} while (!feof(pfile) && !isspace(next_ch));
 
 	if (i >= BUFSIZ) return (-1);
 	buf[i] = '\0';
@@ -193,12 +193,12 @@ s2c_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc)
 		return;
 	}
 
-	if (!LIST_EMPTY(&loopdata->wbhead.whead)) {
-		if (s2c_parse_search_list(lineproc->ret, &loopdata->wbhead.whead))
+	if (!LIST_EMPTY(&loopdata->pbhead.phead)) {
+		if (s2c_parse_search_list(lineproc->ret, &loopdata->pbhead.phead))
 			return;
 	}
 
-	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &loopdata->wbhead.bhead)) == loopdata->repeat_offenses) {
+	if ((pb_status = s2c_parse_and_block_bl(lineproc->ret, &loopdata->pbhead.bhead)) == loopdata->repeat_offenses) {
 
 		pthread_mutex_lock(&thr_mutex);
 		s2c_threads++;
@@ -240,7 +240,7 @@ s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, str
 	while (s2c_parse_line(lineproc->cad, file)) {
 		if (s2c_parse_ip(lineproc)) {
 
-			if(id == ID_WF) {
+			if(id == ID_PF) {
 				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2c_malloc_err();
 				s2c_parse_ipu_set(lineproc->ret, ipu2);
 				LIST_INSERT_AFTER(ipu1, ipu2, elem);
@@ -250,8 +250,8 @@ s2c_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, str
 			if (id == ID_BF) {
 				if (!LIST_EMPTY(head))
 					if (s2c_parse_search_list(lineproc->ret, head)) {
-						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
-						else fprintf(stderr, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_WL, LANG_WARN);
+						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_PL, LANG_WARN);
+						else fprintf(stderr, "%s %s %s - %s", LANG_BENT, lineproc->ret, LANG_PL, LANG_WARN);
 					}
 
 				s2c_pf_ruleadd(loopdata->dev, loopdata->tablename_static);
@@ -306,7 +306,7 @@ s2c_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa)
 }
 
 void
-s2c_parse_load_wl(loopdata_t *loopdata, char *wfile, lineproc_t *lineproc, struct ulist_head *head)
+s2c_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head)
 {
 	struct ipulist *ipu1 = NULL;
 	struct ifreq *ifr = NULL;
@@ -343,8 +343,8 @@ s2c_parse_load_wl(loopdata_t *loopdata, char *wfile, lineproc_t *lineproc, struc
 	s2c_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
 	}
 
-	if (!loopdata->Z) s2c_parse_load_file(loopdata, lineproc, PATH_RESOLV, head, ipu1, ID_WF);
-	s2c_parse_load_file(loopdata, lineproc, wfile, head, ipu1, ID_WF);
+	if (!loopdata->Z) s2c_parse_load_file(loopdata, lineproc, PATH_RESOLV, head, ipu1, ID_PF);
+	s2c_parse_load_file(loopdata, lineproc, pfile, head, ipu1, ID_PF);
 
 	return;
 }
@@ -354,8 +354,8 @@ s2c_parse_print_list(struct ulist_head *head)
 {
 	struct ipulist *aux2 = NULL;
 
-	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_WLL);
-	else fprintf(stderr, "%s", LANG_WLL);
+	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", LANG_PLL);
+	else fprintf(stderr, "%s", LANG_PLL);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", aux2->chaddr);

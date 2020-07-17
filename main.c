@@ -78,7 +78,7 @@ main(int argc, char **argv)
 void
 s2c_pre_init(loopdata_t *loopdata)
 {
-	wfile_monitor = 0;
+	pfile_monitor = 0;
 	bfile_monitor = 0;
 	afile_monitor = 0;
 	pf_reset = 0;
@@ -99,10 +99,6 @@ s2c_pre_init(loopdata_t *loopdata)
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
-
-	signal(SIGHUP,  sighandle);
-	signal(SIGTERM, sighandle);
-	signal(SIGINT,  sighandle);
 
 	return;
 }
@@ -128,6 +124,10 @@ s2c_init(loopdata_t *loopdata)
 		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
 		s2c_exit_fail();
 	}
+
+	signal(SIGHUP,  sighandle);
+	signal(SIGTERM, sighandle);
+	signal(SIGINT,  sighandle);
 
 	s2c_mutex_init();
 	s2c_thr_init(loopdata);
@@ -177,7 +177,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 			case 'Z': loopdata->Z = 1; break;
 			case 'd': strlcpy(loopdata->nmpfdev, optarg, NMBUFSIZ); d = 1; break;
 			case 'a': strlcpy(loopdata->alertfile, optarg, NMBUFSIZ); a = 1; break;
-			case 'w': strlcpy(loopdata->wfile, optarg, NMBUFSIZ); w = 1; break;
+			case 'w': strlcpy(loopdata->pfile, optarg, NMBUFSIZ); w = 1; break;
 			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
 			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
@@ -194,7 +194,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 	argc -= optind;
 	argv += optind;
 
-	if (!w) strlcpy(loopdata->wfile, PATH_PASSLIST, NMBUFSIZ);
+	if (!w) strlcpy(loopdata->pfile, PATH_PASSLIST, NMBUFSIZ);
 	if (!b) strlcpy(loopdata->bfile, PATH_BLOCKLIST, NMBUFSIZ);
 	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
 	if (!d) strlcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);

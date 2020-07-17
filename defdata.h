@@ -84,9 +84,11 @@
 #define NMBUFSIZ		128
 #define REGARSIZ		3
 #define EXPTIME			60*60
-#define ID_WF			0
+#define ID_PF			0
 #define ID_BF			1
 #define ID_AF			2
+#define MONITOR_ONLY		0
+#define MONITOR_READ		1
 
 /* snort priorities */
 #define S2C_SP_HIGH		4
@@ -120,8 +122,8 @@
 #define LANG_THRS		"max dns request threads"
 #define LANG_PRIO		"found priority"
 #define LANG_BENT		"blocklist entry"
-#define LANG_WLL		"Passlist:"
-#define LANG_WL			"is passlisted"
+#define LANG_PLL		"Passlist:"
+#define LANG_PL			"is passlisted"
 #define LANG_DETAILS		"for more details"
 #define LANG_NO_REG		"no regex match found"
 #define LANG_NO_DAEMON		"cannot daemonize"
@@ -141,7 +143,7 @@
 #define LANG_INIT_THR		"unable to init detached thread attributes"
 #define LANG_SET_THR		"unable to set detached thread attributes"
 #define LANG_LAUNCH_THR		"unable to launch detached thread attributes"
-#define LANG_NOT_WHITELISTED	"not passlisted, added to block table"
+#define LANG_NOT_PASSLISTED	"not passlisted, added to block table"
 #define LANG_UNBLOCKED		"block-time expired, removed from block table"
 #define LANG_ERR_ROOT		"error: must be root to run"
 #define LANG_ERR_REGEX		"error compiling regex expr"
@@ -186,10 +188,10 @@ typedef struct _thread_log_t {
 	char logfile[NMBUFSIZ];
 } thread_log_t;
 
-typedef struct _wbhead_t {
-	struct ulist_head whead;
+typedef struct _pbhead_t {
+	struct ulist_head phead;
 	struct ulist_head bhead;
-} wbhead_t;
+} pbhead_t;
 
 typedef struct _lineproc_t {
 	regex_t expr;
@@ -217,9 +219,9 @@ typedef struct _loopdata_t {
 	int priority;
 	long timebuf;
 	unsigned long t;
-	wbhead_t wbhead;
+	pbhead_t pbhead;
 	int repeat_offenses;
-	char wfile[NMBUFSIZ];
+	char pfile[NMBUFSIZ];
 	char bfile[NMBUFSIZ];
 	char extif[IFNAMSIZ];
 	char logfile[NMBUFSIZ];
@@ -246,7 +248,7 @@ int F;
 int s2c_threads;
 int pf_reset;
 int afile_monitor;
-int wfile_monitor;
+int pfile_monitor;
 int bfile_monitor;
 pthread_mutex_t log_mutex;
 pthread_mutex_t dns_mutex;
@@ -298,14 +300,14 @@ void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_hea
 int s2c_parse_and_block_bl(char *, struct ulist_head *);
 void s2c_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
 void s2c_parse_load_ifaces(struct ipulist *);
-void s2c_parse_load_wl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
+void s2c_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
 void s2c_parse_print_list(struct ulist_head *);
 int s2c_parse_search_list(char *, struct ulist_head *);
 
 int s2c_fd_open(char *);
 int s2c_kevent_read(loopdata_t *, lineproc_t *, int);
 void s2c_kevent_open(int *, int *, char *);
-void s2c_kevent_wlf_reload(loopdata_t *, lineproc_t *);
+void s2c_kevent_plf_reload(loopdata_t *, lineproc_t *);
 void s2c_kevent_loop(loopdata_t *);
 void *s2c_kevent_file_monitor(void *arg);
 

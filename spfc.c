@@ -227,7 +227,7 @@ void
 	} else
 		strlcpy(pfbl_log->hbuf, LANG_DNS_DISABLED, NI_MAXHOST);
 
-	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_WHITELISTED, asctime(localtime(&timebuf)));
+	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, LANG_NOT_PASSLISTED, asctime(localtime(&timebuf)));
 	s2c_write_file(pfbl_log->local_logfile, pfbl_log->message);
 	
 	free(pfbl_log);
