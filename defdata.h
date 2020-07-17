@@ -272,7 +272,6 @@ void s2c_spawn_block_log(int, char *, char *);
 void s2c_spawn_thread(void *(*) (void *), void *);
 void s2c_mutex_init();
 void s2c_mutex_destroy();
-void s2c_log_init(loopdata_t *);
 void s2c_check_file(char *);
 void s2c_write_file(char *, char *);
 void s2c_pftbl_set(char *, pftbl_t *);

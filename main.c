@@ -95,13 +95,14 @@ s2c_pre_init(loopdata_t *loopdata)
 	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
 	strlcat(loopdata->tablename_static, "_static", PF_TABLE_NAME_SIZE);
 
-        if (!C) loopdata->timebuf = time(NULL);
-        else loopdata->timebuf = 0;
-
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}
+
+	signal(SIGHUP,  sighandle);
+	signal(SIGTERM, sighandle);
+	signal(SIGINT,  sighandle);
 
 	return;
 }
@@ -109,9 +110,13 @@ s2c_pre_init(loopdata_t *loopdata)
 void
 s2c_init(loopdata_t *loopdata)
 {
-	signal(SIGHUP,  sighandle);
-	signal(SIGTERM, sighandle);
-	signal(SIGINT,  sighandle);
+	if (!C) loopdata->timebuf = time(NULL);
+	else loopdata->timebuf = 0;
+
+	s2c_check_file(loopdata->logfile);
+	memset(loopdata->randombuf, 0x00, BUFSIZ);
+	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&loopdata->timebuf)));
+	s2c_write_file(loopdata->logfile, loopdata->randombuf);
 
 	if (!F) {
 		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
@@ -125,7 +130,6 @@ s2c_init(loopdata_t *loopdata)
 	}
 
 	s2c_mutex_init();
-	s2c_log_init(loopdata);
 	s2c_thr_init(loopdata);
 
 	return;
@@ -207,15 +211,3 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 	return;
 }
 
-void
-s2c_log_init(loopdata_t *loopdata)
-{
-	s2c_check_file(loopdata->logfile);
-
-	memset(loopdata->randombuf, 0x00, BUFSIZ);
-
-	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&loopdata->timebuf)));
-	s2c_write_file(loopdata->logfile, loopdata->randombuf);
-
-	return;
-}
