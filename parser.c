@@ -154,32 +154,6 @@ s2c_parse_priority(int priority, lineproc_t *lineproc)
 }
 
 int
-s2c_parse_pattern(char *pattern, lineproc_t *lineproc)
-{
-	int len = 0;
-	char *p = NULL;
-	regmatch_t rado[REGARSIZ];
-
-	if ((p = strstr(lineproc->cad, pattern))) {
-
-		memset((regmatch_t*)rado, 0x00, (REGARSIZ * sizeof(regmatch_t)));
-
-		if(regexec(&lineproc->expr, p, REGARSIZ, rado, 0) == 0) {
-			len = (rado[0].rm_eo - rado[0].rm_so);
-
-			if(len) {
-				memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
-				memcpy(lineproc->ret, (p + rado[0].rm_so), len);
-				lineproc->ret[len]='\0';
-				return(1);
-			}
-		}
-	}
-
-	return(0);
-}
-
-int
 s2c_parse_ip(lineproc_t *lineproc)
 {
 	int len = 0, i = 0;

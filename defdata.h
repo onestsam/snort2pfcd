@@ -291,7 +291,6 @@ int s2c_pf_tbl_get(int, char *, pftbl_t *);
 void s2c_parse_ipu_set(char *, struct ipulist *);
 int s2c_parse_priority(int, lineproc_t *);
 int s2c_parse_line(char *, FILE *);
-int s2c_parse_pattern(char *, lineproc_t *);
 void s2c_parse_add_list(struct ipulist *, struct ifaddrs *);
 void s2c_parse_and_block_list_clear(struct ulist_head *);
 void s2c_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
