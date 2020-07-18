@@ -56,9 +56,8 @@
 #include "defdata.h"
 #include "version.h"
 
-void
-s2c_check_file(char *namefile)
-{
+void s2c_check_file(char *namefile) {
+
 	struct stat *info = NULL;
 
 	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2c_malloc_err();
@@ -69,7 +68,7 @@ s2c_check_file(char *namefile)
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
 		else fprintf(stderr, "%s %s - %s", LANG_FILE_ERROR, namefile, LANG_EXIT);
 		s2c_exit_fail();
-	}
+	}   /* if (info->st_mode */
 
 	free(info);
 
@@ -77,9 +76,8 @@ s2c_check_file(char *namefile)
 
 } /* s2c_check_file */
 
-void
-s2c_write_file(char *namefile, char *message)
-{
+void s2c_write_file(char *namefile, char *message) {
+
 	FILE *lfile = NULL;
 
 	pthread_mutex_lock(&log_mutex);
@@ -88,7 +86,7 @@ s2c_write_file(char *namefile, char *message)
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
 		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, namefile, LANG_EXIT);
 		s2c_exit_fail();
-	}
+	}   /* if ((lfile */
 
 	flockfile(lfile);
 	fputs(message, lfile);
@@ -101,9 +99,8 @@ s2c_write_file(char *namefile, char *message)
 
 } /* s2c_write_file */
 
-void
-s2c_mutex_init()
-{
+void s2c_mutex_init() {
+
 	s2c_threads = 1;
 	memset(&log_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
@@ -126,15 +123,14 @@ s2c_mutex_init()
 
 } /* s2c_mutex_init */
 
-void
-s2c_thr_init(loopdata_t *loopdata)
-{
+void s2c_thr_init(loopdata_t *loopdata) {
+
 	if (v) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_PRIB, loopdata->priority);
 		else fprintf(stderr, "%s - %d", LANG_PRIB, loopdata->priority);
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", LANG_THRS, loopdata->thr_max);
 		else fprintf(stderr, "%s - %d", LANG_THRS, loopdata->thr_max);
-	}
+	}   /* if (v) */
 
 	s2c_spawn_expiretable(loopdata);
 	s2c_spawn_file_monitor(&pfile_monitor, MONITOR_ONLY, ID_PF, loopdata);
@@ -145,9 +141,8 @@ s2c_thr_init(loopdata_t *loopdata)
 
 } /* s2c_thr_init */
 
-void
-s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata)
-{
+void s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata) {
+
 	thread_fm_t *fm_data = NULL;
 
 	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) s2c_malloc_err();
@@ -163,9 +158,8 @@ s2c_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopda
 
 } /* s2c_spawn_file_monitor */
 
-void
-s2c_spawn_expiretable(loopdata_t *loopdata)
-{
+void s2c_spawn_expiretable(loopdata_t *loopdata) {
+
 	thread_expt_t *expt_data = NULL;
 
 	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2c_malloc_err();
@@ -182,9 +176,8 @@ s2c_spawn_expiretable(loopdata_t *loopdata)
 
 } /* s2c_spawn_expiretable */
 
-void
-s2c_spawn_block_log(int D, char *logip, char *logfile)
-{
+void s2c_spawn_block_log(int D, char *logip, char *logfile) {
+
 	thread_log_t *log_data = NULL;
 
 	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) s2c_malloc_err();
@@ -200,9 +193,8 @@ s2c_spawn_block_log(int D, char *logip, char *logfile)
 
 } /* s2c_spawn_block_log */
 
-void
-s2c_spawn_thread(void *(*func) (void *), void *data)
-{
+void s2c_spawn_thread(void *(*func) (void *), void *data) {
+
 	typedef struct _twisted_t {
 		pthread_t thr;
 		pthread_attr_t attr;
@@ -225,7 +217,7 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
 		else fprintf(stderr, "%s - %s", LANG_LAUNCH_THR, LANG_WARN);
-	}
+	}   /* if (pthread */
 
 	free(yarn);
 
@@ -233,9 +225,8 @@ s2c_spawn_thread(void *(*func) (void *), void *data)
 
 } /* s2c_spawn_thread */
 
-void
-s2c_malloc_err()
-{
+void s2c_malloc_err() {
+
 	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 	else fprintf(stderr, "%s - %s", LANG_MALLOC_ERROR, LANG_EXIT);
 	s2c_exit_fail();
@@ -244,9 +235,8 @@ s2c_malloc_err()
 
 } /* s2c_malloc_err */
 
-void
-s2c_pre_exit()
-{
+void s2c_pre_exit() {
+
 	s2c_mutex_destroy();
 	pidfile_remove(pfh);
 	closelog();
@@ -255,9 +245,8 @@ s2c_pre_exit()
 
 } /* s2c_pre_exit */
 
-void
-s2c_exit_fail()
-{
+void s2c_exit_fail() {
+
 	s2c_pre_exit();
 	exit(EXIT_FAILURE);
 
@@ -265,9 +254,8 @@ s2c_exit_fail()
 
 } /* s2c_exit_fail */
 
-void
-s2c_mutex_destroy()
-{
+void s2c_mutex_destroy() {
+
 	int s2c_threads_check = 0;
 	
 	pthread_mutex_lock(&thr_mutex);
@@ -280,15 +268,14 @@ s2c_mutex_destroy()
 		pthread_mutex_destroy(&thr_mutex);
 		pthread_mutex_destroy(&pf_mutex);
 		pthread_mutex_destroy(&fm_mutex);
-	}
+	}   /* if (s2c_threads_check */
 
 	return;
 
 } /* s2c_mutex_destroy */
 
-void
-s2c_usage()
-{
+void s2c_usage() {
+
 	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", LANG_USE, __progname);
 	fprintf(stderr, "%s %s %s.", LANG_MAN, __progname, LANG_DETAILS);
 	s2c_exit_fail();
@@ -297,9 +284,8 @@ s2c_usage()
 
 } /* s2c_usage */
 
-void
-s2c_sighandle()
-{
+void s2c_sighandle() {
+
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_RECEXIT);
 	else fprintf(stderr, "%s", LANG_RECEXIT);
 	s2c_pre_exit();
@@ -309,9 +295,8 @@ s2c_sighandle()
 
 } /* s2c_sighandle */
 
-long
-s2c_lmin(long a,long b)
-{
+long s2c_lmin(long a,long b) {
+
 	return (a < b)?a:b;
 
 } /* s2c_lmin */

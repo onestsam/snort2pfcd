@@ -56,9 +56,8 @@
 #include "defdata.h"
 #include "ioctl_helpers.h"
 
-void
-*s2c_pf_expiretable(void *arg)
-{
+void *s2c_pf_expiretable(void *arg) {
+
 	struct pfr_astats *astats = NULL;
 	struct pfr_table *target = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
@@ -105,7 +104,7 @@ void
 			for (i = 0; i < astats_count; i++) {
 				if (astats[i].pfras_tzero <= min_timestamp) del_addrs_count++;
 				else oldest_entry = s2c_lmin(oldest_entry, astats[i].pfras_tzero);
-			}
+			}   /* for (i */
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2c_malloc_err();	
 			memset(del_addrs_list, 0x00, sizeof(struct pfr_addr));
@@ -119,16 +118,16 @@ void
 					((struct sockaddr_in *)&pfbl_log->sa)->sin_addr = astats[i].pfras_a.pfra_ip4addr;
 					s2c_pf_unblock_log(pfbl_log);
 					del_addrs_count++;
-				}
+				}   /* if (astats */
 
 			pthread_mutex_lock(&pf_mutex);
 			if (del_addrs_count > 0) radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
 			pthread_mutex_unlock(&pf_mutex);
-		}
+		}   /* if (astats_count > 0) */
 
 		free(del_addrs_list);
 		sleep(age + 1);
-	}
+	}   /* while (1) */
 
 	free(pfbl_log);
 	free(tablename);
@@ -140,9 +139,8 @@ void
 
 } /* s2c_pf_expiretable */
 
-void
-s2c_pf_block(int dev, char *tablename, char *ip) 
-{ 
+void s2c_pf_block(int dev, char *tablename, char *ip)  {
+
 	typedef struct _pfbl_t {
 		struct pfioc_table io;
 		struct pfr_table table;
@@ -173,9 +171,8 @@ s2c_pf_block(int dev, char *tablename, char *ip)
 
 } /* s2c_pf_block */
 
-void
-s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
-{
+void s2c_pf_unblock_log(pfbl_log_t *pfbl_log) {
+
 	long timebuf = 0;
 
 	if (!C) timebuf = time(NULL);
@@ -196,9 +193,8 @@ s2c_pf_unblock_log(pfbl_log_t *pfbl_log)
 
 } /* s2c_pf_unblock_log */
 
-void
-*s2c_pf_block_log(void *arg)
-{
+void *s2c_pf_block_log(void *arg) {
+
 	long timebuf = 0;
 	int gni_error = 0, D = 0;
 	pfbl_log_t *pfbl_log = NULL;
@@ -243,9 +239,8 @@ void
 
 } /* s2c_pf_block_log */
 
-void
-s2c_pf_ruleadd(int dev, char *tablename)
-{
+void s2c_pf_ruleadd(int dev, char *tablename) {
+
 	typedef struct _pfrla_t {
 		struct pfioc_rule io_rule;
 		struct pfioc_pooladdr io_paddr;
@@ -278,9 +273,8 @@ s2c_pf_ruleadd(int dev, char *tablename)
 
 } /* s2c_pf_ruleadd */
 
-int
-s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
-{
+int s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl) {
+
 	s2c_pftbl_set(tablename, pftbl);
 	pftbl->io.pfrio_size = 0;
 	s2c_pf_ioctl(dev, DIOCRGETTABLES, &pftbl->io);
@@ -289,9 +283,8 @@ s2c_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl)
 
 } /* s2c_pf_tbl_get */
 
-void
-s2c_pf_tbladd(int dev, char *tablename)
-{
+void s2c_pf_tbladd(int dev, char *tablename) {
+
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
@@ -311,14 +304,16 @@ s2c_pf_tbladd(int dev, char *tablename)
 		if (v) {
 			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
 			else fprintf(stderr, "%s - %s", LANG_IOCTL_WAIT, LANG_WARN);
-		}
-			sleep(3);
-	}
+		}   /* if (v) */
+
+		sleep(3);
+	}   /* while (ioctl */
+
 	pthread_mutex_unlock(&pf_mutex);
 	if (v) {
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_TBLADD, tablename);
 		else fprintf(stderr, "%s - %s", LANG_TBLADD, tablename);
-	}
+	}   /* if (v) */
 
 	free(pftbl);
 
@@ -326,9 +321,8 @@ s2c_pf_tbladd(int dev, char *tablename)
 
 } /* s2c_pf_tbladd */
 
-void
-s2c_pf_tbldel(int dev, char *tablename)
-{
+void s2c_pf_tbldel(int dev, char *tablename) {
+
 	pftbl_t *pftbl = NULL;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2c_malloc_err();
@@ -341,26 +335,26 @@ s2c_pf_tbldel(int dev, char *tablename)
 
 } /* s2c_pf_tbldel */
 
-void
-s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg)
-{
+void s2c_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
+
 	pthread_mutex_lock(&pf_mutex);
 	if (ioctl(dev, request, pf_io_arg) != 0) {
 		if (v) {
 			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
 			else fprintf(stderr, "%s - %s", LANG_IOCTL_ERROR, LANG_WARN);
-		}
+		}   /* if (v) */
+
 		pf_reset = 1;
-	}
+	}   /* if (ioctl */
+
 	pthread_mutex_unlock(&pf_mutex);
 
 	return;
 
 } /* s2c_pf_ioctl */
 
-void
-s2c_pftbl_set(char *tablename, pftbl_t *pftbl)
-{
+void s2c_pftbl_set(char *tablename, pftbl_t *pftbl) {
+
 	memset(pftbl, 0x00, sizeof(pftbl_t));
 	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 	pftbl->io.pfrio_buffer = &pftbl->table; 

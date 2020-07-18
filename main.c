@@ -55,9 +55,8 @@
 
 #include "defdata.h"
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
+
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
@@ -76,9 +75,8 @@ main(int argc, char **argv)
 
 } /* main */
 
-void
-s2c_pre_init(loopdata_t *loopdata)
-{
+void s2c_pre_init(loopdata_t *loopdata) {
+
 	pfile_monitor = 0;
 	bfile_monitor = 0;
 	afile_monitor = 0;
@@ -99,15 +97,14 @@ s2c_pre_init(loopdata_t *loopdata)
 	if (getuid() != 0) {
 		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
 		exit(EXIT_FAILURE);
-	}
+	}   /* if (getuid() != 0) */
 
 	return;
 
 } /* s2c_pre_init */
 
-void
-s2c_init(loopdata_t *loopdata)
-{
+void s2c_init(loopdata_t *loopdata) {
+
 	if (!C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
 
@@ -125,7 +122,7 @@ s2c_init(loopdata_t *loopdata)
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
 		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
 		s2c_exit_fail();
-	}
+	}   /* if ((loopdata->dev */
 
 	signal(SIGHUP,  s2c_sighandle);
 	signal(SIGTERM, s2c_sighandle);
@@ -138,9 +135,8 @@ s2c_init(loopdata_t *loopdata)
 
 } /* s2c_init */
 
-void
-s2c_daemonize(loopdata_t *loopdata)
-{
+void s2c_daemonize(loopdata_t *loopdata) {
+
 	pid_t otherpid;
 
 	memset(&otherpid, 0x00, sizeof(pid_t));
@@ -155,7 +151,7 @@ s2c_daemonize(loopdata_t *loopdata)
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "%s", LANG_NO_DAEMON);
 		s2c_exit_fail();
-	}
+	}   /* if (daemon */
 
 	pidfile_write(pfh);
 
@@ -163,9 +159,8 @@ s2c_daemonize(loopdata_t *loopdata)
 
 } /* s2c_daemonize */
 
-void
-s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
-{
+void s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
+
 	extern char *optarg;
 	extern int optind;
 	unsigned int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
@@ -193,7 +188,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 			case 'h': s2c_usage();
 			case '?': s2c_usage();
 			default: s2c_usage();
-		}
+		}   /* switch(ch) */
 
 	argc -= optind;
 	argv += optind;
@@ -207,7 +202,7 @@ s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata)
 		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
 		strlcat(loopdata->logfile,  __progname, NMBUFSIZ);
 		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
-	}
+	}   /* if (!l) */
 
 	if(!F) s2c_daemonize(loopdata);
 	if (q) sleep(q);
