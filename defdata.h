@@ -83,19 +83,19 @@
 #define NMBUFSIZ		128
 #define REGARSIZ		3
 #define EXPTIME			60*60
-#define ID_PF			0
-#define ID_BF			1
-#define ID_AF			2
+#define ID_PF			0	/* ID passfile */
+#define ID_BF			1	/* ID blockfile */
+#define ID_AF			2	/* ID alertfile */
 #define MONITOR_ONLY		0
 #define MONITOR_READ		1
 
-/* snort priorities */
+/* Snort Priorities */
 #define S2C_SP_HIGH		4
 #define S2C_SP_MEDIUM		3
 #define S2C_SP_LOW		2
 #define S2C_SP_VERYLOW		1
 
-/* Paths & regex */
+/* Paths & Regex */
 #define PFDEVICE		"/dev/pf"
 #define PATH_LOG		"/var/log/"
 #define PATH_RUN		"/var/run/"
@@ -104,7 +104,7 @@
 #define PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
 #define PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
 #define REG_ADDR 		"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
-/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
+				/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
 
 /* Language */
 #define LANG_EXIT		"exiting"
@@ -158,7 +158,7 @@
 /* Macros */
 LIST_HEAD(ulist_head, ipulist);
 
-/* Global structs */
+/* Global Structs */
 struct ipulist {
         unsigned long t;
         int repeat_offenses;
@@ -237,7 +237,7 @@ typedef struct _thread_fm_t {
         loopdata_t loopdata;
 } thread_fm_t;
 
-/* Global vars */
+/* Global Vars */
 extern char *__progname;
 struct pidfh *pfh;
 int v;
@@ -254,7 +254,7 @@ pthread_mutex_t thr_mutex;
 pthread_mutex_t pf_mutex;
 pthread_mutex_t fm_mutex;
 
-/* Function defs */
+/* Function Defs */
 void s2c_usage();
 void s2c_sighandle();
 void s2c_pre_exit();
