@@ -11,10 +11,10 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2c_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line based in pfctl code (pfctl_radix.c)
  * Copyright (c) Armin's Wolfermann
  *
- * s2c_pf_block functions are based
+ * s2cd_pf_block functions are based
  * on Armin's Wolfermann pftabled-1.03 functions.
  * 
  * libcidr
@@ -78,82 +78,82 @@
 #include <ifaddrs.h>
 
 /* Params */
-#define REPEATO			0
-#define THRMAX			100
-#define NMBUFSIZ		128
-#define REGARSIZ		3
-#define EXPTIME			60*60
-#define ID_PF			0	/* ID passfile */
-#define ID_BF			1	/* ID blockfile */
-#define ID_AF			2	/* ID alertfile */
-#define MONITOR_ONLY		0
-#define MONITOR_READ		1
+#define S2CD_REPEATO			0
+#define S2CD_THRMAX			100
+#define S2CD_NMBUFSIZ			128
+#define S2CD_REGARSIZ			3
+#define S2CD_EXPTIME			60*60
+#define S2CD_ID_PF			0	/* ID passfile */
+#define S2CD_ID_BF			1	/* ID blockfile */
+#define S2CD_ID_AF			2	/* ID alertfile */
+#define S2CD_MONITOR_ONLY		0
+#define S2CD_MONITOR_READ		1
 
 /* Snort Priorities */
-#define S2C_SP_HIGH		4
-#define S2C_SP_MEDIUM		3
-#define S2C_SP_LOW		2
-#define S2C_SP_VERYLOW		1
+#define S2CD_SP_HIGH			4
+#define S2CD_SP_MEDIUM			3
+#define S2CD_SP_LOW			2
+#define S2CD_SP_VERYLOW			1
 
 /* Paths & Regex */
-#define PFDEVICE		"/dev/pf"
-#define PATH_LOG		"/var/log/"
-#define PATH_RUN		"/var/run/"
-#define PATH_RESOLV		"/etc/resolv.conf"
-#define PATH_ALERT		"/var/log/snort/alert"
-#define PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
-#define PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
-#define REG_ADDR 		"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
-				/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
+#define S2CD_PFDEVICE			"/dev/pf"
+#define S2CD_PATH_LOG			"/var/log/"
+#define S2CD_PATH_RUN			"/var/run/"
+#define S2CD_PATH_RESOLV		"/etc/resolv.conf"
+#define S2CD_PATH_ALERT			"/var/log/snort/alert"
+#define S2CD_PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
+#define S2CD_PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
+#define S2CD_REG_ADDR 			"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
+					/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
 
 /* Language */
-#define LANG_EXIT		"exiting"
-#define LANG_WARN		"warning"
-#define LANG_RELOAD		"reloading"
-#define LANG_START		"started"
-#define LANG_MON		"monitoring"
-#define LANG_USE		"usage"
-#define LANG_FOUND		"found"
-#define LANG_MAN		"see man"
-#define LANG_PF			"packet filter"
-#define LANG_BLK		"blocked"
-#define LANG_PRIB		"priority blocked at or above"
-#define LANG_THRS		"max dns request threads"
-#define LANG_PRIO		"found priority"
-#define LANG_BENT		"blocklist entry"
-#define LANG_PLL		"Passlist:"
-#define LANG_PL			"is passlisted"
-#define LANG_DETAILS		"for more details"
-#define LANG_NO_REG		"no regex match found"
-#define LANG_NO_DAEMON		"cannot daemonize"
-#define LANG_MALLOC_ERROR	"malloc error"
-#define LANG_STATE_CHANGE	"state change detected in"
-#define LANG_INTDB		"!! internal database error !!"
-#define LANG_CON_EST		"connection with pf established"
-#define LANG_TBLADD		"table added"
-#define LANG_IOCTL_WAIT		"attempting to re-establish connection with pf"
-#define LANG_IOCTL_ERROR	"unable to connect to pf"
-#define LANG_IFADDR_ERROR	"ifaddr error"
-#define LANG_MUTEX_ERROR	"unable to init mutex"
-#define LANG_NO_OPEN		"unable to open"
-#define LANG_RECEXIT		"exit signal received - exiting"
-#define LANG_DAEMON_RUNNING	"daemon already running"
-#define LANG_NO_PID		"cannot open or create pidfile"
-#define LANG_INIT_THR		"unable to init detached thread attributes"
-#define LANG_SET_THR		"unable to set detached thread attributes"
-#define LANG_LAUNCH_THR		"unable to launch detached thread attributes"
-#define LANG_NOT_PASSLISTED	"not passlisted, added to block table"
-#define LANG_UNBLOCKED		"block-time expired, removed from block table"
-#define LANG_ERR_ROOT		"error: must be root to run"
-#define LANG_ERR_REGEX		"error compiling regex expr"
-#define LANG_KQ_ERROR		"kqueue init error"
-#define LANG_KE_READ		"kevent read"
-#define LANG_KE_REQ_ERROR	"kevent request error"
-#define LANG_KE_READ_ERROR	"kevent read error"
-#define LANG_KE_ERROR		"unable to set kevent structure"
-#define LANG_FILE_ERROR		"file error: file is a directory"
-#define LANG_LOGTHR_ERROR	"!! internal log thread error !!"
-#define LANG_DNS_DISABLED	"DNS lookup disabled"
+#define S2CD_LANG_EXIT			"exiting"
+#define S2CD_LANG_WARN			"warning"
+#define S2CD_LANG_RELOAD		"reloading"
+#define S2CD_LANG_START			"started"
+#define S2CD_LANG_MON			"monitoring"
+#define S2CD_LANG_USE			"usage"
+#define S2CD_LANG_FOUND			"found"
+#define S2CD_LANG_MAN			"see man"
+#define S2CD_LANG_PF			"packet filter"
+#define S2CD_LANG_BLK			"blocked"
+#define S2CD_LANG_PRIB			"priority blocked at or above"
+#define S2CD_LANG_THRS			"max dns request threads"
+#define S2CD_LANG_PRIO			"found priority"
+#define S2CD_LANG_BENT			"blocklist entry"
+#define S2CD_LANG_PLL			"Passlist:"
+#define S2CD_LANG_PL			"is passlisted"
+#define S2CD_LANG_DETAILS		"for more details"
+#define S2CD_LANG_NO_REG		"no regex match found"
+#define S2CD_LANG_NO_DAEMON		"cannot daemonize"
+#define S2CD_LANG_MALLOC_ERROR		"malloc error"
+#define S2CD_LANG_STATE_CHANGE		"state change detected in"
+#define S2CD_LANG_INTDB			"!! internal database error !!"
+#define S2CD_LANG_CON_EST		"connection with pf established"
+#define S2CD_LANG_TBLADD		"table added"
+#define S2CD_LANG_IOCTL_WAIT		"attempting to re-establish connection with pf"
+#define S2CD_LANG_IOCTL_ERROR		"unable to connect to pf"
+#define S2CD_LANG_IFADDR_ERROR		"ifaddr error"
+#define S2CD_LANG_MUTEX_ERROR		"unable to init mutex"
+#define S2CD_LANG_NO_OPEN		"unable to open"
+#define S2CD_LANG_RECEXIT		"exit signal received - exiting"
+#define S2CD_LANG_DAEMON_RUNNING	"daemon already running"
+#define S2CD_LANG_NO_PID		"cannot open or create pidfile"
+#define S2CD_LANG_INIT_THR		"unable to init detached thread attributes"
+#define S2CD_LANG_SET_THR		"unable to set detached thread attributes"
+#define S2CD_LANG_LAUNCH_THR		"unable to launch detached thread attributes"
+#define S2CD_LANG_NOT_PASSLISTED	"not passlisted, added to block table"
+#define S2CD_LANG_UNBLOCKED		"block-time expired, removed from block table"
+#define S2CD_LANG_ERR_ROOT		"error: must be root to run"
+#define S2CD_LANG_ERR_REGEX		"error compiling regex expr"
+#define S2CD_LANG_KQ_ERROR		"kqueue init error"
+#define S2CD_LANG_KE_READ		"kevent read"
+#define S2CD_LANG_KE_REQ_ERROR		"kevent request error"
+#define S2CD_LANG_KE_READ_ERROR		"kevent read error"
+#define S2CD_LANG_KE_ERROR		"unable to set kevent structure"
+#define S2CD_LANG_FILE_ERROR		"file error: file is a directory"
+#define S2CD_LANG_LOGTHR_ERROR		"!! internal log thread error !!"
+#define S2CD_LANG_DNS_DISABLED		"DNS lookup disabled"
 
 /* Macros */
 LIST_HEAD(ulist_head, ipulist);
@@ -175,15 +175,15 @@ typedef struct _pftbl_t {
 typedef struct _thread_expt_t {
 	int dev;
 	unsigned long t;
-	char logfile[NMBUFSIZ];
-	char nmpfdev[NMBUFSIZ];
+	char logfile[S2CD_NMBUFSIZ];
+	char nmpfdev[S2CD_NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 } thread_expt_t;
 
 typedef struct _thread_log_t {
 	int D;
 	char logip[BUFSIZ];
-	char logfile[NMBUFSIZ];
+	char logfile[S2CD_NMBUFSIZ];
 } thread_log_t;
 
 typedef struct _pbhead_t {
@@ -200,7 +200,7 @@ typedef struct _lineproc_t {
 typedef struct _pfbl_log_t {
 	char message[BUFSIZ];
 	char local_logip[BUFSIZ];
-	char local_logfile[NMBUFSIZ];
+	char local_logfile[S2CD_NMBUFSIZ];
 	char hbuf[NI_MAXHOST];
 	struct sockaddr sa;
 } pfbl_log_t;
@@ -219,12 +219,12 @@ typedef struct _loopdata_t {
 	unsigned long t;
 	pbhead_t pbhead;
 	int repeat_offenses;
-	char pfile[NMBUFSIZ];
-	char bfile[NMBUFSIZ];
+	char pfile[S2CD_NMBUFSIZ];
+	char bfile[S2CD_NMBUFSIZ];
 	char extif[IFNAMSIZ];
-	char logfile[NMBUFSIZ];
-	char nmpfdev[NMBUFSIZ];
-	char alertfile[NMBUFSIZ];
+	char logfile[S2CD_NMBUFSIZ];
+	char nmpfdev[S2CD_NMBUFSIZ];
+	char alertfile[S2CD_NMBUFSIZ];
 	char randombuf[BUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
 	char tablename_static[PF_TABLE_NAME_SIZE];
@@ -243,7 +243,7 @@ struct pidfh *pfh;
 int v;
 int C;
 int F;
-int s2c_threads;
+int s2cd_threads;
 int pf_reset;
 int afile_monitor;
 int pfile_monitor;
@@ -255,59 +255,59 @@ pthread_mutex_t pf_mutex;
 pthread_mutex_t fm_mutex;
 
 /* Function Defs */
-void s2c_usage();
-void s2c_sighandle();
-void s2c_pre_exit();
-void s2c_exit_fail();
-void s2c_malloc_err();
-void s2c_init(loopdata_t *);
-void s2c_pre_init(loopdata_t *);
-void s2c_daemonize(loopdata_t *);
-void s2c_thr_init(loopdata_t *);
-void s2c_get_optargs(int, char **, loopdata_t *);
-void s2c_pf_ioctl(int, unsigned long, void *);
-void s2c_spawn_file_monitor(int *, int, int, loopdata_t *);
-void s2c_spawn_expiretable(loopdata_t *);
-void s2c_spawn_block_log(int, char *, char *);
-void s2c_spawn_thread(void *(*) (void *), void *);
-void s2c_mutex_init();
-void s2c_mutex_destroy();
-void s2c_check_file(char *);
-void s2c_write_file(char *, char *);
-void s2c_pftbl_set(char *, pftbl_t *);
-long s2c_lmin(long ,long);
+void s2cd_usage();
+void s2cd_sighandle();
+void s2cd_pre_exit();
+void s2cd_exit_fail();
+void s2cd_malloc_err();
+void s2cd_init(loopdata_t *);
+void s2cd_pre_init(loopdata_t *);
+void s2cd_daemonize(loopdata_t *);
+void s2cd_thr_init(loopdata_t *);
+void s2cd_get_optargs(int, char **, loopdata_t *);
+void s2cd_pf_ioctl(int, unsigned long, void *);
+void s2cd_spawn_file_monitor(int *, int, int, loopdata_t *);
+void s2cd_spawn_expiretable(loopdata_t *);
+void s2cd_spawn_block_log(int, char *, char *);
+void s2cd_spawn_thread(void *(*) (void *), void *);
+void s2cd_mutex_init();
+void s2cd_mutex_destroy();
+void s2cd_check_file(char *);
+void s2cd_write_file(char *, char *);
+void s2cd_pftbl_set(char *, pftbl_t *);
+long s2cd_lmin(long ,long);
 
-void s2c_pf_block(int, char *, char *);
-void s2c_pf_tbladd(int, char *);
-void s2c_pf_tbldel(int, char *);
-void s2c_pf_ruleadd(int, char *);
-void s2c_pf_unblock_log(pfbl_log_t *);
-void *s2c_file_monitor(void *);
-void *s2c_pf_block_log(void *);
-void *s2c_pf_expiretable(void *);
-int s2c_pf_tbl_get(int, char *, pftbl_t *);
+void s2cd_pf_block(int, char *, char *);
+void s2cd_pf_tbladd(int, char *);
+void s2cd_pf_tbldel(int, char *);
+void s2cd_pf_ruleadd(int, char *);
+void s2cd_pf_unblock_log(pfbl_log_t *);
+void *s2cd_file_monitor(void *);
+void *s2cd_pf_block_log(void *);
+void *s2cd_pf_expiretable(void *);
+int s2cd_pf_tbl_get(int, char *, pftbl_t *);
 
-void s2c_parse_ipu_set(char *, struct ipulist *);
-int s2c_parse_priority(int, lineproc_t *);
-int s2c_parse_line(char *, FILE *);
-void s2c_parse_add_list(struct ipulist *, struct ifaddrs *);
-void s2c_parse_and_block_list_clear(struct ulist_head *);
-void s2c_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
-void s2c_parse_and_block(loopdata_t *, lineproc_t *);
-void s2c_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
-int s2c_parse_and_block_bl(char *, struct ulist_head *);
-void s2c_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
-void s2c_parse_load_ifaces(struct ipulist *);
-void s2c_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
-void s2c_parse_print_list(struct ulist_head *);
-int s2c_parse_search_list(char *, struct ulist_head *);
+void s2cd_parse_ipu_set(char *, struct ipulist *);
+int s2cd_parse_priority(int, lineproc_t *);
+int s2cd_parse_line(char *, FILE *);
+void s2cd_parse_add_list(struct ipulist *, struct ifaddrs *);
+void s2cd_parse_and_block_list_clear(struct ulist_head *);
+void s2cd_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
+void s2cd_parse_and_block(loopdata_t *, lineproc_t *);
+void s2cd_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
+int s2cd_parse_and_block_bl(char *, struct ulist_head *);
+void s2cd_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
+void s2cd_parse_load_ifaces(struct ipulist *);
+void s2cd_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
+void s2cd_parse_print_list(struct ulist_head *);
+int s2cd_parse_search_list(char *, struct ulist_head *);
 
-int s2c_fd_open(char *);
-int s2c_kevent_read(loopdata_t *, lineproc_t *, int);
-void s2c_kevent_open(int *, int *, char *);
-void s2c_kevent_plf_reload(loopdata_t *, lineproc_t *);
-void s2c_kevent_loop(loopdata_t *);
-void *s2c_kevent_file_monitor(void *arg);
+int s2cd_fd_open(char *);
+int s2cd_kevent_read(loopdata_t *, lineproc_t *, int);
+void s2cd_kevent_open(int *, int *, char *);
+void s2cd_kevent_plf_reload(loopdata_t *, lineproc_t *);
+void s2cd_kevent_loop(loopdata_t *);
+void *s2cd_kevent_file_monitor(void *arg);
 
 #endif /* _DEFDATA_H */
 

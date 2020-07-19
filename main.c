@@ -11,10 +11,10 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2c_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line based in pfctl code (pfctl_radix.c)
  * Copyright (c) Armin's Wolfermann
  *
- * s2c_pf_block functions are based
+ * s2cd_pf_block functions are based
  * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
@@ -59,23 +59,23 @@ int main(int argc, char **argv) {
 
 	loopdata_t *loopdata = NULL;
 
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2cd_malloc_err();
 
-	s2c_pre_init(loopdata);
-	s2c_get_optargs(argc, argv, loopdata);
-	s2c_init(loopdata);
+	s2cd_pre_init(loopdata);
+	s2cd_get_optargs(argc, argv, loopdata);
+	s2cd_init(loopdata);
 
-	s2c_kevent_loop(loopdata);
+	s2cd_kevent_loop(loopdata);
 
 	close(loopdata->dev);
 	free(loopdata);
-	s2c_pre_exit();
+	s2cd_pre_exit();
 
 	return(0);
 
 } /* main */
 
-void s2c_pre_init(loopdata_t *loopdata) {
+void s2cd_pre_init(loopdata_t *loopdata) {
 
 	pfile_monitor = 0;
 	bfile_monitor = 0;
@@ -87,79 +87,79 @@ void s2c_pre_init(loopdata_t *loopdata) {
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 
-	loopdata->priority = S2C_SP_HIGH;
-	loopdata->thr_max = THRMAX;
-	loopdata->repeat_offenses = REPEATO;
+	loopdata->priority = S2CD_SP_HIGH;
+	loopdata->thr_max = S2CD_THRMAX;
+	loopdata->repeat_offenses = S2CD_REPEATO;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
 	strlcat(loopdata->tablename_static, "_static", PF_TABLE_NAME_SIZE);
 
 	if (getuid() != 0) {
-		fprintf(stderr, "%s %s - %s\n", LANG_ERR_ROOT, loopdata->tablename, LANG_EXIT);
+		fprintf(stderr, "%s %s - %s\n", S2CD_LANG_ERR_ROOT, loopdata->tablename, S2CD_LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}   /* if (getuid() != 0) */
 
 	return;
 
-} /* s2c_pre_init */
+} /* s2cd_pre_init */
 
-void s2c_init(loopdata_t *loopdata) {
+void s2cd_init(loopdata_t *loopdata) {
 
 	if (!C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
 
-	s2c_check_file(loopdata->logfile);
+	s2cd_check_file(loopdata->logfile);
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
-	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, LANG_START, asctime(localtime(&loopdata->timebuf)));
-	s2c_write_file(loopdata->logfile, loopdata->randombuf);
+	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, S2CD_LANG_START, asctime(localtime(&loopdata->timebuf)));
+	s2cd_write_file(loopdata->logfile, loopdata->randombuf);
 
 	if (!F) {
 		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
-		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
-	} else fprintf(stderr, "%s %s, pid: %d", loopdata->tablename, LANG_START, getpid());
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
+	} else fprintf(stderr, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
 
 	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, loopdata->nmpfdev, LANG_EXIT);
-		s2c_exit_fail();
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
+		s2cd_exit_fail();
 	}   /* if ((loopdata->dev */
 
-	signal(SIGHUP,  s2c_sighandle);
-	signal(SIGTERM, s2c_sighandle);
-	signal(SIGINT,  s2c_sighandle);
+	signal(SIGHUP,  s2cd_sighandle);
+	signal(SIGTERM, s2cd_sighandle);
+	signal(SIGINT,  s2cd_sighandle);
 
-	s2c_mutex_init();
-	s2c_thr_init(loopdata);
+	s2cd_mutex_init();
+	s2cd_thr_init(loopdata);
 
 	return;
 
-} /* s2c_init */
+} /* s2cd_init */
 
-void s2c_daemonize(loopdata_t *loopdata) {
+void s2cd_daemonize(loopdata_t *loopdata) {
 
 	pid_t otherpid;
 
 	memset(&otherpid, 0x00, sizeof(pid_t));
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
-	strlcpy(loopdata->randombuf, PATH_RUN, BUFSIZ);
+	strlcpy(loopdata->randombuf, S2CD_PATH_RUN, BUFSIZ);
 	strlcat(loopdata->randombuf,  __progname, BUFSIZ);
 	strlcat(loopdata->randombuf, ".pid", BUFSIZ);
 
 	if ((pfh = pidfile_open(loopdata->randombuf, 0600, &otherpid)) == NULL)
-		fprintf(stderr, "%s", LANG_NO_PID);
+		fprintf(stderr, "%s", S2CD_LANG_NO_PID);
 
 	if (daemon(0, 0) == -1) {
-		fprintf(stderr, "%s", LANG_NO_DAEMON);
-		s2c_exit_fail();
+		fprintf(stderr, "%s", S2CD_LANG_NO_DAEMON);
+		s2cd_exit_fail();
 	}   /* if (daemon */
 
 	pidfile_write(pfh);
 
 	return;
 
-} /* s2c_daemonize */
+} /* s2cd_daemonize */
 
-void s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
+void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 
 	extern char *optarg;
 	extern int optind;
@@ -174,39 +174,39 @@ void s2c_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
-			case 'd': strlcpy(loopdata->nmpfdev, optarg, NMBUFSIZ); d = 1; break;
-			case 'a': strlcpy(loopdata->alertfile, optarg, NMBUFSIZ); a = 1; break;
-			case 'w': strlcpy(loopdata->pfile, optarg, NMBUFSIZ); w = 1; break;
-			case 'b': strlcpy(loopdata->bfile, optarg, NMBUFSIZ); b = 1; break;
+			case 'd': strlcpy(loopdata->nmpfdev, optarg, S2CD_NMBUFSIZ); d = 1; break;
+			case 'a': strlcpy(loopdata->alertfile, optarg, S2CD_NMBUFSIZ); a = 1; break;
+			case 'w': strlcpy(loopdata->pfile, optarg, S2CD_NMBUFSIZ); w = 1; break;
+			case 'b': strlcpy(loopdata->bfile, optarg, S2CD_NMBUFSIZ); b = 1; break;
 			case 'e': strlcpy(loopdata->extif, optarg, IFNAMSIZ); e = 1; break;
-			case 'l': strlcpy(loopdata->logfile, optarg, NMBUFSIZ); l = 1; break;
-			case 't': if (!(loopdata->t = strtol(optarg,NULL,0))) s2c_usage(); break;
-			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
-			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
-			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
-			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) s2c_usage(); break;
-			case 'h': s2c_usage();
-			case '?': s2c_usage();
-			default: s2c_usage();
+			case 'l': strlcpy(loopdata->logfile, optarg, S2CD_NMBUFSIZ); l = 1; break;
+			case 't': if (!(loopdata->t = strtol(optarg,NULL,0))) s2cd_usage(); break;
+			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
+			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
+			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
+			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
+			case 'h': s2cd_usage();
+			case '?': s2cd_usage();
+			default: s2cd_usage();
 		}   /* switch(ch) */
 
 	argc -= optind;
 	argv += optind;
 
-	if (!w) strlcpy(loopdata->pfile, PATH_PASSLIST, NMBUFSIZ);
-	if (!b) strlcpy(loopdata->bfile, PATH_BLOCKLIST, NMBUFSIZ);
-	if (!a) strlcpy(loopdata->alertfile, PATH_ALERT, NMBUFSIZ);
-	if (!d) strlcpy(loopdata->nmpfdev, PFDEVICE, NMBUFSIZ);
+	if (!w) strlcpy(loopdata->pfile, S2CD_PATH_PASSLIST, S2CD_NMBUFSIZ);
+	if (!b) strlcpy(loopdata->bfile, S2CD_PATH_BLOCKLIST, S2CD_NMBUFSIZ);
+	if (!a) strlcpy(loopdata->alertfile, S2CD_PATH_ALERT, S2CD_NMBUFSIZ);
+	if (!d) strlcpy(loopdata->nmpfdev, S2CD_PFDEVICE, S2CD_NMBUFSIZ);
 	if (!e) strlcpy(loopdata->extif, "all", IFNAMSIZ);
 	if (!l) {
-		strlcpy(loopdata->logfile, PATH_LOG, NMBUFSIZ);
-		strlcat(loopdata->logfile,  __progname, NMBUFSIZ);
-		strlcat(loopdata->logfile, ".log", NMBUFSIZ);
+		strlcpy(loopdata->logfile, S2CD_PATH_LOG, S2CD_NMBUFSIZ);
+		strlcat(loopdata->logfile,  __progname, S2CD_NMBUFSIZ);
+		strlcat(loopdata->logfile, ".log", S2CD_NMBUFSIZ);
 	}   /* if (!l) */
 
-	if(!F) s2c_daemonize(loopdata);
+	if(!F) s2cd_daemonize(loopdata);
 	if (q) sleep(q);
 
 	return;
 
-} /* s2c_get_optargs */
+} /* s2cd_get_optargs */

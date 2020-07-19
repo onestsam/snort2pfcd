@@ -11,10 +11,10 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2c_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line based in pfctl code (pfctl_radix.c)
  * Copyright (c) Armin's Wolfermann
  *
- * s2c_pf_block functions are based
+ * s2cd_pf_block functions are based
  * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
@@ -55,18 +55,18 @@
 
 #include "defdata.h"
 
-void *s2c_kevent_file_monitor(void *arg) {
+void *s2cd_kevent_file_monitor(void *arg) {
 
 	thread_fm_t *data = (thread_fm_t *)arg;
 	struct kevent *trigger = NULL;
-	char local_fn[NMBUFSIZ];
+	char local_fn[S2CD_NMBUFSIZ];
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 	loopdata_t *loopdata = NULL;
-	unsigned long age = EXPTIME, last_time = 0, this_time = 0;
+	unsigned long age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
 
-	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) s2c_malloc_err();
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2c_malloc_err();
+	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) s2cd_malloc_err();
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2cd_malloc_err();
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 	memcpy(loopdata, &data->loopdata, sizeof(loopdata_t));
 	fid = data->fid;
@@ -74,47 +74,47 @@ void *s2c_kevent_file_monitor(void *arg) {
 	fm = data->file_monitor;
 	free(data);
 
-	if (fid == ID_AF) strlcpy(local_fn, loopdata->alertfile, NMBUFSIZ);
-	if (fid == ID_BF) strlcpy(local_fn, loopdata->bfile, NMBUFSIZ);
-	if (fid == ID_PF) strlcpy(local_fn, loopdata->pfile, NMBUFSIZ);
+	if (fid == S2CD_ID_AF) strlcpy(local_fn, loopdata->alertfile, S2CD_NMBUFSIZ);
+	if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
+	if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
 
 	if (v) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_MON, local_fn);
-		else fprintf(stderr, "%s - %s\n", LANG_MON, local_fn);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_MON, local_fn);
+		else fprintf(stderr, "%s - %s\n", S2CD_LANG_MON, local_fn);
 	}   /* if (v) */
 
 	if (fr) {
 		if (loopdata->t > 0) age = loopdata->t;
-		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2c_malloc_err();
-		if(!loopdata->W) s2c_check_file(loopdata->pfile);
-		if(!loopdata->B) s2c_check_file(loopdata->bfile);
+		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2cd_malloc_err();
+		if(!loopdata->W) s2cd_check_file(loopdata->pfile);
+		if(!loopdata->B) s2cd_check_file(loopdata->bfile);
 	}   /* if (fr) */
 
 	while (1) {
 		if (fr) {
 			memset(lineproc, 0x00, sizeof(lineproc_t));
 
-			if (regcomp(&lineproc->expr, REG_ADDR, REG_EXTENDED) != 0) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
-				else fprintf(stderr, "%s - %s", LANG_ERR_REGEX, LANG_EXIT);
-				s2c_exit_fail();
+			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) {
+				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
+				else fprintf(stderr, "%s - %s", S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
+				s2cd_exit_fail();
 			}   /* if (regcomp */
 
-			s2c_pf_ruleadd(loopdata->dev, loopdata->tablename);
+			s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", LANG_CON_EST);
-				else fprintf(stderr, "%s", LANG_CON_EST);
+				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", S2CD_LANG_CON_EST);
+				else fprintf(stderr, "%s", S2CD_LANG_CON_EST);
 			}   /* if (v) */
 
 			pthread_mutex_lock(&fm_mutex);
 
 			if (!loopdata->W) {
-				s2c_kevent_plf_reload(loopdata, lineproc);
+				s2cd_kevent_plf_reload(loopdata, lineproc);
 				pfile_monitor = 0;
 			}   /* if (!loopdata->W) */
 
 			if (!loopdata->B) {
-				s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, ID_BF);
+				s2cd_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, S2CD_ID_BF);
 				bfile_monitor = 0;
 			}   /* if (!loopdata->B) */
 
@@ -132,32 +132,32 @@ void *s2c_kevent_file_monitor(void *arg) {
 
 				if ((last_time + age) < (this_time + 1)) {
 					last_time = this_time;
-					s2c_parse_and_block_list_timeout(age, this_time, &loopdata->pbhead.bhead);
+					s2cd_parse_and_block_list_timeout(age, this_time, &loopdata->pbhead.bhead);
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2c_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
+			s2cd_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
 			memset(trigger, 0x00, sizeof(struct kevent));
 			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
-				else fprintf(stderr, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
-				s2c_exit_fail();
+				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+				else fprintf(stderr, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+				s2cd_exit_fail();
 
 			} else {
 				if (fr) {
-					if (s2c_kevent_read(loopdata, lineproc, trigger->data) == -1) {
-						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
-						else fprintf(stderr, "%s - %s", LANG_KE_READ_ERROR, LANG_WARN);
-					}   /* if (s2c_kevent_read */
+					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) == -1) {
+						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+						else fprintf(stderr, "%s - %s", S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+					}   /* if (s2cd_kevent_read */
 
 					pthread_mutex_lock(&fm_mutex);
 
 					if (pfile_monitor) {
 						if (!loopdata->W) {
-							s2c_kevent_plf_reload(loopdata, lineproc);
+							s2cd_kevent_plf_reload(loopdata, lineproc);
 							if (v) {
-								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->pfile, LANG_RELOAD);
-								else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, loopdata->pfile, LANG_RELOAD);
+								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
+								else fprintf(stderr, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
 							}   /* if (v) */
 						}   /* if (!loopdata->W) */
 						pfile_monitor = 0;
@@ -165,11 +165,11 @@ void *s2c_kevent_file_monitor(void *arg) {
 
 					if (bfile_monitor) {
 						if (!loopdata->B) {
-							s2c_pf_tbldel(loopdata->dev, loopdata->tablename_static);
-							s2c_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, ID_BF);
+							s2cd_pf_tbldel(loopdata->dev, loopdata->tablename_static);
+							s2cd_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, S2CD_ID_BF);
 							if (v) {
-								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
-								else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, loopdata->bfile, LANG_RELOAD);
+								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
+								else fprintf(stderr, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
 							}   /* if (v) */
 						}   /* if (!loopdata->B) */
 						bfile_monitor = 0;
@@ -194,11 +194,11 @@ void *s2c_kevent_file_monitor(void *arg) {
 
 		}   /* while (!pf_reset_check) */
 
-		if (fr) s2c_parse_and_block_list_clear(&loopdata->pbhead.bhead);
+		if (fr) s2cd_parse_and_block_list_clear(&loopdata->pbhead.bhead);
 
 		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
-			else fprintf(stderr, "%s %s - %s", LANG_STATE_CHANGE, LANG_PF, LANG_RELOAD);
+			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
+			else fprintf(stderr, "%s %s - %s", S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
 		}   /* if (v) */
 
 	}   /* while (1) */
@@ -211,9 +211,9 @@ void *s2c_kevent_file_monitor(void *arg) {
 
 	pthread_exit(NULL);
 
-} /* s2c_kevent_file_monitor */
+} /* s2cd_kevent_file_monitor */
 
-int s2c_fd_open(char *file) {
+int s2cd_fd_open(char *file) {
 	int fd = 0;
 
 	if ((fd = open(file, O_RDONLY)) == -1) return(-1);
@@ -221,56 +221,56 @@ int s2c_fd_open(char *file) {
 
 	return(fd);
 
-} /* s2c_fd_open */
+} /* s2cd_fd_open */
 
-void s2c_kevent_open(int *kq, int *fd, char *file) {
+void s2cd_kevent_open(int *kq, int *fd, char *file) {
 
 	struct kevent change;
 
 	if ((*kq = kqueue()) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
-		else fprintf(stderr, "%s - %s", LANG_KQ_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s - %s", S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
+		s2cd_exit_fail();
         }   /* if ((*kq */
 
-	if ((*fd = s2c_fd_open(file)) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", LANG_NO_OPEN, file, LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s", LANG_NO_OPEN, file, LANG_EXIT);
-		s2c_exit_fail();
+	if ((*fd = s2cd_fd_open(file)) == -1) {
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s", S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
+		s2cd_exit_fail();
 	}   /* if ((*fd */
 
 	memset(&change, 0x00, sizeof(struct kevent));
 	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
 	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
-		else fprintf(stderr, "%s - %s", LANG_KE_REQ_ERROR, LANG_EXIT);
-		s2c_exit_fail();
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+		s2cd_exit_fail();
 	}   /* if (kevent */
 
 	return;
 
-} /* s2c_kevent_open */
+} /* s2cd_kevent_open */
 
-void s2c_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
+void s2cd_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
 
-	s2c_parse_and_block_list_clear(&loopdata->pbhead.phead);
-	s2c_parse_load_pl(loopdata, loopdata->pfile, lineproc, &loopdata->pbhead.phead);
-	if (v) s2c_parse_print_list(&loopdata->pbhead.phead);
+	s2cd_parse_and_block_list_clear(&loopdata->pbhead.phead);
+	s2cd_parse_load_pl(loopdata, loopdata->pfile, lineproc, &loopdata->pbhead.phead);
+	if (v) s2cd_parse_print_list(&loopdata->pbhead.phead);
 
 	return;
 
-} /* s2c_kevent_plf_reload */
+} /* s2cd_kevent_plf_reload */
 
-void s2c_kevent_loop(loopdata_t *loopdata) {
+void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	pftbl_t pftbl;
 
-	pf_tbl_state_init = pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
+	pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 	while (1) {
-		pf_tbl_state_current = s2c_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
+		pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
 		pthread_mutex_lock(&fm_mutex);
 
@@ -291,16 +291,16 @@ void s2c_kevent_loop(loopdata_t *loopdata) {
 			pthread_mutex_lock(&pf_mutex);
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
-			s2c_write_file(loopdata->alertfile, " ");
+			s2cd_write_file(loopdata->alertfile, " ");
 		} else
 			if (!C) sleep(10);
 	}   /* while (1) */
 
 	return;
 
-} /* s2c_kevent_loop */
+} /* s2cd_kevent_loop */
 
-int s2c_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
+int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 
 	int i = 0, r = 0, total = 0;
 
@@ -314,15 +314,15 @@ int s2c_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 		}   /* for (i */
 
 		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", LANG_KE_READ, lineproc->cad);
-			else fprintf(stderr, "%s - %s", LANG_KE_READ, lineproc->cad);
+			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_READ, lineproc->cad);
+			else fprintf(stderr, "%s - %s", S2CD_LANG_KE_READ, lineproc->cad);
 		}   /* if (v) */
 
-		s2c_parse_and_block(loopdata, lineproc);
+		s2cd_parse_and_block(loopdata, lineproc);
 		total += i;
 
 	} while (i > 0 && total < nbytes);
 
 	return(total);
 
-} /* s2c_kevent_read */
+} /* s2cd_kevent_read */
