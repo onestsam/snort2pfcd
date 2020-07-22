@@ -153,6 +153,9 @@ int s2cd_parse_priority(int priority, lineproc_t *lineproc) {
 
 } /* s2cd_parse_priority */
 
+/* s2cd_parse_ip returns the last ip address regmatched per kevent which should be the 
+ip address we are looking for. */
+
 int s2cd_parse_ip(lineproc_t *lineproc) {
 
 	int len = 0, i = 0;

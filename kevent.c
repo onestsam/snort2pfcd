@@ -274,11 +274,9 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 		pthread_mutex_lock(&fm_mutex);
 
-		if (pfile_monitor)
-			pf_reset_check = 1;
-
-		if (bfile_monitor)
-			pf_reset_check = 1;
+		/* I always have problems with && and || operators */
+		if (pfile_monitor) pf_reset_check = 1;
+		if (bfile_monitor) pf_reset_check = 1;
 		
 		pthread_mutex_unlock(&fm_mutex);
 
