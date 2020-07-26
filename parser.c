@@ -141,7 +141,7 @@ int s2cd_parse_priority(int priority, lineproc_t *lineproc) {
 	if ((p = strstr(lineproc->cad, "y: "))) {
 		if (v) {
 			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", S2CD_LANG_PRIO, p[3]);
-			else fprintf(stderr, "%s - %c", S2CD_LANG_PRIO, p[3]);
+			else fprintf(stderr, "%s - %c\n", S2CD_LANG_PRIO, p[3]);
 		}   /* if (v) */
 
 		if (isdigit(p[3]))
@@ -190,7 +190,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 	if (!s2cd_parse_ip(lineproc)) {
 		if (v) {
 			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", S2CD_LANG_NO_REG);
-			else fprintf(stderr, "%s", S2CD_LANG_NO_REG);
+			else fprintf(stderr, "%s\n", S2CD_LANG_NO_REG);
 		}   /* if (v) */
 		return;
 	}   /* if (!s2cd_parse_ip */
@@ -213,12 +213,12 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		s2cd_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 		if (v) {
 			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_BLK, lineproc->ret);
-			else fprintf(stderr, "%s - %s", S2CD_LANG_BLK, lineproc->ret);
+			else fprintf(stderr, "%s - %s\n", S2CD_LANG_BLK, lineproc->ret);
 		}   /* if (v) */
 
 	} else if (pb_status == -1) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s - %s", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s - %s\n", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* else if (pb_status */
 
@@ -233,7 +233,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 
 	if ((file = fopen(ufile, "r")) == NULL) {
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
-		else fprintf(stderr, "%s %s - %s", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
+		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
 		return;
 	}   /* if ((file */
 
@@ -253,7 +253,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 				if (!LIST_EMPTY(head))
 					if (s2cd_parse_search_list(lineproc->ret, head)) {
 						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
-						else fprintf(stderr, "%s %s %s - %s", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
+						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
 				s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename_static);
@@ -274,8 +274,8 @@ void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s -%s", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s -%s", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
+		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s - %s\n", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if (getifaddrs */
 
@@ -334,7 +334,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
 			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
-			else fprintf(stderr, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+			else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 			s2cd_exit_fail();
 		}
 		pthread_mutex_unlock(&pf_mutex);
@@ -357,11 +357,11 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 	struct ipulist *aux2 = NULL;
 
 	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", S2CD_LANG_PLL);
-	else fprintf(stderr, "%s", S2CD_LANG_PLL);
+	else fprintf(stderr, "%s\n", S2CD_LANG_PLL);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", aux2->chaddr);
-		else fprintf(stderr, "%s", aux2->chaddr);
+		else fprintf(stderr, "%s\n", aux2->chaddr);
 
 	return;
 

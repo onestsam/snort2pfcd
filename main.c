@@ -116,11 +116,11 @@ void s2cd_init(loopdata_t *loopdata) {
 	if (!F) {
 		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
-	} else fprintf(stderr, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
+	} else fprintf(stderr, "%s %s, pid: %d\n", loopdata->tablename, S2CD_LANG_START, getpid());
 
 	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
+		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if ((loopdata->dev */
 
@@ -146,10 +146,10 @@ void s2cd_daemonize(loopdata_t *loopdata) {
 	strlcat(loopdata->randombuf, ".pid", BUFSIZ);
 
 	if ((pfh = pidfile_open(loopdata->randombuf, 0600, &otherpid)) == NULL)
-		fprintf(stderr, "%s", S2CD_LANG_NO_PID);
+		fprintf(stderr, "%s\n", S2CD_LANG_NO_PID);
 
 	if (daemon(0, 0) == -1) {
-		fprintf(stderr, "%s", S2CD_LANG_NO_DAEMON);
+		fprintf(stderr, "%s\n", S2CD_LANG_NO_DAEMON);
 		s2cd_exit_fail();
 	}   /* if (daemon */
 

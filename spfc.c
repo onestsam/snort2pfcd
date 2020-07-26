@@ -303,7 +303,7 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
 		if (v) {
 			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
-			else fprintf(stderr, "%s - %s", S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
+			else fprintf(stderr, "%s - %s\n", S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
 		}   /* if (v) */
 
 		sleep(3);
@@ -312,7 +312,7 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 	pthread_mutex_unlock(&pf_mutex);
 	if (v) {
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_TBLADD, tablename);
-		else fprintf(stderr, "%s - %s", S2CD_LANG_TBLADD, tablename);
+		else fprintf(stderr, "%s - %s\n", S2CD_LANG_TBLADD, tablename);
 	}   /* if (v) */
 
 	free(pftbl);
@@ -341,7 +341,7 @@ void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 	if (ioctl(dev, request, pf_io_arg) != 0) {
 		if (v) {
 			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
-			else fprintf(stderr, "%s - %s", S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
+			else fprintf(stderr, "%s - %s\n", S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
 		}   /* if (v) */
 
 		pf_reset = 1;
