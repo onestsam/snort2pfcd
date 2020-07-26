@@ -290,8 +290,10 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
 			s2cd_write_file(loopdata->alertfile, " ");
-		} else
+		} else {
 			if (!C) sleep(10);
+			if (v) if (F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
+		}   /* else */
 	}   /* while (1) */
 
 	return;

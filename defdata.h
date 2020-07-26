@@ -151,6 +151,7 @@
 #define S2CD_LANG_KE_REQ_ERROR		"kevent request error"
 #define S2CD_LANG_KE_READ_ERROR		"kevent read error"
 #define S2CD_LANG_KE_ERROR		"unable to set kevent structure"
+#define S2CD_LANG_KE_WAIT		"waiting for kevent"
 #define S2CD_LANG_FILE_ERROR		"file error: file is a directory"
 #define S2CD_LANG_LOGTHR_ERROR		"!! internal log thread error !!"
 #define S2CD_LANG_DNS_DISABLED		"DNS lookup disabled"
