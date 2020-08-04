@@ -302,7 +302,8 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 
-	int i = 0, r = 0, total = 0;
+	register int i = 0;
+	int r = 0, total = 0;
 
 	do  {
 		for (i = 0; i < BUFSIZ; i++) {

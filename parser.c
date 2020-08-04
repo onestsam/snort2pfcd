@@ -103,7 +103,7 @@ void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
 void s2cd_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, struct ulist_head *head) {
 
-	struct ipulist *aux2 = NULL;
+	register struct ipulist *aux2 = NULL;
 
 	for (aux2=head->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next)
 		if ((aux2->t + age) < this_time) {
@@ -354,7 +354,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 
 void s2cd_parse_print_list(struct ulist_head *head) {
 
-	struct ipulist *aux2 = NULL;
+	register struct ipulist *aux2 = NULL;
 
 	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", S2CD_LANG_PLL);
 	else fprintf(stderr, "%s\n", S2CD_LANG_PLL);
@@ -369,7 +369,7 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 int s2cd_parse_search_list(char *ip, struct ulist_head *head) {
 
-	struct ipulist *aux2 = NULL;
+	register struct ipulist *aux2 = NULL;
 	CIDR ipcidr;
 	int f = 0;
 
