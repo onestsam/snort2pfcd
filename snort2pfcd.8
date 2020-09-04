@@ -91,11 +91,11 @@ The options are as follows:
 .It Fl e Ar External_Interface
 external interface e.g. eth0 or "all" to passlist all interfaces, default is to passlist all interfaces.
 .It Fl w Ar Passlist_File
-passlist file, default is /usr/local/etc/snort/rules/iplists/default.whitelist.
+passlist file, default is /usr/local/etc/snort/rules/iplists/default.passlist.
 .It Fl W
 If set, will prevent loading of any passlist file.
 .It Fl b Ar Blocklist_File
-blocklist file, default is /usr/local/etc/snort/rules/iplists/default.blacklist.
+blocklist file, default is /usr/local/etc/snort/rules/iplists/default.blocklist.
 .It Fl B 
 If set, will prevent loading of the snort blocklist file.
 .It Fl C
@@ -180,7 +180,7 @@ The user-supplied passlist can also be prepended with the address of the externa
 .Nm
 also automatically passlists addresses found within the /etc/resolv.conf file as these addresses should also be handled by specific packet filter rules.
 .Pp
-A static blocklist table is also maintained and populated within the packet filter firewall with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blacklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
+A static blocklist table is also maintained and populated within the packet filter firewall with the addresses found within the /usr/local/etc/snort/rules/iplists/default.blocklist file. These addresses can be supplied by the user or automatically populated with addresses supplied by the snort community.
 .Sh CREDITS
 This program is based on snort2c written by Antonio Benojar which was based on the original snort2pf perl script written by Stephan Schmieder. Expiration of entries use Henrik Gustafsson's expiretable functions. Blocking functionality based on pfctl and pftabled functions by Armin Wolfermann.
 .Sh SEE ALSO

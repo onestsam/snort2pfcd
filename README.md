@@ -1,7 +1,7 @@
 # snort2pfcd
-v2.8
+v2.9
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Mon Aug  3 21:22:01 2020 -->
+<!-- CreationDate: Fri Sep  4 00:00:53 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -68,7 +68,7 @@ passlist all interfaces.</p>
 <i>Passlist_File</i></p>
 
 <p style="margin-left:17%;">passlist file, default is
-/usr/local/etc/snort/rules/iplists/default.whitelist.</p>
+/usr/local/etc/snort/rules/iplists/default.passlist.</p>
 
 <p style="margin-top: 1em"><b>&minus;W</b></p>
 
@@ -79,7 +79,7 @@ prevent loading of any passlist file.</p>
 <i>Blocklist_File</i></p>
 
 <p style="margin-left:17%;">blocklist file, default is
-/usr/local/etc/snort/rules/iplists/default.blacklist.</p>
+/usr/local/etc/snort/rules/iplists/default.blocklist.</p>
 
 <p style="margin-top: 1em"><b>&minus;B</b></p>
 
@@ -280,7 +280,7 @@ handled by specific packet filter rules.</p>
 <p style="margin-left:6%; margin-top: 1em">A static
 blocklist table is also maintained and populated within the
 packet filter firewall with the addresses found within the
-/usr/local/etc/snort/rules/iplists/default.blacklist file.
+/usr/local/etc/snort/rules/iplists/default.blocklist file.
 These addresses can be supplied by the user or automatically
 populated with addresses supplied by the snort
 community.</p>

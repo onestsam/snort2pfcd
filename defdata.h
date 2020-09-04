@@ -80,6 +80,7 @@
 /* Params */
 #define S2CD_REPEATO			0
 #define S2CD_THRMAX			100
+#define S2CD_ADDRMAX			1000
 #define S2CD_NMBUFSIZ			128
 #define S2CD_REGARSIZ			3
 #define S2CD_EXPTIME			60*60
@@ -102,7 +103,7 @@
 #define S2CD_PATH_RESOLV		"/etc/resolv.conf"
 #define S2CD_PATH_ALERT			"/var/log/snort/alert"
 #define S2CD_PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
-#define S2CD_PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blacklist"
+#define S2CD_PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blocklist"
 #define S2CD_REG_ADDR 			"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
 					/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
 
@@ -216,7 +217,7 @@ typedef struct _loopdata_t {
 	int dev;
 	int thr_max;
 	int priority;
-	long timebuf;
+	time_t timebuf;
 	unsigned long t;
 	pbhead_t pbhead;
 	int repeat_offenses;
