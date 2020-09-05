@@ -294,7 +294,7 @@ void s2cd_sighandle() {
 
 } /* s2cd_sighandle */
 
-long s2cd_lmin(long a,long b) {
+time_t s2cd_lmin(time_t a, time_t b) {
 
 	return (a < b)?a:b;
 

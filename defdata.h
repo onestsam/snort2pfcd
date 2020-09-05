@@ -278,7 +278,7 @@ void s2cd_mutex_destroy();
 void s2cd_check_file(char *);
 void s2cd_write_file(char *, char *);
 void s2cd_pftbl_set(char *, pftbl_t *);
-long s2cd_lmin(long ,long);
+time_t s2cd_lmin(time_t, time_t);
 
 void s2cd_pf_block(int, char *, char *);
 void s2cd_pf_tbladd(int, char *);
