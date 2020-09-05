@@ -62,8 +62,8 @@ void *s2cd_pf_expiretable(void *arg) {
 	struct pfr_table *target = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
 	int astats_count = 0, del_addrs_count = 0, local_dev = 0, i = 0;
-	unsigned long age = S2CD_EXPTIME;
-	long min_timestamp = 0, oldest_entry = 0;
+	time_t age = S2CD_EXPTIME;
+	time_t min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 	char *tablename = NULL;
 	char *nmpfdev = NULL;
@@ -173,7 +173,7 @@ void s2cd_pf_block(int dev, char *tablename, char *ip)  {
 
 void s2cd_pf_unblock_log(pfbl_log_t *pfbl_log) {
 
-	long timebuf = 0;
+	time_t timebuf = 0;
 
 	if (!C) timebuf = time(NULL);
 	
@@ -195,7 +195,7 @@ void s2cd_pf_unblock_log(pfbl_log_t *pfbl_log) {
 
 void *s2cd_pf_block_log(void *arg) {
 
-	long timebuf = 0;
+	time_t timebuf = 0;
 	int gni_error = 0, D = 0;
 	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;

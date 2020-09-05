@@ -162,7 +162,7 @@ LIST_HEAD(ulist_head, ipulist);
 
 /* Global Structs */
 struct ipulist {
-        unsigned long t;
+        time_t t;
         int repeat_offenses;
 	CIDR ciaddr;
         char chaddr[BUFSIZ];
@@ -176,7 +176,7 @@ typedef struct _pftbl_t {
 
 typedef struct _thread_expt_t {
 	int dev;
-	unsigned long t;
+	time_t t;
 	char logfile[S2CD_NMBUFSIZ];
 	char nmpfdev[S2CD_NMBUFSIZ];
 	char tablename[PF_TABLE_NAME_SIZE];
@@ -215,10 +215,11 @@ typedef struct _loopdata_t {
 	int fd;
 	int kq;
 	int dev;
+	time_t t;
 	int thr_max;
+	int addr_max;
 	int priority;
 	time_t timebuf;
-	unsigned long t;
 	pbhead_t pbhead;
 	int repeat_offenses;
 	char pfile[S2CD_NMBUFSIZ];
@@ -294,7 +295,7 @@ int s2cd_parse_priority(int, lineproc_t *);
 int s2cd_parse_line(char *, FILE *);
 void s2cd_parse_add_list(struct ipulist *, struct ifaddrs *);
 void s2cd_parse_and_block_list_clear(struct ulist_head *);
-void s2cd_parse_and_block_list_timeout(unsigned long, unsigned long, struct ulist_head *);
+void s2cd_parse_and_block_list_timeout(time_t, time_t, struct ulist_head *);
 void s2cd_parse_and_block(loopdata_t *, lineproc_t *);
 void s2cd_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
 int s2cd_parse_and_block_bl(char *, struct ulist_head *);

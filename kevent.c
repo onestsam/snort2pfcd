@@ -62,7 +62,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	char local_fn[S2CD_NMBUFSIZ];
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 	loopdata_t *loopdata = NULL;
-	unsigned long age = S2CD_EXPTIME, last_time = 0, this_time = 0;
+	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
 
 	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) s2cd_malloc_err();

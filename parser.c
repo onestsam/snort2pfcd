@@ -57,7 +57,7 @@
 
 int s2cd_parse_and_block_bl(char *ret, struct ulist_head *head) {
 
-	struct ipulist *aux2 = NULL, *ipu = NULL;
+	register struct ipulist *aux2 = NULL, *ipu = NULL;
 
 	if (head->lh_first == NULL){
 		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
@@ -87,7 +87,7 @@ int s2cd_parse_and_block_bl(char *ret, struct ulist_head *head) {
 
 void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
-	struct ipulist *n1 = NULL, *n2 = NULL;
+	register struct ipulist *n1 = NULL, *n2 = NULL;
 
  	n1 = LIST_FIRST(head);
 
@@ -101,7 +101,7 @@ void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
 } /* s2cd_parse_and_block_list_clear */
 
-void s2cd_parse_and_block_list_timeout(unsigned long age, unsigned long this_time, struct ulist_head *head) {
+void s2cd_parse_and_block_list_timeout(time_t age, time_t this_time, struct ulist_head *head) {
 
 	register struct ipulist *aux2 = NULL;
 
@@ -136,7 +136,7 @@ int s2cd_parse_line(char *buf, FILE* pfile) {
 
 int s2cd_parse_priority(int priority, lineproc_t *lineproc) {
 
-	char *p = NULL;
+	register char *p = NULL;
 
 	if ((p = strstr(lineproc->cad, "y: "))) {
 		if (v) {
@@ -228,7 +228,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
-	struct ipulist *ipu2 = NULL;
+	register struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
@@ -271,7 +271,8 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 
 void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 
-	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
+	struct ifaddrs *ifaddr = NULL;
+	register struct ifaddrs *ifa = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {
 		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
@@ -293,7 +294,7 @@ void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 
 void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 
-	struct ipulist *ipu2 = NULL;
+	register struct ipulist *ipu2 = NULL;
 	char ret[BUFSIZ];
 
 	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
@@ -310,7 +311,7 @@ void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head) {
 
-	struct ipulist *ipu1 = NULL;
+	register struct ipulist *ipu1 = NULL;
 	struct ifreq *ifr = NULL;
 	int fd = 0;
 

@@ -1,7 +1,7 @@
 # snort2pfcd
 v2.9
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Sat Sep  5 09:16:24 2020 -->
+<!-- CreationDate: Sat Sep  5 15:05:05 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -39,7 +39,8 @@ alerts via packet filter firewall tables.</p>
 [<b>&minus;t&nbsp;</b><i>Seconds</i>]
 [<b>&minus;d&nbsp;</b><i>Pf_device</i>]
 [<b>&minus;q&nbsp;</b><i>Seconds</i>]
-[<b>&minus;m&nbsp;</b><i>Thr_max</i>] [<b>&minus;v</b>]
+[<b>&minus;m&nbsp;</b><i>Thr_max</i>]
+[<b>&minus;A&nbsp;</b><i>Addr_max</i>] [<b>&minus;v</b>]
 [<b>&minus;h</b>]</p>
 
 <p style="margin-top: 1em"><b>DESCRIPTION</b></p>
@@ -161,19 +162,26 @@ especially shortly after boot. Default is 0.</p>
 <i>thr_max</i></p>
 
 <p style="margin-left:17%;">Maximum number of DNS request
-threads. Default is 100. <b>snort2pfcd</b> uses a
-non-blocking design to ensure that waiting for DNS names to
-resolve in the block log do not interfere with the blocking
-of snort alerts. Instead of the main program waiting, a new
-thread is spawned to do the waiting. Since connection speeds
-vary widely (100mb/s - &gt;40Gb/s) and servers also vary in
-terms of processing capability, the option exists to
-increase or decrease the maximum number of threads waiting
-for DNS requests. Once the maximum number of threads waiting
-for a DNS response is reached, logging will stop until an
-active thread exits. The main program however will continue
-its blocking function with a cessation in logging until a
-new thread can be spawned.</p>
+threads. Default is 100.</p>
+
+<p style="margin-top: 1em"><b>&minus;A</b>
+<i>addr_max</i></p>
+
+<p style="margin-left:17%;">Maximum number of blocked
+addresses. Default is 1000. Once exceeded, the oldest
+entries be purged regardless of timeout. <b>snort2pfcd</b>
+uses a non-blocking design to ensure that waiting for DNS
+names to resolve in the block log do not interfere with the
+blocking of snort alerts. Instead of the main program
+waiting, a new thread is spawned to do the waiting. Since
+connection speeds vary widely (100mb/s - &gt;40Gb/s) and
+servers also vary in terms of processing capability, the
+option exists to increase or decrease the maximum number of
+threads waiting for DNS requests. Once the maximum number of
+threads waiting for a DNS response is reached, logging will
+stop until an active thread exits. The main program however
+will continue its blocking function with a cessation in
+logging until a new thread can be spawned.</p>
 
 <p style="margin-top: 1em"><b>&minus;v</b></p>
 
@@ -304,7 +312,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">Aug&nbsp;1,
+<p style="margin-left:6%; margin-top: 1em">Sept&nbsp;5th,
 2020</p>
 <hr>
 </body>
