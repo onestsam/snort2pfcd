@@ -239,7 +239,7 @@ typedef struct _thread_fm_t {
         loopdata_t loopdata;
 } thread_fm_t;
 
-/* Global Vars */
+/* Global Vars Decs */
 extern char *__progname;
 extern struct pidfh *pfh;
 extern int v;
@@ -255,21 +255,6 @@ extern pthread_mutex_t dns_mutex;
 extern pthread_mutex_t thr_mutex;
 extern pthread_mutex_t pf_mutex;
 extern pthread_mutex_t fm_mutex;
-
-struct pidfh *pfh;
-int v;
-int C;
-int F;
-int pf_reset;
-int s2cd_threads;
-int afile_monitor;
-int pfile_monitor;
-int bfile_monitor;
-pthread_mutex_t log_mutex;
-pthread_mutex_t dns_mutex;
-pthread_mutex_t thr_mutex;
-pthread_mutex_t pf_mutex;
-pthread_mutex_t fm_mutex;
 
 /* Function Defs */
 void s2cd_usage();

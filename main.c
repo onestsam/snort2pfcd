@@ -55,6 +55,22 @@
 
 #include "defdata.h"
 
+/* Global Vars Init */
+struct pidfh *pfh = NULL;
+int v = 0;
+int C = 0;
+int F = 0;
+int pf_reset = 0;
+int s2cd_threads = 1;
+int afile_monitor = 0;
+int pfile_monitor = 0;
+int bfile_monitor = 0;
+pthread_mutex_t log_mutex;
+pthread_mutex_t dns_mutex;
+pthread_mutex_t thr_mutex;
+pthread_mutex_t pf_mutex;
+pthread_mutex_t fm_mutex;
+
 int main(int argc, char **argv) {
 
 	loopdata_t *loopdata = NULL;
@@ -76,14 +92,6 @@ int main(int argc, char **argv) {
 } /* main */
 
 void s2cd_pre_init(loopdata_t *loopdata) {
-
-	pfile_monitor = 0;
-	bfile_monitor = 0;
-	afile_monitor = 0;
-	pf_reset = 0;
-	v = 0;
-	C = 0;
-	F = 0;
 
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 

@@ -101,7 +101,6 @@ void s2cd_write_file(char *namefile, char *message) {
 
 void s2cd_mutex_init() {
 
-	s2cd_threads = 1;
 	memset(&log_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
 	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
