@@ -241,12 +241,27 @@ typedef struct _thread_fm_t {
 
 /* Global Vars */
 extern char *__progname;
+extern struct pidfh *pfh;
+extern int v;
+extern int C;
+extern int F;
+extern int pf_reset;
+extern int s2cd_threads;
+extern int afile_monitor;
+extern int pfile_monitor;
+extern int bfile_monitor;
+extern pthread_mutex_t log_mutex;
+extern pthread_mutex_t dns_mutex;
+extern pthread_mutex_t thr_mutex;
+extern pthread_mutex_t pf_mutex;
+extern pthread_mutex_t fm_mutex;
+
 struct pidfh *pfh;
 int v;
 int C;
 int F;
-int s2cd_threads;
 int pf_reset;
+int s2cd_threads;
 int afile_monitor;
 int pfile_monitor;
 int bfile_monitor;
