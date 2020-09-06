@@ -97,7 +97,6 @@ void s2cd_pre_init(loopdata_t *loopdata) {
 
 	loopdata->priority = S2CD_SP_HIGH;
 	loopdata->thr_max = S2CD_THRMAX;
-	loopdata->addr_max = S2CD_ADDRMAX;
 	loopdata->repeat_offenses = S2CD_REPEATO;
 	strlcpy(loopdata->tablename, __progname, PF_TABLE_NAME_SIZE);
 	strlcpy(loopdata->tablename_static, loopdata->tablename, PF_TABLE_NAME_SIZE);
@@ -174,7 +173,7 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 	extern int optind;
 	unsigned int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 
-	while ((ch = getopt(argc, argv, "w:p:q:m:A:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
+	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
 			case 'v': v = 1; break;
 			case 'F': F = 1; break;
@@ -192,7 +191,6 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 			case 't': if (!(loopdata->t = (time_t)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'p': if (!(loopdata->priority = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'm': if (!(loopdata->thr_max = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
-			case 'A': if (!(loopdata->addr_max = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'r': if (!(loopdata->repeat_offenses = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'h': s2cd_usage();

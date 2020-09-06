@@ -76,7 +76,6 @@
 .Op Fl d Ar Pf_device
 .Op Fl q Ar Seconds
 .Op Fl m Ar Thr_max
-.Op Fl A Ar Addr_max
 .Op Fl v
 .Op Fl h
 .Sh DESCRIPTION
@@ -125,8 +124,6 @@ Packet filter device interface. Default is /dev/pf.
 The number of seconds to wait before starting to parse the snort alert file. Useful if 
 .Nm
 is interfering with connection setup, especially shortly after boot. Default is 0.
-.It Fl A Ar addr_max
-Maximum number of blocked addresses. Default is 1000. Once exceeded, the oldest entries be purged regardless of timeout.
 .It Fl m Ar thr_max
 Maximum number of DNS request threads. Default is 100.
 .Nm

@@ -80,7 +80,6 @@
 /* Params */
 #define S2CD_REPEATO			0
 #define S2CD_THRMAX			100
-#define S2CD_ADDRMAX			1000
 #define S2CD_NMBUFSIZ			128
 #define S2CD_REGARSIZ			3
 #define S2CD_EXPTIME			60*60
@@ -217,7 +216,6 @@ typedef struct _loopdata_t {
 	int dev;
 	time_t t;
 	int thr_max;
-	int addr_max;
 	int priority;
 	time_t timebuf;
 	pbhead_t pbhead;

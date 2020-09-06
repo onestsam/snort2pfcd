@@ -1,7 +1,7 @@
 # snort2pfcd
-v2.9
+v3.0
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Sat Sep  5 15:49:38 2020 -->
+<!-- CreationDate: Sun Sep  6 13:47:28 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -39,8 +39,7 @@ alerts via packet filter firewall tables.</p>
 [<b>&minus;t&nbsp;</b><i>Seconds</i>]
 [<b>&minus;d&nbsp;</b><i>Pf_device</i>]
 [<b>&minus;q&nbsp;</b><i>Seconds</i>]
-[<b>&minus;m&nbsp;</b><i>Thr_max</i>]
-[<b>&minus;A&nbsp;</b><i>Addr_max</i>] [<b>&minus;v</b>]
+[<b>&minus;m&nbsp;</b><i>Thr_max</i>] [<b>&minus;v</b>]
 [<b>&minus;h</b>]</p>
 
 <p style="margin-top: 1em"><b>DESCRIPTION</b></p>
@@ -157,13 +156,6 @@ Default is /dev/pf.</p>
 before starting to parse the snort alert file. Useful if
 <b>snort2pfcd</b> is interfering with connection setup,
 especially shortly after boot. Default is 0.</p>
-
-<p style="margin-top: 1em"><b>&minus;A</b>
-<i>addr_max</i></p>
-
-<p style="margin-left:17%;">Maximum number of blocked
-addresses. Default is 1000. Once exceeded, the oldest
-entries be purged regardless of timeout.</p>
 
 <p style="margin-top: 1em"><b>&minus;m</b>
 <i>thr_max</i></p>
