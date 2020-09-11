@@ -227,14 +227,9 @@ void s2cd_spawn_thread(void *(*func) (void *), void *data) {
 
 	memset(yarn, 0x00, sizeof(twisted_t));
  
-	if (pthread_attr_init(&yarn->attr)) {
-		s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN);
- 
-	} else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
-		s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
- 
-	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data))
-		s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
+	if (pthread_attr_init(&yarn->attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
+	else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
+	else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
 
 	free(yarn);
 
@@ -292,7 +287,7 @@ void s2cd_mutex_destroy() {
 
 void s2cd_usage() {
 
-	fprintf(stderr, "%s: %s [-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]\n", S2CD_LANG_USE, __progname);
+	fprintf(stderr, "%s: %s %s\n", S2CD_LANG_USE, __progname, S2CD_OPTIONS);
 	fprintf(stderr, "%s %s %s.\n", S2CD_LANG_MAN, __progname, S2CD_LANG_DETAILS);
 	s2cd_exit_fail();
 
