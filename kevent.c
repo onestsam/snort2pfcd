@@ -75,6 +75,10 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	if (fid == S2CD_ID_AF) strlcpy(local_fn, loopdata->alertfile, S2CD_NMBUFSIZ);
 	else if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
 	else if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
+	else {
+		s2cd_sw_switch(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
+		s2cd_exit_fail();
+	}
 
 	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
