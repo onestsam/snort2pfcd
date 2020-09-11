@@ -78,7 +78,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	else {
 		s2cd_sw_switch(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
-	}
+	}  /* else */
 
 	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
@@ -99,10 +99,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			}   /* if (regcomp */
 
 			s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename);
-			if (v) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", S2CD_LANG_CON_EST);
-				else fprintf(stderr, "%s\n", S2CD_LANG_CON_EST);
-			}   /* if (v) */
+			if (v) s2cd_sw_switch_s(S2CD_LANG_CON_EST);
 
 			pthread_mutex_lock(&fm_mutex);
 

@@ -72,6 +72,15 @@ void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
 
 } /* s2cd_sw_switch_e */
 
+void s2cd_sw_switch_s(char *lsw) {
+
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", lsw);
+	else fprintf(stderr, "%s\n", lsw);
+
+	return;
+
+} /* s2cd_sw_switch_s */
+
 void s2cd_check_file(char *namefile) {
 
 	struct stat *info = NULL;
@@ -293,8 +302,7 @@ void s2cd_usage() {
 
 void s2cd_sighandle() {
 
-	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", S2CD_LANG_RECEXIT);
-	else fprintf(stderr, "%s\n", S2CD_LANG_RECEXIT);
+	s2cd_sw_switch_s(S2CD_LANG_PLL);
 	s2cd_pre_exit();
 	exit(EXIT_SUCCESS);
 

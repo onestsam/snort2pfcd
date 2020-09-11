@@ -186,10 +186,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 	if (!s2cd_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2cd_parse_ip(lineproc)) {
-		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s", S2CD_LANG_NO_REG);
-			else fprintf(stderr, "%s\n", S2CD_LANG_NO_REG);
-		}   /* if (v) */
+		if (v) s2cd_sw_switch_s(S2CD_LANG_NO_REG);
 		return;
 	}   /* if (!s2cd_parse_ip */
 
@@ -348,12 +345,10 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 	register struct ipulist *aux2 = NULL;
 
-	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", S2CD_LANG_PLL);
-	else fprintf(stderr, "%s\n", S2CD_LANG_PLL);
+	s2cd_sw_switch_s(S2CD_LANG_PLL);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s", aux2->chaddr);
-		else fprintf(stderr, "%s\n", aux2->chaddr);
+		s2cd_sw_switch_s(aux2->chaddr);
 
 	return;
 

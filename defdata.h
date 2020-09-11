@@ -264,6 +264,7 @@ void s2cd_init(loopdata_t *);
 void s2cd_pre_init(loopdata_t *);
 void s2cd_daemonize(loopdata_t *);
 void s2cd_thr_init(loopdata_t *);
+void s2cd_sw_switch_s(char *);
 void s2cd_sw_switch(char *, char *);
 void s2cd_sw_switch_e(char *, char *, char *);
 void s2cd_pf_ioctl(int, unsigned long, void *);
