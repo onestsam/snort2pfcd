@@ -298,14 +298,15 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
 	pthread_mutex_lock(&pf_mutex);
+
 	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
 		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
 		sleep(3);
 	}   /* while (ioctl */
 
 	pthread_mutex_unlock(&pf_mutex);
-	if (v) s2cd_sw_switch(S2CD_LANG_TBLADD, tablename);
 
+	if (v) s2cd_sw_switch(S2CD_LANG_TBLADD, tablename);
 	free(pftbl);
 
 	return;
@@ -329,6 +330,7 @@ void s2cd_pf_tbldel(int dev, char *tablename) {
 void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 
 	pthread_mutex_lock(&pf_mutex);
+
 	if (ioctl(dev, request, pf_io_arg) != 0) {
 		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
 		pf_reset = 1;

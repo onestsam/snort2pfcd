@@ -269,7 +269,7 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 			pthread_mutex_unlock(&pf_mutex);
 			s2cd_write_file(loopdata->alertfile, " ");
 		} else {
-			if (!C) sleep(10);
+			if (!C) sleep(S2CD_PF_POLLING_FREQ);
 			if (v) if (F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
 		}   /* else */
 	}   /* while (1) */
