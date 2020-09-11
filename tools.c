@@ -153,16 +153,18 @@ void s2cd_thr_init(loopdata_t *loopdata) {
 		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, loopdata->thr_max);
 	}   /* if (v) */
 
-	s2cd_spawn_expiretable(loopdata);
-	s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, loopdata);
-	s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, loopdata);
-	s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, loopdata);
+	if(s2cd_spawn_expiretable(loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else return;
 
+	s2cd_exit_fail();
 	return;
 
 } /* s2cd_thr_init */
 
-void s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata) {
+int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata) {
 
 	thread_fm_t *fm_data = NULL;
 
@@ -173,13 +175,12 @@ void s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *
 	fm_data->fileread = fileread;
 	fm_data->fid = fid;
 	memcpy(&fm_data->loopdata, loopdata, sizeof(loopdata_t));
-	s2cd_spawn_thread(s2cd_kevent_file_monitor, fm_data);
 
-	return;
+	return(s2cd_spawn_thread(s2cd_kevent_file_monitor, fm_data));
 
 } /* s2cd_spawn_file_monitor */
 
-void s2cd_spawn_expiretable(loopdata_t *loopdata) {
+int s2cd_spawn_expiretable(loopdata_t *loopdata) {
 
 	thread_expt_t *expt_data = NULL;
 
@@ -191,13 +192,12 @@ void s2cd_spawn_expiretable(loopdata_t *loopdata) {
 	strlcpy(expt_data->logfile, loopdata->logfile, S2CD_NMBUFSIZ);
 	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, S2CD_NMBUFSIZ);
 	strlcpy(expt_data->tablename, loopdata->tablename, PF_TABLE_NAME_SIZE);
-	s2cd_spawn_thread(s2cd_pf_expiretable, expt_data);
 
-	return;
+	return(s2cd_spawn_thread(s2cd_pf_expiretable, expt_data));
 
 } /* s2cd_spawn_expiretable */
 
-void s2cd_spawn_block_log(int D, char *logip, char *logfile) {
+int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 
 	thread_log_t *log_data = NULL;
 
@@ -208,14 +208,14 @@ void s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, S2CD_NMBUFSIZ);
 	strlcpy(log_data->logip, logip, BUFSIZ);
-	s2cd_spawn_thread(s2cd_pf_block_log, log_data);
 
-	return;
+	return(s2cd_spawn_thread(s2cd_pf_block_log, log_data));
 
 } /* s2cd_spawn_block_log */
 
-void s2cd_spawn_thread(void *(*func) (void *), void *data) {
+int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 
+	int thr_check = 1;
 	typedef struct _twisted_t {
 		pthread_t thr;
 		pthread_attr_t attr;
@@ -230,10 +230,11 @@ void s2cd_spawn_thread(void *(*func) (void *), void *data) {
 	if (pthread_attr_init(&yarn->attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
 	else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
 	else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
+	else thr_check = 0;
 
 	free(yarn);
 
-	return;
+	return(thr_check);
 
 } /* s2cd_spawn_thread */
 

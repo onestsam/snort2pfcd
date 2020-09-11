@@ -207,7 +207,6 @@ void *s2cd_pf_block_log(void *arg) {
 	free(data);
 
 	if (!C) timebuf = time(NULL);
-	else timebuf = 0;
 
 	if(!D) {
 		pfbl_log->sa.sa_family = AF_INET;

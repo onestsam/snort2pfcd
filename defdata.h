@@ -143,6 +143,7 @@
 #define S2CD_LANG_INIT_THR		"unable to init detached thread attributes"
 #define S2CD_LANG_SET_THR		"unable to set detached thread attributes"
 #define S2CD_LANG_LAUNCH_THR		"unable to launch detached thread attributes"
+#define S2CD_LANG_PTRHR_ERROR		"failed to spawn thread"
 #define S2CD_LANG_NOT_PASSLISTED	"not passlisted, added to block table"
 #define S2CD_LANG_UNBLOCKED		"block-time expired, removed from block table"
 #define S2CD_LANG_ERR_ROOT		"error: must be root to run"
@@ -271,10 +272,10 @@ void s2cd_sw_switch(char *, char *);
 void s2cd_sw_switch_e(char *, char *, char *);
 void s2cd_pf_ioctl(int, unsigned long, void *);
 void s2cd_get_optargs(int, char **, loopdata_t *);
-void s2cd_spawn_file_monitor(int *, int, int, loopdata_t *);
-void s2cd_spawn_expiretable(loopdata_t *);
-void s2cd_spawn_block_log(int, char *, char *);
-void s2cd_spawn_thread(void *(*) (void *), void *);
+int s2cd_spawn_file_monitor(int *, int, int, loopdata_t *);
+int s2cd_spawn_expiretable(loopdata_t *);
+int s2cd_spawn_block_log(int, char *, char *);
+int s2cd_spawn_thread(void *(*) (void *), void *);
 void s2cd_mutex_init();
 void s2cd_mutex_destroy();
 void s2cd_check_file(char *);
@@ -292,20 +293,20 @@ void *s2cd_pf_block_log(void *);
 void *s2cd_pf_expiretable(void *);
 int s2cd_pf_tbl_get(int, char *, pftbl_t *);
 
-void s2cd_parse_ipu_set(char *, struct ipulist *);
 int s2cd_parse_priority(int, lineproc_t *);
 int s2cd_parse_line(char *, FILE *);
+void s2cd_parse_ipu_set(char *, struct ipulist *);
 void s2cd_parse_add_list(struct ipulist *, struct ifaddrs *);
 void s2cd_parse_and_block_list_clear(struct ulist_head *);
 void s2cd_parse_and_block_list_timeout(time_t, time_t, struct ulist_head *);
 void s2cd_parse_and_block(loopdata_t *, lineproc_t *);
 void s2cd_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
-int s2cd_parse_and_block_bl(char *, struct ulist_head *);
 void s2cd_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
 void s2cd_parse_load_ifaces(struct ipulist *);
 void s2cd_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
 void s2cd_parse_print_list(struct ulist_head *);
 int s2cd_parse_search_list(char *, struct ulist_head *);
+int s2cd_parse_and_block_bl(char *, struct ulist_head *);
 
 int s2cd_fd_open(char *);
 int s2cd_kevent_read(loopdata_t *, lineproc_t *, int);
