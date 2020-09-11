@@ -59,12 +59,16 @@ void s2cd_sw_switch(char *lsw, char *lvar) {
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", lsw, lvar);
 	else fprintf(stderr, "%s - %s\n", lsw, lvar);
 
+	return;
+
 } /* s2cd_sw_switch */
 
 void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
 
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", lsw, lvar, lsw2);
 	else fprintf(stderr, "%s %s - %s\n", lsw, lvar, lsw2);
+
+	return;
 
 } /* s2cd_sw_switch_e */
 
