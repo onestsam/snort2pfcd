@@ -298,7 +298,7 @@ void s2cd_usage() {
 
 void s2cd_sighandle() {
 
-	s2cd_sw_switch_s(S2CD_LANG_PLL);
+	s2cd_sw_switch_s(S2CD_LANG_RECEXIT);
 	s2cd_pre_exit();
 	exit(EXIT_SUCCESS);
 
