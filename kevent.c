@@ -99,7 +99,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			}   /* if (regcomp */
 
 			s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename);
-			if (v) s2cd_sw_switch_s(S2CD_LANG_CON_EST);
+			if (v) s2cd_sw_switch(S2CD_LANG_CON_EST, "");
 
 			pthread_mutex_lock(&fm_mutex);
 

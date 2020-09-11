@@ -137,7 +137,7 @@
 #define S2CD_LANG_IFADDR_ERROR		"ifaddr error"
 #define S2CD_LANG_MUTEX_ERROR		"unable to init mutex"
 #define S2CD_LANG_NO_OPEN		"unable to open"
-#define S2CD_LANG_RECEXIT		"exit signal received - exiting"
+#define S2CD_LANG_RECEXIT		"exit signal received"
 #define S2CD_LANG_DAEMON_RUNNING	"daemon already running"
 #define S2CD_LANG_NO_PID		"cannot open or create pidfile"
 #define S2CD_LANG_INIT_THR		"unable to init detached thread attributes"
@@ -267,7 +267,6 @@ void s2cd_init(loopdata_t *);
 void s2cd_pre_init(loopdata_t *);
 void s2cd_daemonize(loopdata_t *);
 void s2cd_thr_init(loopdata_t *);
-void s2cd_sw_switch_s(char *);
 void s2cd_sw_switch(char *, char *);
 void s2cd_sw_switch_e(char *, char *, char *);
 void s2cd_pf_ioctl(int, unsigned long, void *);

@@ -186,7 +186,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 	if (!s2cd_parse_priority(loopdata->priority, lineproc)) return;
 	if (!s2cd_parse_ip(lineproc)) {
-		if (v) s2cd_sw_switch_s(S2CD_LANG_NO_REG);
+		if (v) s2cd_sw_switch(S2CD_LANG_NO_REG, S2CD_LANG_WARN);
 		return;
 	}   /* if (!s2cd_parse_ip */
 
@@ -345,10 +345,10 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 	register struct ipulist *aux2 = NULL;
 
-	s2cd_sw_switch_s(S2CD_LANG_PLL);
+	s2cd_sw_switch(S2CD_LANG_PLL, S2CD_LANG_WARN);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		s2cd_sw_switch_s(aux2->chaddr);
+		s2cd_sw_switch("<", aux2->chaddr);
 
 	return;
 
