@@ -80,6 +80,7 @@
 #define S2CD_THRMAX			100
 #define S2CD_NMBUFSIZ			128
 #define S2CD_REGARSIZ			3
+#define S2CD_BASE_THR			5
 #define S2CD_EXPTIME			60*60
 #define S2CD_ID_PF			0	/* ID passfile */
 #define S2CD_ID_BF			1	/* ID blockfile */

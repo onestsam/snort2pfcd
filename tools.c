@@ -259,19 +259,21 @@ void s2cd_exit_fail() {
 
 void s2cd_mutex_destroy() {
 
-	int s2cd_threads_check = 0;
-	
-	pthread_mutex_lock(&thr_mutex);
-	s2cd_threads_check = s2cd_threads;
-	pthread_mutex_unlock(&thr_mutex);
+	int s2cd_threads_check = (S2CD_BASE_THR + 1);
 
-	if (s2cd_threads_check > 0) {
-		pthread_mutex_destroy(&log_mutex);
-		pthread_mutex_destroy(&dns_mutex);
-		pthread_mutex_destroy(&thr_mutex);
-		pthread_mutex_destroy(&pf_mutex);
-		pthread_mutex_destroy(&fm_mutex);
-	}   /* if (s2cd_threads_check */
+	while (s2cd_threads_check > S2CD_BASE_THR) {	
+		pthread_mutex_lock(&thr_mutex);
+		s2cd_threads_check = s2cd_threads;
+		pthread_mutex_unlock(&thr_mutex);
+		if (s2cd_threads_check > S2CD_BASE_THR)
+			sleep(5);
+	}  /* while (s2cd_threads_check */
+
+	pthread_mutex_destroy(&log_mutex);
+	pthread_mutex_destroy(&dns_mutex);
+	pthread_mutex_destroy(&thr_mutex);
+	pthread_mutex_destroy(&pf_mutex);
+	pthread_mutex_destroy(&fm_mutex);
 
 	return;
 
