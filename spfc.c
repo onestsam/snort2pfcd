@@ -11,11 +11,9 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- *
- * s2cd_pf_block functions are based
- * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
@@ -301,19 +299,12 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 
 	pthread_mutex_lock(&pf_mutex);
 	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
-		if (v) {
-			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
-			else fprintf(stderr, "%s - %s\n", S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
-		}   /* if (v) */
-
+		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
 		sleep(3);
 	}   /* while (ioctl */
 
 	pthread_mutex_unlock(&pf_mutex);
-	if (v) {
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_TBLADD, tablename);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_TBLADD, tablename);
-	}   /* if (v) */
+	if (v) s2cd_sw_switch(S2CD_LANG_TBLADD, tablename);
 
 	free(pftbl);
 
@@ -339,11 +330,7 @@ void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 
 	pthread_mutex_lock(&pf_mutex);
 	if (ioctl(dev, request, pf_io_arg) != 0) {
-		if (v) {
-			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
-			else fprintf(stderr, "%s - %s\n", S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
-		}   /* if (v) */
-
+		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
 		pf_reset = 1;
 	}   /* if (ioctl */
 

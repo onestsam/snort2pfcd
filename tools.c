@@ -11,11 +11,9 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- *
- * s2cd_pf_block functions are based
- * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
@@ -56,6 +54,20 @@
 #include "defdata.h"
 #include "version.h"
 
+void s2cd_sw_switch(char *lsw, char *lvar) {
+
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", lsw, lvar);
+	else fprintf(stderr, "%s - %s\n", lsw, lvar);
+
+} /* s2cd_sw_switch */
+
+void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
+
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", lsw, lvar, lsw2);
+	else fprintf(stderr, "%s %s - %s\n", lsw, lvar, lsw2);
+
+} /* s2cd_sw_switch_e */
+
 void s2cd_check_file(char *namefile) {
 
 	struct stat *info = NULL;
@@ -65,8 +77,7 @@ void s2cd_check_file(char *namefile) {
 	lstat(namefile, info);
 
 	if (info->st_mode & S_IFDIR) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
+		s2cd_sw_switch_e(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if (info->st_mode */
 
@@ -83,8 +94,7 @@ void s2cd_write_file(char *namefile, char *message) {
 	pthread_mutex_lock(&log_mutex);
 
 	if ((lfile = fopen(namefile, "a")) == NULL) {
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
+		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if ((lfile */
 
@@ -114,8 +124,7 @@ void s2cd_mutex_init() {
 	if (pthread_mutex_init(&fm_mutex, NULL) == 0)
 		return;
 
-	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
-	else fprintf(stderr, "%s - %s\n", S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
+	s2cd_sw_switch(S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
 	s2cd_exit_fail();
 
 	return;
@@ -206,17 +215,13 @@ void s2cd_spawn_thread(void *(*func) (void *), void *data) {
 	memset(yarn, 0x00, sizeof(twisted_t));
  
 	if (pthread_attr_init(&yarn->attr)) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_INIT_THR, S2CD_LANG_WARN);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_INIT_THR, S2CD_LANG_WARN);
+		s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN);
  
 	} else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_SET_THR, S2CD_LANG_WARN);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_SET_THR, S2CD_LANG_WARN);
+		s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
  
-	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
-	}   /* if (pthread */
+	} else if (pthread_create(&yarn->thr, &yarn->attr, func, data))
+		s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
 
 	free(yarn);
 
@@ -226,8 +231,7 @@ void s2cd_spawn_thread(void *(*func) (void *), void *data) {
 
 void s2cd_malloc_err() {
 
-	if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT);
-	else fprintf(stderr, "%s - %s\n", S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT);
+	s2cd_sw_switch(S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT);
 	s2cd_exit_fail();
 
 	return;

@@ -11,11 +11,9 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line from pfctl_radix.c
+ * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- *
- * s2cd_pf_block functions are based
- * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
@@ -75,13 +73,10 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	free(data);
 
 	if (fid == S2CD_ID_AF) strlcpy(local_fn, loopdata->alertfile, S2CD_NMBUFSIZ);
-	if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
-	if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
 
-	if (v) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_MON, local_fn);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_MON, local_fn);
-	}   /* if (v) */
+	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
 	if (fr) {
 		if (loopdata->t > 0) age = loopdata->t;
@@ -95,8 +90,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			memset(lineproc, 0x00, sizeof(lineproc_t));
 
 			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
-				else fprintf(stderr, "%s - %s\n", S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
+				s2cd_sw_switch(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 				s2cd_exit_fail();
 			}   /* if (regcomp */
 
@@ -139,26 +133,19 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			s2cd_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
 			memset(trigger, 0x00, sizeof(struct kevent));
 			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) {
-				if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
-				else fprintf(stderr, "%s - %s\n", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+				s2cd_sw_switch(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 				s2cd_exit_fail();
-
 			} else {
 				if (fr) {
-					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) == -1) {
-						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
-						else fprintf(stderr, "%s - %s\n", S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
-					}   /* if (s2cd_kevent_read */
+					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) == -1)
+						s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
 
 					if (pfile_monitor) {
 						if (!loopdata->W) {
 							s2cd_kevent_plf_reload(loopdata, lineproc);
-							if (v) {
-								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
-								else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
-							}   /* if (v) */
+							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
 						}   /* if (!loopdata->W) */
 						pfile_monitor = 0;
 					}   /* if (pfile_monitor) */
@@ -167,10 +154,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 						if (!loopdata->B) {
 							s2cd_pf_tbldel(loopdata->dev, loopdata->tablename_static);
 							s2cd_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, S2CD_ID_BF);
-							if (v) {
-								if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
-								else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
-							}   /* if (v) */
+							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
 						}   /* if (!loopdata->B) */
 						bfile_monitor = 0;
 					}   /* if (bfile_monitor) */
@@ -195,11 +179,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 		}   /* while (!pf_reset_check) */
 
 		if (fr) s2cd_parse_and_block_list_clear(&loopdata->pbhead.bhead);
-
-		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
-			else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
-		}   /* if (v) */
+		if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
 
 	}   /* while (1) */
 
@@ -228,14 +208,12 @@ void s2cd_kevent_open(int *kq, int *fd, char *file) {
 	struct kevent change;
 
 	if ((*kq = kqueue()) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
+		s2cd_sw_switch(S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
         }   /* if ((*kq */
 
 	if ((*fd = s2cd_fd_open(file)) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
+		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if ((*fd */
 
@@ -243,8 +221,7 @@ void s2cd_kevent_open(int *kq, int *fd, char *file) {
 	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
 	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+		s2cd_sw_switch(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if (kevent */
 
@@ -314,11 +291,7 @@ int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 			}   /* if (lineproc */
 		}   /* for (i */
 
-		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_KE_READ, lineproc->cad);
-			else fprintf(stderr, "%s - %s\n", S2CD_LANG_KE_READ, lineproc->cad);
-		}   /* if (v) */
-
+		if (v) s2cd_sw_switch(S2CD_LANG_KE_READ, lineproc->cad);
 		s2cd_parse_and_block(loopdata, lineproc);
 		total += i;
 

@@ -11,11 +11,9 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- *
- * s2cd_pf_block functions are based
- * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
@@ -127,8 +125,7 @@ void s2cd_init(loopdata_t *loopdata) {
 	} else fprintf(stderr, "%s %s, pid: %d\n", loopdata->tablename, S2CD_LANG_START, getpid());
 
 	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
+		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if ((loopdata->dev */
 

@@ -11,11 +11,9 @@
  * Expiretable functions from expiretable
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line based in pfctl code (pfctl_radix.c)
+ * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- *
- * s2cd_pf_block functions are based
- * on Armin's Wolfermann pftabled-1.03 functions.
  *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
@@ -211,14 +209,10 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 			s2cd_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
 
 		s2cd_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
-		if (v) {
-			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_BLK, lineproc->ret);
-			else fprintf(stderr, "%s - %s\n", S2CD_LANG_BLK, lineproc->ret);
-		}   /* if (v) */
+		if (v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
 
 	} else if (pb_status == -1) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
+		s2cd_sw_switch(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* else if (pb_status */
 
@@ -232,8 +226,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 	FILE *file = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
-		else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
+		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
 		return;
 	}   /* if ((file */
 
@@ -275,8 +268,7 @@ void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 	register struct ifaddrs *ifa = NULL;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s - %s", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
-		else fprintf(stderr, "%s - %s\n", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
+		s2cd_sw_switch(S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
 	}   /* if (getifaddrs */
 
@@ -334,8 +326,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 
 		pthread_mutex_lock(&pf_mutex);
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
-			if (!F) syslog(LOG_DAEMON | LOG_ERR, "%s %s - %s", S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
-			else fprintf(stderr, "%s %s - %s\n", S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+			s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 			s2cd_exit_fail();
 		}
 		pthread_mutex_unlock(&pf_mutex);
