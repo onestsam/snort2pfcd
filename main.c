@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 
 	loopdata_t *loopdata = NULL;
 
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2cd_malloc_err();
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
 
 	s2cd_pre_init(loopdata);
 	s2cd_get_optargs(argc, argv, loopdata);
@@ -124,10 +124,7 @@ void s2cd_init(loopdata_t *loopdata) {
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
 	} else fprintf(stderr, "%s %s, pid: %d\n", loopdata->tablename, S2CD_LANG_START, getpid());
 
-	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) {
-		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if ((loopdata->dev */
+	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
 
 	signal(SIGHUP,  s2cd_sighandle);
 	signal(SIGTERM, s2cd_sighandle);

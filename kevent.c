@@ -63,8 +63,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
 
-	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) s2cd_malloc_err();
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) s2cd_malloc_err();
+	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
+	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(loopdata, 0x00, sizeof(loopdata_t));
 	memcpy(loopdata, &data->loopdata, sizeof(loopdata_t));
 	fid = data->fid;
@@ -75,16 +75,13 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	if (fid == S2CD_ID_AF) strlcpy(local_fn, loopdata->alertfile, S2CD_NMBUFSIZ);
 	else if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
 	else if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
-	else {
-		s2cd_sw_switch(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* else */
+	else s2cd_sw_switch_f(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 
 	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
 	if (fr) {
 		if (loopdata->t > 0) age = loopdata->t;
-		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2cd_malloc_err();
+		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) S2CD_MALLOC_ERR;
 		if (!loopdata->W) s2cd_check_file(loopdata->pfile);
 		if (!loopdata->B) s2cd_check_file(loopdata->bfile);
 	}   /* if (fr) */
@@ -93,10 +90,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 		if (fr) {
 			memset(lineproc, 0x00, sizeof(lineproc_t));
 
-			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) {
-				s2cd_sw_switch(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
-				s2cd_exit_fail();
-			}   /* if (regcomp */
+			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
 			s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename);
 			if (v) s2cd_sw_switch(S2CD_LANG_CON_EST, "");
@@ -208,23 +202,13 @@ void s2cd_kevent_open(int *kq, int *fd, char *file) {
 
 	struct kevent change;
 
-	if ((*kq = kqueue()) == -1) {
-		s2cd_sw_switch(S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-        }   /* if ((*kq */
-
-	if ((*fd = s2cd_fd_open(file)) == -1) {
-		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if ((*fd */
+	if ((*kq = kqueue()) == -1) s2cd_sw_switch_f(S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
+	if ((*fd = s2cd_fd_open(file)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
 
 	memset(&change, 0x00, sizeof(struct kevent));
 	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
-	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) {
-		s2cd_sw_switch(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if (kevent */
+	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 
 	return;
 

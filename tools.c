@@ -63,6 +63,15 @@ void s2cd_sw_switch(char *lsw, char *lvar) {
 
 }   /* s2cd_sw_switch */
 
+void s2cd_sw_switch_f(char *lsw, char *lvar) {
+
+	s2cd_sw_switch(lsw, lvar);
+	s2cd_exit_fail();
+
+	return;
+
+}   /* s2cd_sw_switch */
+
 void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
 
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", lsw, lvar, lsw2);
@@ -72,18 +81,24 @@ void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
 
 }   /* s2cd_sw_switch_e */
 
+void s2cd_sw_switch_ef(char *lsw, char *lvar, char *lsw2) {
+
+	s2cd_sw_switch_e(lsw, lvar, lsw2);
+	s2cd_exit_fail();
+
+	return;
+
+}   /* s2cd_sw_switch_ef */
+
 void s2cd_check_file(char *namefile) {
 
 	struct stat *info = NULL;
 
-	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) s2cd_malloc_err();
+	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) S2CD_MALLOC_ERR;
 	memset(info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
-	if (info->st_mode & S_IFDIR) {
-		s2cd_sw_switch_e(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if (info->st_mode */
+	if (info->st_mode & S_IFDIR) s2cd_sw_switch_ef(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
 
 	free(info);
 
@@ -97,10 +112,7 @@ void s2cd_write_file(char *namefile, char *message) {
 
 	pthread_mutex_lock(&log_mutex);
 
-	if ((lfile = fopen(namefile, "a")) == NULL) {
-		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if ((lfile */
+	if ((lfile = fopen(namefile, "a")) == NULL) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
 
 	flockfile(lfile);
 	fputs(message, lfile);
@@ -128,8 +140,7 @@ void s2cd_mutex_init() {
 	if (pthread_mutex_init(&fm_mutex, NULL) == 0)
 		return;
 
-	s2cd_sw_switch(S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
-	s2cd_exit_fail();
+	s2cd_sw_switch_f(S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
 
 	return;
 
@@ -159,7 +170,7 @@ int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *l
 
 	thread_fm_t *fm_data = NULL;
 
-	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) s2cd_malloc_err();
+	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(fm_data, 0x00, sizeof(thread_fm_t));
 
 	fm_data->file_monitor = notifaddr;
@@ -175,7 +186,7 @@ int s2cd_spawn_expiretable(loopdata_t *loopdata) {
 
 	thread_expt_t *expt_data = NULL;
 
-	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) s2cd_malloc_err();
+	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(expt_data, 0x00, sizeof(thread_expt_t));
 
 	expt_data->t = loopdata->t;
@@ -192,7 +203,7 @@ int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 
 	thread_log_t *log_data = NULL;
 
-	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) s2cd_malloc_err();
+	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(log_data, 0x00, sizeof(thread_log_t));
 
 	log_data->D = D;
@@ -213,7 +224,7 @@ int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 
 	twisted_t *yarn = NULL;
  
-	if ((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) s2cd_malloc_err();
+	if ((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(yarn, 0x00, sizeof(twisted_t));
  
 	if (pthread_attr_init(&yarn->attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
@@ -226,15 +237,6 @@ int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 	return(thr_check);
 
 }   /* s2cd_spawn_thread */
-
-void s2cd_malloc_err() {
-
-	s2cd_sw_switch(S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT);
-	s2cd_exit_fail();
-
-	return;
-
-}   /* s2cd_malloc_err */
 
 void s2cd_pre_exit() {
 

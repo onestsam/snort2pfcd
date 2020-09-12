@@ -68,11 +68,11 @@ void *s2cd_pf_expiretable(void *arg) {
 	pfbl_log_t *pfbl_log = NULL;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
-	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2cd_malloc_err();
-	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) s2cd_malloc_err();
-	if ((nmpfdev = (char *)malloc(sizeof(char)*S2CD_NMBUFSIZ)) == NULL) s2cd_malloc_err();
-	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) s2cd_malloc_err();
-	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) s2cd_malloc_err();
+	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) S2CD_MALLOC_ERR;
+	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) S2CD_MALLOC_ERR;
+	if ((nmpfdev = (char *)malloc(sizeof(char)*S2CD_NMBUFSIZ)) == NULL) S2CD_MALLOC_ERR;
+	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) S2CD_MALLOC_ERR;
+	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) S2CD_MALLOC_ERR;
 
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
@@ -104,7 +104,7 @@ void *s2cd_pf_expiretable(void *arg) {
 				else oldest_entry = s2cd_lmin(oldest_entry, astats[i].pfras_tzero);
 			}   /* for (i */
 
-			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) s2cd_malloc_err();	
+			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;	
 			memset(del_addrs_list, 0x00, sizeof(struct pfr_addr));
 
 			del_addrs_count = 0;
@@ -147,7 +147,7 @@ void s2cd_pf_block(int dev, char *tablename, char *ip)  {
 
 	pfbl_t *pfbl = NULL;
 
-	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) s2cd_malloc_err();
+	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(pfbl, 0x00, sizeof(pfbl_t));
 	
 	strlcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
@@ -198,7 +198,7 @@ void *s2cd_pf_block_log(void *arg) {
 	pfbl_log_t *pfbl_log = NULL;
 	thread_log_t *data = (thread_log_t *)arg;
 
-	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) s2cd_malloc_err();
+	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
 
 	D = data->D;
@@ -247,7 +247,7 @@ void s2cd_pf_ruleadd(int dev, char *tablename) {
 	
 	s2cd_pf_tbladd(dev, tablename);
 
-	if ((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) s2cd_malloc_err();
+	if ((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(pfrla, 0x00, sizeof(pfrla_t));
 
 	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
@@ -284,7 +284,7 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 
 	pftbl_t *pftbl = NULL;
 
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2cd_malloc_err();
+	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(pftbl, 0x00, sizeof(pftbl_t));
 
 	s2cd_pf_tbl_get(dev, tablename, pftbl);
@@ -316,7 +316,7 @@ void s2cd_pf_tbldel(int dev, char *tablename) {
 
 	pftbl_t *pftbl = NULL;
 
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) s2cd_malloc_err();
+	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
 	s2cd_pftbl_set(tablename, pftbl);
 	s2cd_pf_ioctl(dev, DIOCRDELTABLES, &pftbl->io);
 

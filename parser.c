@@ -58,7 +58,7 @@ int s2cd_parse_and_block_bl(char *ret, struct ulist_head *head) {
 	register struct ipulist *aux2 = NULL, *ipu = NULL;
 
 	if (head->lh_first == NULL){
-		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
+		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 
 		s2cd_parse_ipu_set(ret, ipu);
 		LIST_INIT(head);
@@ -71,7 +71,7 @@ int s2cd_parse_and_block_bl(char *ret, struct ulist_head *head) {
 				aux2->repeat_offenses++;
 				return(aux2->repeat_offenses);
 			} else if (!aux2->elem.le_next) {
-				if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
+				if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 				s2cd_parse_ipu_set(ret, ipu);
 				LIST_INSERT_AFTER(aux2, ipu, elem);
 				return(0);
@@ -203,18 +203,12 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		pthread_mutex_unlock(&thr_mutex);
 
 		if (threadcheck < loopdata->thr_max)
-			if (s2cd_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile)) {
-				s2cd_sw_switch(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
-				s2cd_exit_fail();
-			}   /* if (s2cd_spawn_block_log */
+			if (s2cd_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
 		s2cd_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 		if (v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
 
-	} else if (pb_status == -1) {
-		s2cd_sw_switch(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* else if (pb_status */
+	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
 	return;
 
@@ -236,7 +230,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 		if (s2cd_parse_ip(lineproc)) {
 
 			if (id == S2CD_ID_PF) {
-				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
+				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 				s2cd_parse_ipu_set(lineproc->ret, ipu2);
 				LIST_INSERT_AFTER(ipu1, ipu2, elem);
 				ipu1 = ipu2;
@@ -267,10 +261,7 @@ void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 	struct ifaddrs *ifaddr = NULL;
 	register struct ifaddrs *ifa = NULL;
 
-	if (getifaddrs(&ifaddr) == -1) {
-		s2cd_sw_switch(S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
-		s2cd_exit_fail();
-	}   /* if (getifaddrs */
+	if (getifaddrs(&ifaddr) == -1) s2cd_sw_switch_f(S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
@@ -289,7 +280,7 @@ void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 	register struct ipulist *ipu2 = NULL;
 	char ret[BUFSIZ];
 
-	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
+	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 
 	inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, ret, INET_ADDRSTRLEN);
 	s2cd_parse_ipu_set(ret, ipu2);
@@ -307,7 +298,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 	struct ifreq *ifr = NULL;
 	int fd = 0;
 
-	if ((ipu1 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
+	if ((ipu1 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 	memset(ipu1, 0x00, sizeof(struct ipulist));
 
 	ipu1->ciaddr = *cidr_from_str("127.0.0.0/8");
@@ -317,7 +308,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 	if (!strcmp(loopdata->extif, "all")) s2cd_parse_load_ifaces(ipu1);
 	else {
 
-		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) s2cd_malloc_err();
+		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) S2CD_MALLOC_ERR;
 		memset(ifr, 0x00, sizeof(struct ifreq));
 		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -325,16 +316,13 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
 		pthread_mutex_lock(&pf_mutex);
-		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
-			s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
-			s2cd_exit_fail();
-		}   /* if (ioctl(fd */
+		if (ioctl(fd, SIOCGIFADDR, ifr) != 0)s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 		pthread_mutex_unlock(&pf_mutex);
 
 		close(fd);
 		free(ifr);
 
-	s2cd_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
+		s2cd_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
 	}   /* else if (!strcmp */
 
 	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
