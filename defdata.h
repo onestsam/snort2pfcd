@@ -124,6 +124,7 @@
 #define S2CD_LANG_BENT			"blocklist entry"
 #define S2CD_LANG_PLL			"Passlist:"
 #define S2CD_LANG_PL			"is passlisted"
+#define S2CD_LANG_SPBL			"error: cannot spawn block log thread"
 #define S2CD_LANG_THR_WAIT		"waiting for exiting threads"
 #define S2CD_LANG_ERR_ID		"Internal Error: ID undefined"
 #define S2CD_LANG_DETAILS		"for more details"

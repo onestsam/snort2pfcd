@@ -202,8 +202,11 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		threadcheck = s2cd_threads;
 		pthread_mutex_unlock(&thr_mutex);
 
-		if(threadcheck < loopdata->thr_max)
-			s2cd_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile);
+		if (threadcheck < loopdata->thr_max)
+			if (s2cd_spawn_block_log(loopdata->D, lineproc->ret, loopdata->logfile)) {
+				s2cd_sw_switch(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
+				s2cd_exit_fail();
+			}   /* if (s2cd_spawn_block_log */
 
 		s2cd_pf_block(loopdata->dev, loopdata->tablename, lineproc->ret);
 		if (v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
@@ -232,7 +235,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 	while (s2cd_parse_line(lineproc->cad, file)) {
 		if (s2cd_parse_ip(lineproc)) {
 
-			if(id == S2CD_ID_PF) {
+			if (id == S2CD_ID_PF) {
 				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) s2cd_malloc_err();
 				s2cd_parse_ipu_set(lineproc->ret, ipu2);
 				LIST_INSERT_AFTER(ipu1, ipu2, elem);
@@ -325,7 +328,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		if (ioctl(fd, SIOCGIFADDR, ifr) != 0){
 			s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 			s2cd_exit_fail();
-		}
+		}   /* if (ioctl(fd */
 		pthread_mutex_unlock(&pf_mutex);
 
 		close(fd);
