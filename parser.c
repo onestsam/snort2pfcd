@@ -190,10 +190,9 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		return;
 	}   /* if (!s2cd_parse_ip */
 
-	if (!LIST_EMPTY(&loopdata->pbhead.phead)) {
+	if (!LIST_EMPTY(&loopdata->pbhead.phead))
 		if (s2cd_parse_search_list(lineproc->ret, &loopdata->pbhead.phead))
 			return;
-	}   /* if (!LIST_EMPTY */
 
 	if ((pb_status = s2cd_parse_and_block_bl(lineproc->ret, &loopdata->pbhead.bhead)) == loopdata->repeat_offenses) {
 
@@ -316,7 +315,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
 		pthread_mutex_lock(&pf_mutex);
-		if (ioctl(fd, SIOCGIFADDR, ifr) != 0)s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+		if (ioctl(fd, SIOCGIFADDR, ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 		pthread_mutex_unlock(&pf_mutex);
 
 		close(fd);

@@ -320,4 +320,3 @@ void s2cd_kevent_loop(loopdata_t *);
 void *s2cd_kevent_file_monitor(void *arg);
 
 #endif /* _DEFDATA_H */
-
