@@ -329,12 +329,10 @@ void s2cd_pf_tbldel(int dev, char *tablename) {
 void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 
 	pthread_mutex_lock(&pf_mutex);
-
 	if (ioctl(dev, request, pf_io_arg) != 0) {
 		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
 		pf_reset = 1;
 	}   /* if (ioctl */
-
 	pthread_mutex_unlock(&pf_mutex);
 
 	return;

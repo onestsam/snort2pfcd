@@ -231,12 +231,10 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 	while (1) {
 		pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->tablename, &pftbl);
 
-		pthread_mutex_lock(&fm_mutex);
-
 		/* I always have problems with && and || operators */
+		pthread_mutex_lock(&fm_mutex);
 		if (pfile_monitor) pf_reset_check = 1;
 		if (bfile_monitor) pf_reset_check = 1;
-		
 		pthread_mutex_unlock(&fm_mutex);
 
 		if (pf_tbl_state_current < pf_tbl_state_init)

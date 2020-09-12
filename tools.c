@@ -162,6 +162,7 @@ void s2cd_thr_init(loopdata_t *loopdata) {
 	else return;
 
 	s2cd_exit_fail();
+
 	return;
 
 }   /* s2cd_thr_init */
