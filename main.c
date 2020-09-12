@@ -209,7 +209,7 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 		strlcat(loopdata->logfile, ".log", S2CD_NMBUFSIZ);
 	}   /* if (!l) */
 
-	if(!F) s2cd_daemonize(loopdata);
+	if (!F) s2cd_daemonize(loopdata);
 	if (q) sleep(q);
 
 	return;

@@ -144,7 +144,7 @@ void s2cd_thr_init(loopdata_t *loopdata) {
 		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, loopdata->thr_max);
 	}   /* if (v) */
 
-	if(s2cd_spawn_expiretable(loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	if (s2cd_spawn_expiretable(loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);

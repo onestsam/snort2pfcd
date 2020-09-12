@@ -208,9 +208,9 @@ void *s2cd_pf_block_log(void *arg) {
 
 	if (!C) timebuf = time(NULL);
 
-	if(!D) {
+	if (!D) {
 		pfbl_log->sa.sa_family = AF_INET;
-		if(inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
+		if (inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
 			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);

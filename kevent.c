@@ -85,8 +85,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	if (fr) {
 		if (loopdata->t > 0) age = loopdata->t;
 		if ((lineproc = (lineproc_t *)malloc(sizeof(lineproc_t))) == NULL) s2cd_malloc_err();
-		if(!loopdata->W) s2cd_check_file(loopdata->pfile);
-		if(!loopdata->B) s2cd_check_file(loopdata->bfile);
+		if (!loopdata->W) s2cd_check_file(loopdata->pfile);
+		if (!loopdata->B) s2cd_check_file(loopdata->bfile);
 	}   /* if (fr) */
 
 	while (1) {
@@ -285,7 +285,7 @@ int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 
 	do  {
 		for (i = 0; i < BUFSIZ; i++) {
-			if((r = read(loopdata->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
+			if ((r = read(loopdata->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
 			if (lineproc->cad[i] == '\n') {
 				lineproc->cad[i] = '\0';
 				break;
