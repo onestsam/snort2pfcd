@@ -78,7 +78,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	else {
 		s2cd_sw_switch(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 		s2cd_exit_fail();
-	}  /* else */
+	}   /* else */
 
 	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
@@ -192,7 +192,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	pthread_exit(NULL);
 
-} /* s2cd_kevent_file_monitor */
+}   /* s2cd_kevent_file_monitor */
 
 int s2cd_fd_open(char *file) {
 	int fd = 0;
@@ -202,7 +202,7 @@ int s2cd_fd_open(char *file) {
 
 	return(fd);
 
-} /* s2cd_fd_open */
+}   /* s2cd_fd_open */
 
 void s2cd_kevent_open(int *kq, int *fd, char *file) {
 
@@ -228,7 +228,7 @@ void s2cd_kevent_open(int *kq, int *fd, char *file) {
 
 	return;
 
-} /* s2cd_kevent_open */
+}   /* s2cd_kevent_open */
 
 void s2cd_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
 
@@ -238,7 +238,7 @@ void s2cd_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 	return;
 
-} /* s2cd_kevent_plf_reload */
+}   /* s2cd_kevent_plf_reload */
 
 void s2cd_kevent_loop(loopdata_t *loopdata) {
 
@@ -276,7 +276,7 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 	return;
 
-} /* s2cd_kevent_loop */
+}   /* s2cd_kevent_loop */
 
 int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 
@@ -300,4 +300,4 @@ int s2cd_kevent_read(loopdata_t *loopdata, lineproc_t *lineproc, int nbytes) {
 
 	return(total);
 
-} /* s2cd_kevent_read */
+}   /* s2cd_kevent_read */

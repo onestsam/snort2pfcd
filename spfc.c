@@ -135,7 +135,7 @@ void *s2cd_pf_expiretable(void *arg) {
 
 	pthread_exit(NULL);
 
-} /* s2cd_pf_expiretable */
+}   /* s2cd_pf_expiretable */
 
 void s2cd_pf_block(int dev, char *tablename, char *ip)  {
 
@@ -167,7 +167,7 @@ void s2cd_pf_block(int dev, char *tablename, char *ip)  {
 
 	return;
 
-} /* s2cd_pf_block */
+}   /* s2cd_pf_block */
 
 void s2cd_pf_unblock_log(pfbl_log_t *pfbl_log) {
 
@@ -189,7 +189,7 @@ void s2cd_pf_unblock_log(pfbl_log_t *pfbl_log) {
 
 	return;
 
-} /* s2cd_pf_unblock_log */
+}   /* s2cd_pf_unblock_log */
 
 void *s2cd_pf_block_log(void *arg) {
 
@@ -234,7 +234,7 @@ void *s2cd_pf_block_log(void *arg) {
 
 	pthread_exit(NULL);
 
-} /* s2cd_pf_block_log */
+}   /* s2cd_pf_block_log */
 
 void s2cd_pf_ruleadd(int dev, char *tablename) {
 
@@ -268,7 +268,7 @@ void s2cd_pf_ruleadd(int dev, char *tablename) {
 
 	return;
 
-} /* s2cd_pf_ruleadd */
+}   /* s2cd_pf_ruleadd */
 
 int s2cd_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl) {
 
@@ -278,7 +278,7 @@ int s2cd_pf_tbl_get(int dev, char *tablename, pftbl_t *pftbl) {
 
 	return(pftbl->io.pfrio_size);
 
-} /* s2cd_pf_tbl_get */
+}   /* s2cd_pf_tbl_get */
 
 void s2cd_pf_tbladd(int dev, char *tablename) {
 
@@ -310,7 +310,7 @@ void s2cd_pf_tbladd(int dev, char *tablename) {
 
 	return;
 
-} /* s2cd_pf_tbladd */
+}   /* s2cd_pf_tbladd */
 
 void s2cd_pf_tbldel(int dev, char *tablename) {
 
@@ -324,7 +324,7 @@ void s2cd_pf_tbldel(int dev, char *tablename) {
 
 	return;
 
-} /* s2cd_pf_tbldel */
+}   /* s2cd_pf_tbldel */
 
 void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 
@@ -339,7 +339,7 @@ void s2cd_pf_ioctl(int dev, unsigned long request, void *pf_io_arg) {
 
 	return;
 
-} /* s2cd_pf_ioctl */
+}   /* s2cd_pf_ioctl */
 
 void s2cd_pftbl_set(char *tablename, pftbl_t *pftbl) {
 
@@ -351,4 +351,4 @@ void s2cd_pftbl_set(char *tablename, pftbl_t *pftbl) {
 
 	return;
 
-} /* s2cd_pftbl_set */
+}   /* s2cd_pftbl_set */

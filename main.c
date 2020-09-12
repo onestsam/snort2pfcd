@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 
 	return(0);
 
-} /* main */
+}   /* main */
 
 void s2cd_pre_init(loopdata_t *loopdata) {
 
@@ -107,7 +107,7 @@ void s2cd_pre_init(loopdata_t *loopdata) {
 
 	return;
 
-} /* s2cd_pre_init */
+}   /* s2cd_pre_init */
 
 void s2cd_init(loopdata_t *loopdata) {
 
@@ -138,7 +138,7 @@ void s2cd_init(loopdata_t *loopdata) {
 
 	return;
 
-} /* s2cd_init */
+}   /* s2cd_init */
 
 void s2cd_daemonize(loopdata_t *loopdata) {
 
@@ -162,7 +162,7 @@ void s2cd_daemonize(loopdata_t *loopdata) {
 
 	return;
 
-} /* s2cd_daemonize */
+}   /* s2cd_daemonize */
 
 void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 
@@ -214,4 +214,4 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 
 	return;
 
-} /* s2cd_get_optargs */
+}   /* s2cd_get_optargs */

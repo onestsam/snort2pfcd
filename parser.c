@@ -81,7 +81,7 @@ int s2cd_parse_and_block_bl(char *ret, struct ulist_head *head) {
 
 	return(-1);
 
-} /* s2cd_parse_and_block_bl */
+}   /* s2cd_parse_and_block_bl */
 
 void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
@@ -97,7 +97,7 @@ void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
 	return;
 
-} /* s2cd_parse_and_block_list_clear */
+}   /* s2cd_parse_and_block_list_clear */
 
 void s2cd_parse_and_block_list_timeout(time_t age, time_t this_time, struct ulist_head *head) {
 
@@ -111,7 +111,7 @@ void s2cd_parse_and_block_list_timeout(time_t age, time_t this_time, struct ulis
 
 	return;
 
-} /* s2cd_parse_and_block_list_timeout */
+}   /* s2cd_parse_and_block_list_timeout */
 
 int s2cd_parse_line(char *buf, FILE* pfile) {
 
@@ -130,7 +130,7 @@ int s2cd_parse_line(char *buf, FILE* pfile) {
 
 	return(1);
 
-} /* s2cd_parse_line */
+}   /* s2cd_parse_line */
 
 int s2cd_parse_priority(int priority, lineproc_t *lineproc) {
 
@@ -149,7 +149,7 @@ int s2cd_parse_priority(int priority, lineproc_t *lineproc) {
 
 	return(0);
 
-} /* s2cd_parse_priority */
+}   /* s2cd_parse_priority */
 
 /* s2cd_parse_ip returns the last ip address regmatched per kevent which should be the 
 ip address we are looking for. */
@@ -178,7 +178,7 @@ int s2cd_parse_ip(lineproc_t *lineproc) {
 
 	return(i);
 
-} /* s2cd_parse_ip */
+}   /* s2cd_parse_ip */
 
 void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
@@ -215,7 +215,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 	return;
 
-} /* s2cd_parse_and_block */
+}   /* s2cd_parse_and_block */
 
 void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
@@ -257,7 +257,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 
 	return;
 
-} /* s2cd_parse_load_file */
+}   /* s2cd_parse_load_file */
 
 void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 
@@ -279,7 +279,7 @@ void s2cd_parse_load_ifaces(struct ipulist *ipu1) {
 
 	return;
 
-} /* s2cd_parse_load_ifaces */
+}   /* s2cd_parse_load_ifaces */
 
 void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 
@@ -296,7 +296,7 @@ void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 	return;
 
-} /* s2cd_parse_add_list */
+}   /* s2cd_parse_add_list */
 
 void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head) {
 
@@ -339,7 +339,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 
 	return;
 
-} /* s2cd_parse_load_pl */
+}   /* s2cd_parse_load_pl */
 
 void s2cd_parse_print_list(struct ulist_head *head) {
 
@@ -352,7 +352,7 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 	return;
 
-} /* s2cd_parse_print_list */
+}   /* s2cd_parse_print_list */
 
 int s2cd_parse_search_list(char *ip, struct ulist_head *head) {
 
@@ -367,7 +367,7 @@ int s2cd_parse_search_list(char *ip, struct ulist_head *head) {
 
 	return(f);
 
-} /* s2cd_parse_search_list */
+}   /* s2cd_parse_search_list */
 
 void s2cd_parse_ipu_set(char *ret, struct ipulist *ipu) {
 
@@ -380,4 +380,4 @@ void s2cd_parse_ipu_set(char *ret, struct ipulist *ipu) {
 
 	return;
 
-} /* s2cd_parse_ipu_set */
+}   /* s2cd_parse_ipu_set */
