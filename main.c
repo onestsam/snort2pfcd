@@ -54,15 +54,12 @@
 #include "defdata.h"
 
 /* Global Vars Init */
-struct pidfh *pfh = NULL;
-int v = 0;
-int C = 0;
-int F = 0;
 int pf_reset = 0;
 int s2cd_threads = 1;
 int afile_monitor = 0;
 int pfile_monitor = 0;
 int bfile_monitor = 0;
+struct pidfh *pfh = NULL;
 pthread_mutex_t log_mutex;
 pthread_mutex_t dns_mutex;
 pthread_mutex_t thr_mutex;
@@ -71,6 +68,7 @@ pthread_mutex_t fm_mutex;
 
 int main(int argc, char **argv) {
 
+	int F = 0;
 	loopdata_t *loopdata = NULL;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
@@ -81,9 +79,9 @@ int main(int argc, char **argv) {
 
 	s2cd_kevent_loop(loopdata);
 
+	s2cd_pre_exit(loopdata->v);
 	close(loopdata->dev);
 	free(loopdata);
-	s2cd_pre_exit();
 
 	return(0);
 
@@ -111,26 +109,26 @@ void s2cd_pre_init(loopdata_t *loopdata) {
 
 void s2cd_init(loopdata_t *loopdata) {
 
-	if (!C) loopdata->timebuf = time(NULL);
+	if (!loopdata->C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
 
-	s2cd_check_file(loopdata->logfile);
+	s2cd_check_file(loopdata->F, loopdata->logfile);
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, S2CD_LANG_START, asctime(localtime(&loopdata->timebuf)));
-	s2cd_write_file(loopdata->logfile, loopdata->randombuf);
+	s2cd_write_file(loopdata->F, loopdata->logfile, loopdata->randombuf);
 
-	if (!F) {
+	if (!loopdata->F) {
 		openlog(loopdata->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", loopdata->tablename, S2CD_LANG_START, getpid());
 	} else fprintf(stderr, "%s %s, pid: %d\n", loopdata->tablename, S2CD_LANG_START, getpid());
 
-	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
+	if ((loopdata->dev = open(loopdata->nmpfdev, O_RDWR)) == -1) s2cd_sw_switch_ef(loopdata->F, S2CD_LANG_NO_OPEN, loopdata->nmpfdev, S2CD_LANG_EXIT);
 
 	signal(SIGHUP,  s2cd_sighandle);
 	signal(SIGTERM, s2cd_sighandle);
 	signal(SIGINT,  s2cd_sighandle);
 
-	s2cd_mutex_init();
+	s2cd_mutex_init(loopdata->F);
 	s2cd_thr_init(loopdata);
 
 	return;
@@ -169,13 +167,13 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
-			case 'v': v = 1; break;
-			case 'F': F = 1; break;
-			case 'C': C = 1; F = 1; break;
+			case 'F': loopdata->F = 1; break;
+			case 'v': loopdata->v = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
+			case 'C': loopdata->C = 1; loopdata->F = 1; break;
 			case 'd': strlcpy(loopdata->nmpfdev, optarg, S2CD_NMBUFSIZ); d = 1; break;
 			case 'a': strlcpy(loopdata->alertfile, optarg, S2CD_NMBUFSIZ); a = 1; break;
 			case 'w': strlcpy(loopdata->pfile, optarg, S2CD_NMBUFSIZ); w = 1; break;
@@ -206,7 +204,7 @@ void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
 		strlcat(loopdata->logfile, ".log", S2CD_NMBUFSIZ);
 	}   /* if (!l) */
 
-	if (!F) s2cd_daemonize(loopdata);
+	if (!loopdata->F) s2cd_daemonize(loopdata);
 	if (q) sleep(q);
 
 	return;
