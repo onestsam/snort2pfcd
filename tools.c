@@ -8,10 +8,13 @@
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
  * Copyright (c) 2002 Cedric Berger
  *
- * Expiretable functions from expiretable
+ * s2cd_pf_expiretable from expiretable
+ * s2cd_radix_ioctlfrom ioctl_helpers.c
+ * s2cd_radix_get_astats from ioctl_helpers.c
+ * s2cd_radix_del_addrs from ioctl_helpers.c
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_parse_line from pfctl_radix.c
  * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
  *
@@ -194,6 +197,7 @@ int s2cd_spawn_expiretable(loopdata_t *loopdata) {
 
 	expt_data->F = F;
 	expt_data->C = loopdata->C;
+	expt_data->v = loopdata->v;
 	expt_data->t = loopdata->t;
 	expt_data->dev = loopdata->dev;
 	strlcpy(expt_data->logfile, loopdata->logfile, S2CD_NMBUFSIZ);

@@ -8,7 +8,10 @@
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
  * Copyright (c) 2002 Cedric Berger
  *
- * Expiretable functions from expiretable
+ * s2cd_pf_expiretable from expiretable
+ * s2cd_radix_ioctlfrom ioctl_helpers.c
+ * s2cd_radix_get_astats from ioctl_helpers.c
+ * s2cd_radix_del_addrs from ioctl_helpers.c
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
  * s2cd_parse_line from pfctl_radix.c
@@ -219,10 +222,12 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	pftbl_t pftbl;
 
-	pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl);
+	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
+	if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 	while (1) {
-		pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl);
+		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
+		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 		/* I always have problems with && and || operators */
 		pthread_mutex_lock(&fm_mutex);
@@ -230,8 +235,7 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 		if (bfile_monitor) pf_reset_check = 1;
 		pthread_mutex_unlock(&fm_mutex);
 
-		if (pf_tbl_state_current < pf_tbl_state_init)
-			pf_reset_check = 1;
+		if (pf_tbl_state_current < pf_tbl_state_init) pf_reset_check = 1;
 		pf_tbl_state_init = pf_tbl_state_current;
 
 		if (pf_reset_check) {

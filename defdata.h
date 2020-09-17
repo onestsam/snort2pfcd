@@ -8,13 +8,16 @@
  * Copyright (c) 2005 Antonio Benojar <zz.stalker@gmail.com>
  * Copyright (c) 2002 Cedric Berger
  *
- * Expiretable functions from expiretable
+ * s2cd_pf_expiretable from expiretable
+ * s2cd_radix_ioctlfrom ioctl_helpers.c
+ * s2cd_radix_get_astats from ioctl_helpers.c
+ * s2cd_radix_del_addrs from ioctl_helpers.c
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
- * s2cd_parse_line from pfctl_radix.c 
+ * s2cd_parse_line from pfctl_radix.c
  * s2cd_pf_block from pftabled-1.03
  * Copyright (c) Armin's Wolfermann
- * 
+ *
  * libcidr
  * Copyright (c) 1996 Matthew D. Fuller
  *
@@ -48,7 +51,7 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef _DEFDATA_H_
@@ -180,6 +183,7 @@ typedef struct _pftbl_t {
 } pftbl_t;
 
 typedef struct _thread_expt_t {
+	int v;
 	int C;
 	int F;
 	int dev;
@@ -279,7 +283,7 @@ void s2cd_sw_switch(int, char *, char *);
 void s2cd_sw_switch_f(int, char *, char *);
 void s2cd_sw_switch_e(int, char *, char *, char *);
 void s2cd_sw_switch_ef(int, char *, char *, char *);
-void s2cd_pf_ioctl(int, int, int, unsigned long, void *);
+int s2cd_pf_ioctl(int, int, int, unsigned long, void *);
 void s2cd_get_optargs(int, char **, loopdata_t *);
 void s2cd_mutex_init(int);
 void s2cd_mutex_destroy();
@@ -300,6 +304,9 @@ void s2cd_pf_rule_add(int, int, int, char *);
 void *s2cd_pf_expiretable(void *);
 void *s2cd_file_monitor(void *);
 void *s2cd_pf_block_log(void *);
+int s2cd_radix_ioctl(int, int, int, unsigned long, struct pfioc_table *);
+int s2cd_radix_get_astats(int, int, int, struct pfr_astats **, const struct pfr_table *, int);
+int s2cd_radix_del_addrs(int, int, int, const struct pfr_table *, struct pfr_addr *, int, int);
 int s2cd_parse_line(char *, FILE *);
 int s2cd_parse_priority(int, int, int, lineproc_t *);
 int s2cd_parse_search_list(char *, struct ulist_head *);
