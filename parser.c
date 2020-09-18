@@ -62,7 +62,6 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 
 	if (head->lh_first == NULL){
 		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-
 		s2cd_parse_ipu_set(ret, C, ipu);
 		LIST_INIT(head);
 		LIST_INSERT_HEAD(head, ipu, elem);
@@ -145,9 +144,7 @@ int s2cd_parse_priority(int priority, int v, int F, lineproc_t *lineproc) {
 			else fprintf(stderr, "%s - %c\n", S2CD_LANG_PRIO, p[3]);
 		}   /* if (v) */
 
-		if (isdigit(p[3]))
-			if ((p[3] - 48) >= priority)
-				return(1);
+		if (isdigit(p[3])) if ((p[3] - 48) >= priority) return(1);
 	}   /* if ((p */
 
 	return(0);
@@ -318,9 +315,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		ifr->ifr_addr.sa_family = AF_INET;
 		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
-		pthread_mutex_lock(&pf_mutex);
-		if (ioctl(fd, SIOCGIFADDR, ifr) != 0) s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
-		pthread_mutex_unlock(&pf_mutex);
+		if (s2cd_pf_ioctl(fd, loopdata->v, loopdata->F, SIOCGIFADDR, ifr) != 0) s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 
 		close(fd);
 		free(ifr);

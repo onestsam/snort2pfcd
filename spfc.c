@@ -164,9 +164,7 @@ int s2cd_radix_ioctl(int dev, int v, int F, unsigned long request, struct pfioc_
 		}   /* if (s2cd_pf_ioctl */
 
 		if (pt->pfrio_size + 1 < len) break;
-
 		if (pt->pfrio_size == 0) return(0);
-
 		if (len == 0) len = pt->pfrio_size;
 
 		len *= 2;
@@ -189,7 +187,6 @@ int s2cd_radix_get_astats(int dev, int v, int F, struct pfr_astats **astats, con
 	}
 
 	if (s2cd_radix_ioctl(dev, v, F, DIOCRGETASTATS, &pt) < 0) return(-1);
-
 	*astats = (struct pfr_astats *)pt.pfrio_buffer;
 
 	return(pt.pfrio_size);
