@@ -58,16 +58,21 @@
 
 void *s2cd_pf_expiretable(void *arg) {
 
-	struct pfr_astats *astats = NULL;
-	struct pfr_table *target = NULL;
+	typedef struct _pfas_t {
+		struct pfr_astats astats;
+		struct pfr_table target;
+		pfbl_log_t pfbl_log;
+		char tablename[PF_TABLE_NAME_SIZE];
+		char nmpfdev[S2CD_NMBUFSIZ];
+	} pfas_t;
+
+	pfas_t *pfas = NULL;
+	struct pfr_astats *astatsp = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
 	int astats_count = 0, del_addrs_count = 0, local_dev = 0, v = 0, C = 0, F = 0, i = 0;
 	time_t age = S2CD_EXPTIME;
 	time_t min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
-	char *tablename = NULL;
-	char *nmpfdev = NULL;
-	pfbl_log_t *pfbl_log = NULL;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
 	v = data->v;
@@ -76,36 +81,33 @@ void *s2cd_pf_expiretable(void *arg) {
 	local_dev = data->dev;
 	if (data->t > 0) age = data->t;
 
-	if ((pfbl_log = (pfbl_log_t *)malloc(sizeof(pfbl_log_t))) == NULL) S2CD_MALLOC_ERR;
-	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) S2CD_MALLOC_ERR;
-	if ((nmpfdev = (char *)malloc(sizeof(char)*S2CD_NMBUFSIZ)) == NULL) S2CD_MALLOC_ERR;
-	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) S2CD_MALLOC_ERR;
-	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) S2CD_MALLOC_ERR;
+	if ((pfas = (pfas_t *)malloc(sizeof(pfas_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(pfas, 0x00, sizeof(pfas_t));
 
-	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	memset(pfbl_log, 0x00, sizeof(pfbl_log_t));
-	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
-	strlcpy(pfbl_log->local_logfile, data->logfile, S2CD_NMBUFSIZ);
-	strlcpy(nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
+	strlcpy(pfas->tablename, data->tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(pfas->pfbl_log.local_logfile, data->logfile, S2CD_NMBUFSIZ);
+	strlcpy(pfas->nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	free(data);
 
+	astatsp = &pfas->astats;
+
 	while (1) {
-		memset(target, 0x00, sizeof(struct pfr_table));
-		memset(astats, 0x00, sizeof(struct pfr_astats));
-		strlcpy(target->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		memset(&pfas->target, 0x00, sizeof(struct pfr_table));
+		memset(&pfas->astats, 0x00, sizeof(struct pfr_astats));
+		strlcpy(pfas->target.pfrt_name, pfas->tablename, PF_TABLE_NAME_SIZE);
 		if (!C) oldest_entry = time(NULL);
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
-		astats_count = s2cd_radix_get_astats(local_dev, v, F, &astats, target, 0);
+		astats_count = s2cd_radix_get_astats(local_dev, v, F, &astatsp, &pfas->target, 0);
 
 		if (astats_count > 0) {
 
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++) {
-				if (astats[i].pfras_tzero <= min_timestamp) del_addrs_count++;
-				else oldest_entry = s2cd_lmin(oldest_entry, astats[i].pfras_tzero);
+				if (astatsp[i].pfras_tzero <= min_timestamp) del_addrs_count++;
+				else oldest_entry = s2cd_lmin(oldest_entry, astatsp[i].pfras_tzero);
 			}   /* for (i */
 
 			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;
@@ -114,26 +116,22 @@ void *s2cd_pf_expiretable(void *arg) {
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++)
-				if (astats[i].pfras_tzero <= min_timestamp) {
-					del_addrs_list[del_addrs_count] = astats[i].pfras_a;
+				if (astatsp[i].pfras_tzero <= min_timestamp) {
+					del_addrs_list[del_addrs_count] = astatsp[i].pfras_a;
 					del_addrs_list[del_addrs_count].pfra_fback = 0;
-					((struct sockaddr_in *)&pfbl_log->sa)->sin_addr = astats[i].pfras_a.pfra_ip4addr;
-					s2cd_pf_unblock_log(C, F, pfbl_log);
+					((struct sockaddr_in *)&pfas->pfbl_log.sa)->sin_addr = astatsp[i].pfras_a.pfra_ip4addr;
+					s2cd_pf_unblock_log(C, F, &pfas->pfbl_log);
 					del_addrs_count++;
 				}   /* if (astats */
 
-			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, v, F, target, del_addrs_list, del_addrs_count, flags);
+			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, v, F, &pfas->target, del_addrs_list, del_addrs_count, flags);
 		}   /* if (astats_count > 0) */
 
 		free(del_addrs_list);
 		sleep(age + 1);
 	}   /* while (1) */
 
-	free(pfbl_log);
-	free(tablename);
-	free(nmpfdev);
-	free(target);
-	free(astats);
+	free(pfas);
 
 	pthread_exit(NULL);
 
