@@ -169,38 +169,52 @@ int s2cd_radix_ioctl(int dev, int v, int F, unsigned long request, struct pfioc_
 }   /* s2cd_radix_ioctl */
 
 int s2cd_radix_get_astats(int dev, int v, int F, struct pfr_astats **astats, const struct pfr_table *filter, int flags) {
-	struct pfioc_table pt;
+	struct pfioc_table *pt;
+	int ch = 0;
 
-	memset(&pt, 0, sizeof(struct pfioc_table));
-	pt.pfrio_esize = sizeof(struct pfr_astats);
-	pt.pfrio_flags = flags;
+	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
+	memset(pt, 0, sizeof(struct pfioc_table));
+
+	pt->pfrio_esize = sizeof(struct pfr_astats);
+	pt->pfrio_flags = flags;
 
 	if (filter != NULL) {
-		pt.pfrio_table = *filter;
-		pt.pfrio_table.pfrt_flags = 0;
+		pt->pfrio_table = *filter;
+		pt->pfrio_table.pfrt_flags = 0;
 	}
 
-	if (s2cd_radix_ioctl(dev, v, F, DIOCRGETASTATS, &pt) < 0) return(-1);
-	*astats = (struct pfr_astats *)pt.pfrio_buffer;
+	if (s2cd_radix_ioctl(dev, v, F, DIOCRGETASTATS, pt) < 0) ch = -1;
+	else {
+		ch = pt->pfrio_size;
+		*astats = (struct pfr_astats *)pt->pfrio_buffer;
+	}   /* else */
 
-	return(pt.pfrio_size);
+	free(pt);
+
+	return(ch);
 
 }   /* s2cd_radix_get_astats */
         
 int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, struct pfr_addr *addrs, int addr_count, int flags) {
-	struct pfioc_table pt;
+	struct pfioc_table *pt;
+	int ch = 0;
 
-	memset(&pt, 0, sizeof(struct pfioc_table));
-	pt.pfrio_size = addr_count;
-	pt.pfrio_esize = sizeof(struct pfr_addr);
-	pt.pfrio_flags = flags;
+	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
+	memset(pt, 0, sizeof(struct pfioc_table));
 
-	pt.pfrio_table = *table;
-	pt.pfrio_buffer = addrs;
+	pt->pfrio_size = addr_count;
+	pt->pfrio_esize = sizeof(struct pfr_addr);
+	pt->pfrio_flags = flags;
 
-	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELADDRS, &pt) < 0) return(-1);
+	pt->pfrio_table = *table;
+	pt->pfrio_buffer = addrs;
 
-	return(pt.pfrio_ndel);
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELADDRS, pt) < 0) ch = -1;
+	else ch = pt->pfrio_ndel;
+
+	free(pt);
+
+	return(ch);
 
 }   /* s2cd_radix_del_addrs */
 
