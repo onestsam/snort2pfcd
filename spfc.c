@@ -199,7 +199,8 @@ int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, s
 	pt.pfrio_buffer = addrs;
 
 	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELADDRS, &pt) < 0) return(-1);
-	else return(pt.pfrio_ndel);
+
+	return(pt.pfrio_ndel);
 
 }   /* s2cd_radix_del_addrs */
 
