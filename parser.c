@@ -58,7 +58,8 @@
 
 int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL, *ipu = NULL;
+	register struct ipulist *aux2 = NULL;
+	struct ipulist *ipu = NULL;
 
 	if (head->lh_first == NULL){
 		if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
@@ -191,8 +192,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 	}   /* if (!s2cd_parse_ip */
 
 	if (!LIST_EMPTY(&loopdata->pbhead.phead))
-		if (s2cd_parse_search_list(lineproc->ret, &loopdata->pbhead.phead))
-			return;
+		if (s2cd_parse_search_list(lineproc->ret, &loopdata->pbhead.phead)) return;
 
 	if ((pb_status = s2cd_parse_and_block_bl(lineproc->ret, loopdata->C, loopdata->F, &loopdata->pbhead.bhead)) == loopdata->repeat_offenses) {
 
@@ -216,7 +216,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
-	register struct ipulist *ipu2 = NULL;
+	struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;
 	int F = loopdata->F;
 
@@ -266,8 +266,7 @@ void s2cd_parse_load_ifaces(int C, int F, struct ipulist *ipu1) {
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
-		if ((ifa->ifa_addr)->sa_family == AF_INET)
-			s2cd_parse_add_list(C, F, ipu1, ifa);
+		if ((ifa->ifa_addr)->sa_family == AF_INET) s2cd_parse_add_list(C, F, ipu1, ifa);
 	}   /* for (ifa */
 
 	freeifaddrs(ifaddr);
@@ -278,7 +277,7 @@ void s2cd_parse_load_ifaces(int C, int F, struct ipulist *ipu1) {
 
 void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
-	register struct ipulist *ipu2 = NULL;
+	struct ipulist *ipu2 = NULL;
 	char ret[BUFSIZ];
 
 	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
@@ -295,7 +294,7 @@ void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa
 
 void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head) {
 
-	register struct ipulist *ipu1 = NULL;
+	struct ipulist *ipu1 = NULL;
 	struct ifreq *ifr = NULL;
 	int fd = 0, F = loopdata->F;
 

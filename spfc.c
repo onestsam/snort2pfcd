@@ -206,32 +206,32 @@ int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, s
 
 void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip)  {
 
-	typedef struct _pfbl_t {
+	typedef struct _pfbls_t {
 		struct pfioc_table io;
 		struct pfr_table table;
 		struct pfr_addr addr;
-	} pfbl_t;
+	} pfbls_t;
 
-	pfbl_t *pfbl = NULL;
+	pfbls_t *pfbls = NULL;
 
-	if ((pfbl = (pfbl_t *)malloc(sizeof(pfbl_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pfbl, 0x00, sizeof(pfbl_t));
+	if ((pfbls = (pfbls_t *)malloc(sizeof(pfbls_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(pfbls, 0x00, sizeof(pfbls_t));
 	
-	strlcpy(pfbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
-	inet_aton(ip, (struct in_addr *)&pfbl->addr.pfra_ip4addr.s_addr);
+	strlcpy(pfbls->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	inet_aton(ip, (struct in_addr *)&pfbls->addr.pfra_ip4addr.s_addr);
 
-	pfbl->addr.pfra_af  = AF_INET;
-	pfbl->addr.pfra_net = 32; 
+	pfbls->addr.pfra_af  = AF_INET;
+	pfbls->addr.pfra_net = 32; 
 
-	pfbl->io.pfrio_table  = pfbl->table; 
-	pfbl->io.pfrio_buffer = &pfbl->addr; 
-	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
-	pfbl->io.pfrio_size   = 1;
+	pfbls->io.pfrio_table  = pfbls->table; 
+	pfbls->io.pfrio_buffer = &pfbls->addr; 
+	pfbls->io.pfrio_esize  = sizeof(struct pfr_addr); 
+	pfbls->io.pfrio_size   = 1;
 
-	if (s2cd_pf_ioctl(dev, v, F, DIOCRADDADDRS, &pfbl->io) < 0)
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRADDADDRS, &pfbls->io) < 0)
 	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_block");
 
-	free(pfbl);
+	free(pfbls);
 
 	return;
 
