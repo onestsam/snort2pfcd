@@ -61,7 +61,7 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 	register struct ipulist *aux2 = NULL, *ipu = NULL;
 
 	if (head->lh_first == NULL){
-		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+		if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 		s2cd_parse_ipu_set(ret, C, ipu);
 		LIST_INIT(head);
 		LIST_INSERT_HEAD(head, ipu, elem);
@@ -73,7 +73,7 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 				aux2->repeat_offenses++;
 				return(aux2->repeat_offenses);
 			} else if (!aux2->elem.le_next) {
-				if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+				if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 				s2cd_parse_ipu_set(ret, C, ipu);
 				LIST_INSERT_AFTER(aux2, ipu, elem);
 				return(0);
@@ -160,7 +160,7 @@ int s2cd_parse_ip(lineproc_t *lineproc) {
 	char *regpos = NULL;
 	regmatch_t rado[S2CD_REGARSIZ];
 
-	memset((regmatch_t*)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
+	memset((regmatch_t *)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
 	regpos = lineproc->cad;
 
 	for (i = 0; (regexec(&lineproc->expr, regpos, S2CD_REGARSIZ, rado, 0) == 0); i++) {
@@ -172,7 +172,7 @@ int s2cd_parse_ip(lineproc_t *lineproc) {
 			memcpy(lineproc->ret, (regpos + rado[0].rm_so), len);
 			lineproc->ret[len]='\0';
 			regpos = (regpos + rado[0].rm_eo);
-			memset((regmatch_t*)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
+			memset((regmatch_t *)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
 		}   /* if (len) */
 	}   /* for (i */
 
@@ -202,7 +202,8 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		pthread_mutex_unlock(&thr_mutex);
 
 		if (threadcheck < loopdata->thr_max)
-			if (s2cd_spawn_block_log(loopdata->C, loopdata->D, loopdata->F, lineproc->ret, loopdata->logfile)) s2cd_sw_switch_f(loopdata->F, S2CD_LANG_SPBL, S2CD_LANG_EXIT);
+			if (s2cd_spawn_block_log(loopdata->C, loopdata->D, loopdata->F, lineproc->ret, loopdata->logfile))
+				s2cd_sw_switch_f(loopdata->F, S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
 		s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, lineproc->ret);
 		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_BLK, lineproc->ret);
@@ -315,7 +316,8 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		ifr->ifr_addr.sa_family = AF_INET;
 		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
-		if (s2cd_pf_ioctl(fd, loopdata->v, loopdata->F, SIOCGIFADDR, ifr) != 0) s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+		if (s2cd_pf_ioctl(fd, loopdata->v, loopdata->F, SIOCGIFADDR, ifr) != 0)
+			s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 
 		close(fd);
 		free(ifr);

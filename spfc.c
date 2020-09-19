@@ -88,7 +88,7 @@ void *s2cd_pf_expiretable(void *arg) {
 	strlcpy(pfas->nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	free(data);
 
-	astatsp = &pfas->astats;
+	astatsp = (struct pfr_astats *)&pfas->astats;
 
 	while (1) {
 		memset(&pfas->target, 0x00, sizeof(struct pfr_table));
@@ -109,7 +109,7 @@ void *s2cd_pf_expiretable(void *arg) {
 				else oldest_entry = s2cd_lmin(oldest_entry, astatsp[i].pfras_tzero);
 			}   /* for (i */
 
-			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;
+			if ((del_addrs_list = (struct pfr_addr *)malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;
 			memset(del_addrs_list, 0x00, sizeof(struct pfr_addr));
 
 			del_addrs_count = 0;
