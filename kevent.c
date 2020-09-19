@@ -193,15 +193,18 @@ int s2cd_fd_open(char *file) {
 
 void s2cd_kevent_open(int F, int *kq, int *fd, char *file) {
 
-	struct kevent change;
+	struct kevent *change;
 
 	if ((*kq = kqueue()) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
 	if ((*fd = s2cd_fd_open(file)) == -1) s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
 
-	memset(&change, 0x00, sizeof(struct kevent));
-	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
+	if ((change = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
+	memset(change, 0x00, sizeof(struct kevent));
+	EV_SET(change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
-	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+	if (kevent(*kq, change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+
+	free(change);
 
 	return;
 
@@ -253,6 +256,8 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 			if (loopdata->v) if (loopdata->F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
 		}   /* else */
 	}   /* while (1) */
+
+	free(pftbl);
 
 	return;
 
