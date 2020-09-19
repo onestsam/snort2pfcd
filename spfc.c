@@ -69,16 +69,15 @@ void *s2cd_pf_expiretable(void *arg) {
 	pfas_t *pfas = NULL;
 	struct pfr_astats *astatsp = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
-	int astats_count = 0, del_addrs_count = 0, local_dev = 0, v = 0, C = 0, F = 0, i = 0;
-	time_t age = S2CD_EXPTIME;
-	time_t min_timestamp = 0, oldest_entry = 0;
+	int astats_count = 0, del_addrs_count = 0, dev = 0, v = 0, C = 0, F = 0, i = 0;
+	time_t age = S2CD_EXPTIME, min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
 	v = data->v;
 	C = data->C;
 	F = data->F;
-	local_dev = data->dev;
+	dev = data->dev;
 	if (data->t > 0) age = data->t;
 
 	if ((pfas = (pfas_t *)malloc(sizeof(pfas_t))) == NULL) S2CD_MALLOC_ERR;
@@ -99,7 +98,7 @@ void *s2cd_pf_expiretable(void *arg) {
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
-		astats_count = s2cd_radix_get_astats(local_dev, v, F, &astatsp, &pfas->target, 0);
+		astats_count = s2cd_radix_get_astats(dev, v, F, &astatsp, &pfas->target, 0);
 
 		if (astats_count > 0) {
 
@@ -124,7 +123,7 @@ void *s2cd_pf_expiretable(void *arg) {
 					del_addrs_count++;
 				}   /* if (astats */
 
-			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, v, F, &pfas->target, del_addrs_list, del_addrs_count, flags);
+			if (del_addrs_count > 0) s2cd_radix_del_addrs(dev, v, F, &pfas->target, del_addrs_list, del_addrs_count, flags);
 		}   /* if (astats_count > 0) */
 
 		free(del_addrs_list);
@@ -148,12 +147,7 @@ int s2cd_radix_ioctl(int dev, int v, int F, unsigned long request, struct pfioc_
 		pt->pfrio_size = len;
 
 		if (len) {
-			newinbuf = realloc(pt->pfrio_buffer, len * pt->pfrio_esize);
-			if (newinbuf == NULL) {
-				free(pt->pfrio_buffer);
-				pt->pfrio_buffer = NULL;
-				S2CD_MALLOC_ERR;
-			}   /* if (newinbuf */
+			if ((newinbuf = realloc(pt->pfrio_buffer, len * pt->pfrio_esize)) == NULL) S2CD_MALLOC_ERR;
 			pt->pfrio_buffer = newinbuf;
 		}   /* if (len) */
 
@@ -233,8 +227,9 @@ void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip)  {
 	pfbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
 	pfbl->io.pfrio_size   = 1;
 
-	s2cd_pf_ioctl(dev, v, F, DIOCRADDADDRS, &pfbl->io);
-		
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRADDADDRS, &pfbl->io) < 0)
+	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_block");
+
 	free(pfbl);
 
 	return;
@@ -367,8 +362,10 @@ void s2cd_pf_tbl_add(int dev, int v, int F, char *tablename) {
 
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
-	s2cd_pf_ioctl(dev, v, F, DIOCRGETTABLES, &pftbl->io);
-	
+
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRGETTABLES, &pftbl->io) < 0)
+	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_add");
+
 	s2cd_pftbl_set(tablename, pftbl);
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
