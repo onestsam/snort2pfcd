@@ -282,10 +282,8 @@ void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa
 	struct ipulist *ipu = NULL;
 	char ret[BUFSIZ];
 
-	if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-
 	inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, ret, INET_ADDRSTRLEN);
-	s2cd_parse_ipu_set(ret, C, ipu);
+	S2CD_IPU_SET;
 
 	LIST_INSERT_AFTER(ipu1, ipu, elem);
 	ipu1 = ipu;

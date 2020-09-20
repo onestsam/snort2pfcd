@@ -173,7 +173,7 @@ int s2cd_radix_get_astats(int dev, int v, int F, struct pfr_astats **astats, con
 	int ch = 0;
 
 	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
-	memset(pt, 0, sizeof(struct pfioc_table));
+	memset(pt, 0x00, sizeof(struct pfioc_table));
 
 	pt->pfrio_esize = sizeof(struct pfr_astats);
 	pt->pfrio_flags = flags;
@@ -200,7 +200,7 @@ int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, s
 	int ch = 0;
 
 	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
-	memset(pt, 0, sizeof(struct pfioc_table));
+	memset(pt, 0x00, sizeof(struct pfioc_table));
 
 	pt->pfrio_size = addr_count;
 	pt->pfrio_esize = sizeof(struct pfr_addr);
