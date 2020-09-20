@@ -178,8 +178,9 @@ struct ipulist {
 };
 
 typedef struct _pftbl_t {
-	struct pfioc_table io;
+	struct pfr_addr addr;
 	struct pfr_table table;
+	struct pfioc_table io;
 	struct pfioc_rule io_rule;
 	struct pfioc_pooladdr io_paddr;
 } pftbl_t;

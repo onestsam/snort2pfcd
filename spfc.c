@@ -220,16 +220,10 @@ int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, s
 
 void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip)  {
 
-	typedef struct _pfbls_t {
-		struct pfioc_table io;
-		struct pfr_table table;
-		struct pfr_addr addr;
-	} pfbls_t;
+	pftbl_t *pfbls = NULL;
 
-	pfbls_t *pfbls = NULL;
-
-	if ((pfbls = (pfbls_t *)malloc(sizeof(pfbls_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pfbls, 0x00, sizeof(pfbls_t));
+	if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(pfbls, 0x00, sizeof(pftbl_t));
 	
 	strlcpy(pfbls->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pfbls->addr.pfra_ip4addr.s_addr);

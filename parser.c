@@ -298,18 +298,18 @@ void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa
 
 void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head) {
 
-	struct ipulist *ipu1 = NULL;
+	struct ipulist *ipu = NULL;
 	struct ifreq *ifr = NULL;
 	int fd = 0, F = loopdata->F;
 
-	if ((ipu1 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-	memset(ipu1, 0x00, sizeof(struct ipulist));
+	if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+	memset(ipu, 0x00, sizeof(struct ipulist));
 
-	ipu1->ciaddr = *cidr_from_str("127.0.0.0/8");
+	ipu->ciaddr = *cidr_from_str("127.0.0.0/8");
 	LIST_INIT(head);
-	LIST_INSERT_HEAD(head, ipu1, elem);
+	LIST_INSERT_HEAD(head, ipu, elem);
 
-	if (!strcmp(loopdata->extif, "all")) s2cd_parse_load_ifaces(loopdata->C, F, ipu1);
+	if (!strcmp(loopdata->extif, "all")) s2cd_parse_load_ifaces(loopdata->C, F, ipu);
 	else {
 
 		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) S2CD_MALLOC_ERR;
@@ -325,11 +325,11 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		close(fd);
 		free(ifr);
 
-		s2cd_parse_add_list(loopdata->C, F, ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
+		s2cd_parse_add_list(loopdata->C, F, ipu, (struct ifaddrs *)&(ifr->ifr_addr));
 	}   /* else if (!strcmp */
 
-	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
-	s2cd_parse_load_file(loopdata, lineproc, pfile, head, ipu1, S2CD_ID_PF);
+	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu, S2CD_ID_PF);
+	s2cd_parse_load_file(loopdata, lineproc, pfile, head, ipu, S2CD_ID_PF);
 
 	return;
 
@@ -339,7 +339,7 @@ void s2cd_parse_print_list(int F, struct ulist_head *head) {
 
 	register struct ipulist *aux2 = NULL;
 
-	s2cd_sw_switch(F, S2CD_LANG_PLL, S2CD_LANG_WARN);
+	s2cd_sw_switch(F, "<", S2CD_LANG_PLL);
 
 	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
 		s2cd_sw_switch(F, "<", aux2->chaddr);
