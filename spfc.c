@@ -398,7 +398,7 @@ int s2cd_pf_ioctl(int dev, int v, int F, unsigned long request, void *pf_io_arg)
 	pthread_mutex_lock(&pf_mutex);
 	for (i = 0; ioctl(dev, request, pf_io_arg) < 0; i++) {
 		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
-		sleep(3);
+		sleep(1);
 		if (i > 4) {
 			if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
 			pf_reset = 1; ch = -1;

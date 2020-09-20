@@ -62,8 +62,7 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 	struct ipulist *ipu = NULL;
 
 	if (head->lh_first == NULL){
-		if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-		s2cd_parse_ipu_set(ret, C, ipu);
+		S2CD_IPU_SET;
 		LIST_INIT(head);
 		LIST_INSERT_HEAD(head, ipu, elem);
 		return(0);
@@ -74,8 +73,7 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 				aux2->repeat_offenses++;
 				return(aux2->repeat_offenses);
 			} else if (!aux2->elem.le_next) {
-				if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(ret, C, ipu);
+				S2CD_IPU_SET;
 				LIST_INSERT_AFTER(aux2, ipu, elem);
 				return(0);
 			}   /* else if (!aux2 */
@@ -104,13 +102,13 @@ void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
 void s2cd_parse_and_block_list_timeout(time_t age, time_t this_time, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *aux = NULL;
 
-	for (aux2=head->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next)
-		if ((aux2->t + age) < this_time) {
-			LIST_REMOVE(aux2, elem);
-			free(aux2);
-		}   /* if ((aux2->t */
+	for (aux=head->lh_first; aux !=NULL; aux=aux->elem.le_next)
+		if ((aux->t + age) < this_time) {
+			LIST_REMOVE(aux, elem);
+			free(aux);
+		}   /* if ((aux->t */
 
 	return;
 
@@ -216,7 +214,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
-	struct ipulist *ipu2 = NULL;
+	struct ipulist *ipu = NULL;
 	FILE *file = NULL;
 	int F = loopdata->F;
 
@@ -236,10 +234,10 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 		if (s2cd_parse_ip(lineproc)) {
 
 			if (id == S2CD_ID_PF) {
-				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(lineproc->ret, loopdata->C, ipu2);
-				LIST_INSERT_AFTER(ipu1, ipu2, elem);
-				ipu1 = ipu2;
+				if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+				s2cd_parse_ipu_set(lineproc->ret, loopdata->C, ipu);
+				LIST_INSERT_AFTER(ipu1, ipu, elem);
+				ipu1 = ipu;
 			}   /* if(id == S2CD_ID_PF) */
 
 			if (id == S2CD_ID_BF) {
@@ -281,16 +279,16 @@ void s2cd_parse_load_ifaces(int C, int F, struct ipulist *ipu1) {
 
 void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
-	struct ipulist *ipu2 = NULL;
+	struct ipulist *ipu = NULL;
 	char ret[BUFSIZ];
 
-	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+	if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
 
 	inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, ret, INET_ADDRSTRLEN);
-	s2cd_parse_ipu_set(ret, C, ipu2);
+	s2cd_parse_ipu_set(ret, C, ipu);
 
-	LIST_INSERT_AFTER(ipu1, ipu2, elem);
-	ipu1 = ipu2;
+	LIST_INSERT_AFTER(ipu1, ipu, elem);
+	ipu1 = ipu;
 
 	return;
 
