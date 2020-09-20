@@ -69,9 +69,8 @@ void *s2cd_pf_expiretable(void *arg) {
 	pfas_t *pfas = NULL;
 	struct pfr_astats *astatsp = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
-	int astats_count = 0, del_addrs_count = 0, dev = 0, v = 0, C = 0, F = 0, i = 0;
+	int flags = PFR_FLAG_FEEDBACK, astats_count = 0, del_addrs_count = 0, dev = 0, v = 0, C = 0, F = 0, i = 0;
 	time_t age = S2CD_EXPTIME, min_timestamp = 0, oldest_entry = 0;
-	int flags = PFR_FLAG_FEEDBACK;
 	thread_expt_t *data = (thread_expt_t *)arg;
 
 	v = data->v;

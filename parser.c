@@ -58,7 +58,7 @@
 
 int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *aux = NULL;
 	struct ipulist *ipu = NULL;
 
 	if (head->lh_first == NULL){
@@ -68,16 +68,16 @@ int s2cd_parse_and_block_bl(char *ret, int C, int F, struct ulist_head *head) {
 		return(0);
 
 	} else {
-		for (aux2=head->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-			if (!strcmp(aux2->chaddr, ret)) {
-				aux2->repeat_offenses++;
-				return(aux2->repeat_offenses);
-			} else if (!aux2->elem.le_next) {
+		for (aux=head->lh_first; aux !=NULL; aux=aux->elem.le_next) {
+			if (!strcmp(aux->chaddr, ret)) {
+				aux->repeat_offenses++;
+				return(aux->repeat_offenses);
+			} else if (!aux->elem.le_next) {
 				S2CD_IPU_SET;
-				LIST_INSERT_AFTER(aux2, ipu, elem);
+				LIST_INSERT_AFTER(aux, ipu, elem);
 				return(0);
-			}   /* else if (!aux2 */
-		}   /* for (aux2 */
+			}   /* else if (!aux */
+		}   /* for (aux */
 	}   /* else if (head */
 
 	return(-1);
@@ -206,7 +206,7 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 		s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, lineproc->ret);
 		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_BLK, lineproc->ret);
 
-	} else if (pb_status == -1) s2cd_sw_switch_f(loopdata->F, S2CD_LANG_INTDB, S2CD_LANG_EXIT);
+	} else if (pb_status < 0) s2cd_sw_switch_f(loopdata->F, S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
 	return;
 
@@ -264,7 +264,7 @@ void s2cd_parse_load_ifaces(int C, int F, struct ipulist *ipu1) {
 	struct ifaddrs *ifaddr = NULL;
 	register struct ifaddrs *ifa = NULL;
 
-	if (getifaddrs(&ifaddr) == -1) s2cd_sw_switch_f(F, S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
+	if (getifaddrs(&ifaddr) < 0) s2cd_sw_switch_f(F, S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
@@ -333,12 +333,12 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 
 void s2cd_parse_print_list(int F, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *aux = NULL;
 
 	s2cd_sw_switch(F, "<", S2CD_LANG_PLL);
 
-	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		s2cd_sw_switch(F, "<", aux2->chaddr);
+	for (aux = head->lh_first; aux != NULL; aux = aux->elem.le_next)
+		s2cd_sw_switch(F, "<", aux->chaddr);
 
 	return;
 
@@ -346,14 +346,14 @@ void s2cd_parse_print_list(int F, struct ulist_head *head) {
 
 int s2cd_parse_search_list(char *ip, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *aux = NULL;
 	CIDR ipcidr;
 	int f = 0;
 
 	ipcidr = *cidr_from_str(ip);
 
-	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		if (!cidr_contains(&aux2->ciaddr, &ipcidr)) { f = 1; break; }
+	for (aux = head->lh_first; aux != NULL; aux = aux->elem.le_next)
+		if (!cidr_contains(&aux->ciaddr, &ipcidr)) { f = 1; break; }
 
 	return(f);
 

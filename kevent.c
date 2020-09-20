@@ -127,10 +127,10 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 			s2cd_kevent_open(F, &loopdata->kq, &loopdata->fd, fn);
 			memset(trigger, 0x00, sizeof(struct kevent));
-			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) < 0) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
 				if (fr) {
-					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) == -1) s2cd_sw_switch(F, S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) < 0) s2cd_sw_switch(F, S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
 					if (pfile_monitor) {
