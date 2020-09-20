@@ -180,6 +180,8 @@ struct ipulist {
 typedef struct _pftbl_t {
 	struct pfioc_table io;
 	struct pfr_table table;
+	struct pfioc_rule io_rule;
+	struct pfioc_pooladdr io_paddr;
 } pftbl_t;
 
 typedef struct _thread_expt_t {
@@ -298,9 +300,9 @@ int s2cd_spawn_file_monitor(int *, int, int, loopdata_t *);
 int s2cd_pf_tbl_get(int, int, int, char *, pftbl_t *);
 void s2cd_pf_block(int, int, int, char *, char *);
 void s2cd_pf_unblock_log(int, int, pfbl_log_t *);
-void s2cd_pf_tbl_add(int, int, int, char *);
+void s2cd_pf_tbl_add(int, int, int, char *, pftbl_t *);
 void s2cd_pf_tbl_del(int, int, int, char *);
-void s2cd_pf_rule_add(int, int, int, char *);
+int s2cd_pf_rule_add(int, int, int, char *);
 void *s2cd_pf_expiretable(void *);
 void *s2cd_file_monitor(void *);
 void *s2cd_pf_block_log(void *);

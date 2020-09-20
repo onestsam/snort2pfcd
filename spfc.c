@@ -318,42 +318,37 @@ void *s2cd_pf_block_log(void *arg) {
 
 }   /* s2cd_pf_block_log */
 
-void s2cd_pf_rule_add(int dev, int v, int F, char *tablename) {
+int s2cd_pf_rule_add(int dev, int v, int F, char *tablename) {
 
-	typedef struct _pfrla_t {
-		struct pfioc_rule io_rule;
-		struct pfioc_pooladdr io_paddr;
-	} pfrla_t;
+	int ch = 0;
+        pftbl_t *pftbl = NULL;
 
-	pfrla_t *pfrla = NULL;
-	
-	s2cd_pf_tbl_add(dev, v, F, tablename);
+        if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
+        memset(pftbl, 0x00, sizeof(pftbl_t));
 
-	if ((pfrla = (pfrla_t *)malloc(sizeof(pfrla_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pfrla, 0x00, sizeof(pfrla_t));
+	s2cd_pf_tbl_add(dev, v, F, tablename, pftbl);
 
-	pfrla->io_rule.action = PF_CHANGE_GET_TICKET;
-	pfrla->io_rule.rule.direction = PF_IN;
-	pfrla->io_rule.rule.action = PF_DROP;
-	pfrla->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
-	pfrla->io_rule.rule.rule_flag = PFRULE_RETURN;
-	strlcpy(pfrla->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pfrla->io_rule.rule.src.addr.v.tblname));
+	pftbl->io_rule.action = PF_CHANGE_GET_TICKET;
+	pftbl->io_rule.rule.direction = PF_IN;
+	pftbl->io_rule.rule.action = PF_DROP;
+	pftbl->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
+	pftbl->io_rule.rule.rule_flag = PFRULE_RETURN;
+	strlcpy(pftbl->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pftbl->io_rule.rule.src.addr.v.tblname));
 
-	if (s2cd_pf_ioctl(dev, v, F, DIOCCHANGERULE, &pfrla->io_rule) > 0) {
-		if (s2cd_pf_ioctl(dev, v, F, DIOCBEGINADDRS, &pfrla->io_paddr) > 0) {
-			pfrla->io_rule.pool_ticket = pfrla->io_paddr.ticket;
-			pfrla->io_rule.action = PF_CHANGE_ADD_TAIL;
+	if (s2cd_pf_ioctl(dev, v, F, DIOCCHANGERULE, &pftbl->io_rule) == 0) {
+		if (s2cd_pf_ioctl(dev, v, F, DIOCBEGINADDRS, &pftbl->io_paddr) == 0) {
+			pftbl->io_rule.pool_ticket = pftbl->io_paddr.ticket;
+			pftbl->io_rule.action = PF_CHANGE_ADD_TAIL;
 
-			if (s2cd_pf_ioctl(dev, v, F, DIOCCHANGERULE, &pfrla->io_rule) < 0)
-			if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_rule_add");
-		} else if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_rule_add");
-	} else if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_rule_add");
+			if (s2cd_pf_ioctl(dev, v, F, DIOCCHANGERULE, &pftbl->io_rule) < 0) ch = -1;
+		} else ch = -1;
+	} else ch = -1;
 
-	free(pfrla);
+	free(pftbl);
 
-	return;
+	return(ch);
 
-}   /* s2cd_pf_ruleadd */
+}   /* s2cd_pf_rule_add */
 
 int s2cd_pf_tbl_get(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
@@ -365,12 +360,7 @@ int s2cd_pf_tbl_get(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
 }   /* s2cd_pf_tbl_get */
 
-void s2cd_pf_tbl_add(int dev, int v, int F, char *tablename) {
-
-	pftbl_t *pftbl = NULL;
-
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pftbl, 0x00, sizeof(pftbl_t));
+void s2cd_pf_tbl_add(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
 	if (s2cd_pf_tbl_get(dev, v, F, tablename, pftbl) < 0)
 	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_add");
@@ -384,15 +374,10 @@ void s2cd_pf_tbl_add(int dev, int v, int F, char *tablename) {
 	s2cd_pftbl_set(tablename, pftbl);
 	pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
-	pthread_mutex_lock(&pf_mutex);
-	while (ioctl(dev, DIOCRADDTABLES, &pftbl->io) != 0) {
-		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
-		sleep(3);
-	}   /* while (ioctl */
-	pthread_mutex_unlock(&pf_mutex);
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRADDTABLES, &pftbl->io) < 0)
+	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_add");
 
 	if (v) s2cd_sw_switch(F, S2CD_LANG_TBLADD, tablename);
-	free(pftbl);
 
 	return;
 
@@ -414,13 +399,18 @@ void s2cd_pf_tbl_del(int dev, int v, int F, char *tablename) {
 }   /* s2cd_pf_tbldel */
 
 int s2cd_pf_ioctl(int dev, int v, int F, unsigned long request, void *pf_io_arg) {
-	int ch = 0;
+	int i = 0, ch = 0;
 
 	pthread_mutex_lock(&pf_mutex);
-	if (ioctl(dev, request, pf_io_arg) != 0) {
-		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
-		pf_reset = 1; ch = -1;
-	}   /* if (ioctl */
+	for (i = 0; ioctl(dev, request, pf_io_arg) < 0; i++) {
+		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_WAIT, S2CD_LANG_WARN);
+		sleep(3);
+		if (i > 4) {
+			if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, S2CD_LANG_WARN);
+			pf_reset = 1; ch = -1;
+			break;
+		}   /* end if */
+	}   /* while (ioctl */
 	pthread_mutex_unlock(&pf_mutex);
 
 	return(ch);

@@ -93,7 +93,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(F, S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
-			s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename);
+			if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename) < 0)
+			if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_file_monitor");
 			if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_CON_EST, "");
 
 			pthread_mutex_lock(&fm_mutex);
