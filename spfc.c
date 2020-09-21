@@ -196,7 +196,6 @@ int s2cd_radix_del_addrs(int dev, int v, int F, struct pfioc_table *source, cons
 	source->pfrio_size = addr_count;
 	source->pfrio_esize = sizeof(struct pfr_addr);
 	source->pfrio_flags = flags;
-
 	source->pfrio_table = *target;
 	source->pfrio_buffer = addrs;
 

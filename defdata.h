@@ -327,7 +327,7 @@ void s2cd_parse_print_list(int, struct ulist_head *);
 void s2cd_parse_ipu_set(char *, int, struct ipulist *);
 void s2cd_kevent_loop(loopdata_t *);
 void *s2cd_kevent_file_monitor(void *arg);
-void s2cd_kevent_open(int, int *, int *, char *);
+void s2cd_kevent_open(int, int *, int *, char *, struct kevent *);
 void s2cd_kevent_plf_reload(loopdata_t *, lineproc_t *);
 int s2cd_kevent_read(loopdata_t *, lineproc_t *, int);
 

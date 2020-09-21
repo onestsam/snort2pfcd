@@ -59,13 +59,14 @@
 void *s2cd_kevent_file_monitor(void *arg) {
 
 	thread_fm_t *data = (thread_fm_t *)arg;
-	struct kevent *trigger = NULL;
+	struct kevent *trigger = NULL, *change = NULL;
 	char fn[S2CD_NMBUFSIZ];
 	loopdata_t *loopdata = NULL;
 	int fid = data->fid, fr = data->fileread, pf_reset_check = 0, F = 0, *fm = data->file_monitor;
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	lineproc_t *lineproc = NULL;
 
+	if ((change = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
 	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
 	memset(loopdata, 0x00, sizeof(loopdata_t));
@@ -125,7 +126,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2cd_kevent_open(F, &loopdata->kq, &loopdata->fd, fn);
+			s2cd_kevent_open(F, &loopdata->kq, &loopdata->fd, fn, change);
 			memset(trigger, 0x00, sizeof(struct kevent));
 			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) < 0) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
@@ -176,6 +177,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	close(loopdata->fd);
 	free(loopdata);
+	free(change);
 	free(fn);
 
 	pthread_exit(NULL);
@@ -192,20 +194,15 @@ int s2cd_fd_open(char *file) {
 
 }   /* s2cd_fd_open */
 
-void s2cd_kevent_open(int F, int *kq, int *fd, char *file) {
-
-	struct kevent *change;
+void s2cd_kevent_open(int F, int *kq, int *fd, char *file, struct kevent *change) {
 
 	if ((*kq = kqueue()) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
 	if ((*fd = s2cd_fd_open(file)) == -1) s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
 
-	if ((change = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
 	memset(change, 0x00, sizeof(struct kevent));
 	EV_SET(change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
 	if (kevent(*kq, change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
-
-	free(change);
 
 	return;
 
@@ -228,8 +225,6 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 	int F = loopdata->F;
 
 	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pftbl, 0x00, sizeof(pftbl_t));
-
 	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, pftbl)) < 0)
 	if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
