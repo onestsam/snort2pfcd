@@ -60,6 +60,7 @@ void *s2cd_pf_expiretable(void *arg) {
 
 	typedef struct _pfas_t {
 		struct pfr_astats astats;
+		struct pfioc_table source;
 		struct pfr_table target;
 		pfbl_log_t pfbl_log;
 		char tablename[PF_TABLE_NAME_SIZE];
@@ -67,7 +68,6 @@ void *s2cd_pf_expiretable(void *arg) {
 	} pfas_t;
 
 	pfas_t *pfas = NULL;
-	struct pfr_astats *astatsp = NULL;
 	struct pfr_addr *del_addrs_list = NULL;
 	int flags = PFR_FLAG_FEEDBACK, astats_count = 0, del_addrs_count = 0, dev = 0, v = 0, C = 0, F = 0, i = 0;
 	time_t age = S2CD_EXPTIME, min_timestamp = 0, oldest_entry = 0;
@@ -87,8 +87,6 @@ void *s2cd_pf_expiretable(void *arg) {
 	strlcpy(pfas->nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	free(data);
 
-	astatsp = (struct pfr_astats *)&pfas->astats;
-
 	while (1) {
 		memset(&pfas->target, 0x00, sizeof(struct pfr_table));
 		memset(&pfas->astats, 0x00, sizeof(struct pfr_astats));
@@ -97,15 +95,15 @@ void *s2cd_pf_expiretable(void *arg) {
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
-		astats_count = s2cd_radix_get_astats(dev, v, F, &astatsp, &pfas->target, 0);
+		astats_count = s2cd_radix_get_astats(dev, v, F, &pfas->astats, &pfas->source, &pfas->target, 0);
 
 		if (astats_count > 0) {
 
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++) {
-				if (astatsp[i].pfras_tzero <= min_timestamp) del_addrs_count++;
-				else oldest_entry = s2cd_lmin(oldest_entry, astatsp[i].pfras_tzero);
+				if (((struct pfr_astats *)&pfas->astats)[i].pfras_tzero <= min_timestamp) del_addrs_count++;
+				else oldest_entry = s2cd_lmin(oldest_entry, ((struct pfr_astats *)&pfas->astats)[i].pfras_tzero);
 			}   /* for (i */
 
 			if ((del_addrs_list = (struct pfr_addr *)malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;
@@ -114,15 +112,15 @@ void *s2cd_pf_expiretable(void *arg) {
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++)
-				if (astatsp[i].pfras_tzero <= min_timestamp) {
-					del_addrs_list[del_addrs_count] = astatsp[i].pfras_a;
+				if (((struct pfr_astats *)&pfas->astats)[i].pfras_tzero <= min_timestamp) {
+					del_addrs_list[del_addrs_count] = ((struct pfr_astats *)&pfas->astats)[i].pfras_a;
 					del_addrs_list[del_addrs_count].pfra_fback = 0;
-					((struct sockaddr_in *)&pfas->pfbl_log.sa)->sin_addr = astatsp[i].pfras_a.pfra_ip4addr;
+					((struct sockaddr_in *)&pfas->pfbl_log.sa)->sin_addr = ((struct pfr_astats *)&pfas->astats)[i].pfras_a.pfra_ip4addr;
 					s2cd_pf_unblock_log(C, F, &pfas->pfbl_log);
 					del_addrs_count++;
 				}   /* if (astats */
 
-			if (del_addrs_count > 0) s2cd_radix_del_addrs(dev, v, F, &pfas->target, del_addrs_list, del_addrs_count, flags);
+			if (del_addrs_count > 0) s2cd_radix_del_addrs(dev, v, F, &pfas->source, &pfas->target, del_addrs_list, del_addrs_count, flags);
 		}   /* if (astats_count > 0) */
 
 		free(del_addrs_list);
@@ -167,51 +165,43 @@ int s2cd_radix_ioctl(int dev, int v, int F, unsigned long request, struct pfioc_
 
 }   /* s2cd_radix_ioctl */
 
-int s2cd_radix_get_astats(int dev, int v, int F, struct pfr_astats **astats, const struct pfr_table *filter, int flags) {
-	struct pfioc_table *pt;
+int s2cd_radix_get_astats(int dev, int v, int F, struct pfr_astats *astats, struct pfioc_table *source, const struct pfr_table *target, int flags) {
 	int ch = 0;
 
-	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
-	memset(pt, 0x00, sizeof(struct pfioc_table));
+	memset(source, 0x00, sizeof(struct pfioc_table));
 
-	pt->pfrio_esize = sizeof(struct pfr_astats);
-	pt->pfrio_flags = flags;
+	source->pfrio_esize = sizeof(struct pfr_astats);
+	source->pfrio_flags = flags;
 
-	if (filter != NULL) {
-		pt->pfrio_table = *filter;
-		pt->pfrio_table.pfrt_flags = 0;
+	if (target != NULL) {
+		source->pfrio_table = *target;
+		source->pfrio_table.pfrt_flags = 0;
 	}
 
-	if (s2cd_radix_ioctl(dev, v, F, DIOCRGETASTATS, pt) < 0) ch = -1;
+	if (s2cd_radix_ioctl(dev, v, F, DIOCRGETASTATS, source) < 0) ch = -1;
 	else {
-		ch = pt->pfrio_size;
-		*astats = (struct pfr_astats *)pt->pfrio_buffer;
+		ch = source->pfrio_size;
+		astats = (struct pfr_astats *)source->pfrio_buffer;
 	}   /* else */
-
-	free(pt);
 
 	return(ch);
 
 }   /* s2cd_radix_get_astats */
         
-int s2cd_radix_del_addrs(int dev, int v, int F, const struct pfr_table *table, struct pfr_addr *addrs, int addr_count, int flags) {
-	struct pfioc_table *pt;
+int s2cd_radix_del_addrs(int dev, int v, int F, struct pfioc_table *source, const struct pfr_table *target, struct pfr_addr *addrs, int addr_count, int flags) {
 	int ch = 0;
 
-	if ((pt = (struct pfioc_table *)malloc(sizeof(struct pfioc_table))) == NULL) S2CD_MALLOC_ERR;
-	memset(pt, 0x00, sizeof(struct pfioc_table));
+	memset(source, 0x00, sizeof(struct pfioc_table));
 
-	pt->pfrio_size = addr_count;
-	pt->pfrio_esize = sizeof(struct pfr_addr);
-	pt->pfrio_flags = flags;
+	source->pfrio_size = addr_count;
+	source->pfrio_esize = sizeof(struct pfr_addr);
+	source->pfrio_flags = flags;
 
-	pt->pfrio_table = *table;
-	pt->pfrio_buffer = addrs;
+	source->pfrio_table = *target;
+	source->pfrio_buffer = addrs;
 
-	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELADDRS, pt) < 0) ch = -1;
-	else ch = pt->pfrio_ndel;
-
-	free(pt);
+	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELADDRS, source) < 0) ch = -1;
+	else ch = source->pfrio_ndel;
 
 	return(ch);
 
