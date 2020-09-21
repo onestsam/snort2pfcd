@@ -206,13 +206,9 @@ int s2cd_radix_del_addrs(int dev, int v, int F, struct pfioc_table *source, cons
 
 }   /* s2cd_radix_del_addrs */
 
-void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip)  {
+void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip, pftbl_t *pfbls)  {
 
-	pftbl_t *pfbls = NULL;
-
-	if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pfbls, 0x00, sizeof(pftbl_t));
-	
+	memset(pfbls, 0x00, sizeof(pftbl_t));	
 	strlcpy(pfbls->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pfbls->addr.pfra_ip4addr.s_addr);
 
@@ -226,8 +222,6 @@ void s2cd_pf_block(int dev, int v, int F, char *tablename, char *ip)  {
 
 	if (s2cd_pf_ioctl(dev, v, F, DIOCRADDADDRS, &pfbls->io) < 0)
 	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_block");
-
-	free(pfbls);
 
 	return;
 

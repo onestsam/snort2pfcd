@@ -178,6 +178,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	close(loopdata->fd);
 	free(loopdata);
 	free(change);
+	free(trigger);
 	free(fn);
 
 	pthread_exit(NULL);

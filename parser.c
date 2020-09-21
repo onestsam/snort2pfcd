@@ -181,7 +181,8 @@ int s2cd_parse_ip(lineproc_t *lineproc) {
 
 void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
-	int pb_status = 0, threadcheck = 0;
+	int pb_status = 0, threadcheck = 0, F = loopdata->F;
+	pftbl_t *pfbls = NULL;
 
 	if (!s2cd_parse_priority(loopdata->priority, loopdata->v, loopdata->F, lineproc)) return;
 	if (!s2cd_parse_ip(lineproc)) {
@@ -203,8 +204,10 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 			if (s2cd_spawn_block_log(loopdata->C, loopdata->D, loopdata->F, lineproc->ret, loopdata->logfile))
 				s2cd_sw_switch_f(loopdata->F, S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
-		s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, lineproc->ret);
+		if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
+		s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, lineproc->ret, pfbls);
 		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_BLK, lineproc->ret);
+		free(pfbls);
 
 	} else if (pb_status < 0) s2cd_sw_switch_f(loopdata->F, S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
@@ -217,8 +220,10 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 	struct ipulist *ipu = NULL;
 	FILE *file = NULL;
 	int F = loopdata->F;
+	pftbl_t *pfbls = NULL;
 
 	if (id == S2CD_ID_BF) {
+		if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
 		if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static) < 0)
                                 if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_parse_load_file");
 	}   /* if (id == S2CD_ID_BF) */
@@ -247,10 +252,12 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
-				s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, lineproc->ret);
+				s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, lineproc->ret, pfbls);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */
+
+	if (id == S2CD_ID_BF) free(pfbls);
 
 	funlockfile(file);
 	fclose(file);

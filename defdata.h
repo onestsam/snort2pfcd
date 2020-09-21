@@ -300,7 +300,7 @@ int s2cd_spawn_block_log(int, int, int, char *, char *);
 int s2cd_spawn_thread(void *(*) (void *), void *, int F);
 int s2cd_spawn_file_monitor(int *, int, int, loopdata_t *);
 int s2cd_pf_tbl_get(int, int, int, char *, pftbl_t *);
-void s2cd_pf_block(int, int, int, char *, char *);
+void s2cd_pf_block(int, int, int, char *, char *, pftbl_t *);
 void s2cd_pf_unblock_log(int, int, pfbl_log_t *);
 void s2cd_pf_tbl_add(int, int, int, char *, pftbl_t *);
 void s2cd_pf_tbl_del(int, int, int, char *);
