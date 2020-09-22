@@ -220,15 +220,13 @@ void s2cd_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
 void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
-	pftbl_t *pftbl;
-	int F = loopdata->F;
+	pftbl_t pftbl;
 
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, pftbl)) < 0)
+	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
 	if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 	while (1) {
-		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, pftbl)) < 0)
+		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
 		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 		/* I always have problems with && and || operators */
@@ -251,8 +249,6 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 			if (loopdata->v) if (loopdata->F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
 		}   /* else */
 	}   /* while (1) */
-
-	free(pftbl);
 
 	return;
 

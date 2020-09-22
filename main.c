@@ -71,7 +71,7 @@ pthread_mutex_t fm_mutex;
 
 int main(int argc, char **argv) {
 
-	loopdata_t *loopdata = malloc(0);
+	loopdata_t *loopdata = NULL;
 	int F = 0;
 
 	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
