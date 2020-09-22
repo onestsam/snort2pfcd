@@ -238,6 +238,7 @@ typedef struct _loopdata_t {
 	time_t t;
 	int thr_max;
 	int priority;
+	pftbl_t pftbl;
 	time_t timebuf;
 	pbhead_t pbhead;
 	int repeat_offenses;
@@ -317,18 +318,18 @@ int s2cd_parse_search_list(char *, struct ulist_head *);
 int s2cd_parse_and_block_bl(char *, int, int, struct ulist_head *);
 void s2cd_parse_and_block_list_clear(struct ulist_head *);
 void s2cd_parse_and_block_list_timeout(time_t, time_t, struct ulist_head *);
-void s2cd_parse_and_block(loopdata_t *, lineproc_t *, pftbl_t *);
+void s2cd_parse_and_block(loopdata_t *, lineproc_t *);
 void s2cd_parse_add_list(int, int, struct ipulist *, struct ifaddrs *);
 void s2cd_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
-void s2cd_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int, pftbl_t *);
+void s2cd_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
 void s2cd_parse_load_ifaces(int, int, struct ipulist *);
-void s2cd_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *, pftbl_t *);
+void s2cd_parse_load_pl(loopdata_t *, char *, lineproc_t *, struct ulist_head *);
 void s2cd_parse_print_list(int, struct ulist_head *);
 void s2cd_parse_ipu_set(char *, int, struct ipulist *);
 void s2cd_kevent_loop(loopdata_t *);
 void *s2cd_kevent_file_monitor(void *arg);
 void s2cd_kevent_open(int, int *, int *, char *, struct kevent *);
-void s2cd_kevent_plf_reload(loopdata_t *, lineproc_t *, pftbl_t *);
-int s2cd_kevent_read(loopdata_t *, lineproc_t *, int, pftbl_t *);
+void s2cd_kevent_plf_reload(loopdata_t *, lineproc_t *);
+int s2cd_kevent_read(loopdata_t *, lineproc_t *, int);
 
 #endif /* _DEFDATA_H */
