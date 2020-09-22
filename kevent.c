@@ -221,14 +221,13 @@ void s2cd_kevent_plf_reload(loopdata_t *loopdata, lineproc_t *lineproc) {
 void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
-	pftbl_t pftbl;
 	int F = loopdata->F, v = loopdata->v;
 
-	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &pftbl)) < 0)
+	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &loopdata->pftbl)) < 0)
 	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 	while (1) {
-		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &pftbl)) < 0)
+		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &loopdata->pftbl)) < 0)
 		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 		/* I always have problems with && and || operators */
