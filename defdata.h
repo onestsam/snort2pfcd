@@ -317,7 +317,7 @@ int s2cd_parse_search_list(char *, struct ulist_head *);
 int s2cd_parse_and_block_bl(char *, int, int, struct ulist_head *);
 void s2cd_parse_and_block_list_clear(struct ulist_head *);
 void s2cd_parse_and_block_list_timeout(time_t, time_t, struct ulist_head *);
-void s2cd_parse_and_block(loopdata_t *, lineproc_t *);
+void s2cd_parse_and_block(loopdata_t *, lineproc_t *, pftbl_t *);
 void s2cd_parse_add_list(int, int, struct ipulist *, struct ifaddrs *);
 void s2cd_parse_load_bl_static(int, lineproc_t *, char*, char *, struct ulist_head *);
 void s2cd_parse_load_file(loopdata_t *, lineproc_t *, char *, struct ulist_head *, struct ipulist *, int, pftbl_t *);
@@ -329,6 +329,6 @@ void s2cd_kevent_loop(loopdata_t *);
 void *s2cd_kevent_file_monitor(void *arg);
 void s2cd_kevent_open(int, int *, int *, char *, struct kevent *);
 void s2cd_kevent_plf_reload(loopdata_t *, lineproc_t *, pftbl_t *);
-int s2cd_kevent_read(loopdata_t *, lineproc_t *, int);
+int s2cd_kevent_read(loopdata_t *, lineproc_t *, int, pftbl_t *);
 
 #endif /* _DEFDATA_H */
