@@ -294,12 +294,10 @@ void *s2cd_pf_block_log(void *arg) {
 
 }   /* s2cd_pf_block_log */
 
-int s2cd_pf_rule_add(int dev, int v, int F, char *tablename) {
+int s2cd_pf_rule_add(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
 	int ch = 0;
-        pftbl_t *pftbl = NULL;
 
-        if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
         memset(pftbl, 0x00, sizeof(pftbl_t));
 
 	s2cd_pf_tbl_add(dev, v, F, tablename, pftbl);
@@ -319,8 +317,6 @@ int s2cd_pf_rule_add(int dev, int v, int F, char *tablename) {
 			if (s2cd_pf_ioctl(dev, v, F, DIOCCHANGERULE, &pftbl->io_rule) < 0) ch = -1;
 		} else ch = -1;
 	} else ch = -1;
-
-	free(pftbl);
 
 	return(ch);
 
@@ -359,16 +355,11 @@ void s2cd_pf_tbl_add(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
 }   /* s2cd_pf_tbladd */
 
-void s2cd_pf_tbl_del(int dev, int v, int F, char *tablename) {
+void s2cd_pf_tbl_del(int dev, int v, int F, char *tablename, pftbl_t *pftbl) {
 
-	pftbl_t *pftbl = NULL;
-
-	if ((pftbl = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
 	s2cd_pftbl_set(tablename, pftbl);
 	if (s2cd_pf_ioctl(dev, v, F, DIOCRDELTABLES, &pftbl->io) < 0)
 	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_del");
-
-	free(pftbl);
 
 	return;
 

@@ -59,30 +59,31 @@
 void *s2cd_kevent_file_monitor(void *arg) {
 
 	typedef struct _evdp_t {
+		char fn[S2CD_NMBUFSIZ];
 		struct kevent trigger;
 		struct kevent change;
 		loopdata_t loopdata;
 		lineproc_t lineproc;
+		pftbl_t pftbl;
 	} evdp_t;
 
 	thread_fm_t *data = (thread_fm_t *)arg;
-	char fn[S2CD_NMBUFSIZ];
 	evdp_t *evdp = NULL;
 	int fid = data->fid, fr = data->fileread, pf_reset_check = 0, F = 0, *fm = data->file_monitor;
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 
 	if ((evdp = (evdp_t *)malloc(sizeof(evdp_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(&evdp->loopdata, 0x00, sizeof(loopdata_t));
+	memset(evdp, 0x00, sizeof(evdp_t));
 	memcpy(&evdp->loopdata, &data->loopdata, sizeof(loopdata_t));
 	F = evdp->loopdata.F;
 	free(data);
 
-	if (fid == S2CD_ID_AF) strlcpy(fn, evdp->loopdata.alertfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_BF) strlcpy(fn, evdp->loopdata.bfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_PF) strlcpy(fn, evdp->loopdata.pfile, S2CD_NMBUFSIZ);
+	if (fid == S2CD_ID_AF) strlcpy(evdp->fn, evdp->loopdata.alertfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_BF) strlcpy(evdp->fn, evdp->loopdata.bfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_PF) strlcpy(evdp->fn, evdp->loopdata.pfile, S2CD_NMBUFSIZ);
 	else s2cd_sw_switch_f(F, S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 
-	if (evdp->loopdata.v) s2cd_sw_switch(F, S2CD_LANG_MON, fn);
+	if (evdp->loopdata.v) s2cd_sw_switch(F, S2CD_LANG_MON, evdp->fn);
 
 	if (fr) {
 		if (evdp->loopdata.t > 0) age = evdp->loopdata.t;
@@ -96,7 +97,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 			if (regcomp(&evdp->lineproc.expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(F, S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
-			if (s2cd_pf_rule_add(evdp->loopdata.dev, evdp->loopdata.v, evdp->loopdata.F, evdp->loopdata.tablename) < 0)
+			if (s2cd_pf_rule_add(evdp->loopdata.dev, evdp->loopdata.v, evdp->loopdata.F, evdp->loopdata.tablename, &evdp->pftbl) < 0)
 			if (evdp->loopdata.v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_file_monitor");
 			if (evdp->loopdata.v) s2cd_sw_switch(F, S2CD_LANG_CON_EST, "");
 
@@ -128,7 +129,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2cd_kevent_open(F, &evdp->loopdata.kq, &evdp->loopdata.fd, fn, &evdp->change);
+			s2cd_kevent_open(F, &evdp->loopdata.kq, &evdp->loopdata.fd, evdp->fn, &evdp->change);
 			memset(&evdp->trigger, 0x00, sizeof(struct kevent));
 			if (kevent(evdp->loopdata.kq, NULL, 0, &evdp->trigger, 1, NULL) < 0) s2cd_sw_switch_f(F, S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
@@ -145,7 +146,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 					}   /* if (pfile_monitor) */
 					if (bfile_monitor) {
 						if (!evdp->loopdata.B) {
-							s2cd_pf_tbl_del(evdp->loopdata.dev, evdp->loopdata.v, F, evdp->loopdata.tablename_static);
+							s2cd_pf_tbl_del(evdp->loopdata.dev, evdp->loopdata.v, F, evdp->loopdata.tablename_static, &evdp->pftbl);
 							s2cd_parse_load_file(&evdp->loopdata, &evdp->lineproc, evdp->loopdata.bfile, &evdp->loopdata.pbhead.phead, NULL, S2CD_ID_BF);
 							if (evdp->loopdata.v) s2cd_sw_switch_e(F, S2CD_LANG_STATE_CHANGE, evdp->loopdata.bfile, S2CD_LANG_RELOAD);
 						}   /* if (!evdp->loopdata.B) */

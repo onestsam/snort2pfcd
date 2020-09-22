@@ -224,7 +224,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 
 	if (id == S2CD_ID_BF) {
 		if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-		if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static) < 0)
+		if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, pfbls) < 0)
                                 if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_parse_load_file");
 	}   /* if (id == S2CD_ID_BF) */
 
