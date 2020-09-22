@@ -217,10 +217,11 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 	struct ipulist *ipu = NULL;
 	FILE *file = NULL;
 	int F = loopdata->F;
+	int v = loopdata->v;
 
 	if (id == S2CD_ID_BF) {
-		if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, pfbls) < 0)
-                                if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_parse_load_file");
+		if (s2cd_pf_rule_add(loopdata->dev, v, F, loopdata->tablename_static, pfbls) < 0)
+                                if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_parse_load_file");
 	}   /* if (id == S2CD_ID_BF) */
 
 	if ((file = fopen(ufile, "r")) == NULL) {
@@ -247,7 +248,7 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
-				s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, lineproc->ret, pfbls);
+				s2cd_pf_block(loopdata->dev, v, F, loopdata->tablename_static, lineproc->ret, pfbls);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */
@@ -315,7 +316,7 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		ifr->ifr_addr.sa_family = AF_INET;
 		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
 
-		if (s2cd_pf_ioctl(fd, loopdata->v, loopdata->F, SIOCGIFADDR, ifr) < 0)
+		if (s2cd_pf_ioctl(fd, loopdata->v, F, SIOCGIFADDR, ifr) < 0)
 			s2cd_sw_switch_ef(F, S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 
 		close(fd);
