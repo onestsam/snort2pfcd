@@ -291,7 +291,7 @@ int s2cd_pf_ioctl(int, int, int, unsigned long, void *);
 void s2cd_get_optargs(int, char **, loopdata_t *);
 void s2cd_mutex_init(int);
 void s2cd_mutex_destroy();
-void s2cd_check_file(int, char *);
+void s2cd_check_file(int, char *, struct stat *);
 void s2cd_write_file(int, char *, char *);
 void s2cd_pftbl_set(char *, pftbl_t *);
 time_t s2cd_lmin(time_t, time_t);

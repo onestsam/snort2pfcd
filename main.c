@@ -112,10 +112,12 @@ void s2cd_pre_init(loopdata_t *loopdata) {
 
 void s2cd_init(loopdata_t *loopdata) {
 
+	struct stat fstat;
+
 	if (!loopdata->C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
 
-	s2cd_check_file(loopdata->F, loopdata->logfile);
+	s2cd_check_file(loopdata->F, loopdata->logfile, &fstat);
 	memset(loopdata->randombuf, 0x00, BUFSIZ);
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, S2CD_LANG_START, asctime(localtime(&loopdata->timebuf)));
 	s2cd_write_file(loopdata->F, loopdata->logfile, loopdata->randombuf);

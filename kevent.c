@@ -62,6 +62,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 		char fn[S2CD_NMBUFSIZ];
 		struct kevent trigger;
 		struct kevent change;
+		struct stat fstat;
 		loopdata_t loopdata;
 		lineproc_t lineproc;
 		pftbl_t pftbl;
@@ -88,8 +89,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	if (fr) {
 		if (evdp->loopdata.t > 0) age = evdp->loopdata.t;
-		if (!evdp->loopdata.W) s2cd_check_file(F, evdp->loopdata.pfile);
-		if (!evdp->loopdata.B) s2cd_check_file(F, evdp->loopdata.bfile);
+		if (!evdp->loopdata.W) s2cd_check_file(F, evdp->loopdata.pfile, &evdp->fstat);
+		if (!evdp->loopdata.B) s2cd_check_file(F, evdp->loopdata.bfile, &evdp->fstat);
 	}   /* if (fr) */
 
 	while (1) {
@@ -222,13 +223,14 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	pftbl_t pftbl;
+	int F = loopdata->F, v = loopdata->v;
 
-	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
-	if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
+	if ((pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &pftbl)) < 0)
+	if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 	while (1) {
-		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename, &pftbl)) < 0)
-		if (loopdata->v) s2cd_sw_switch(loopdata->F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
+		if ((pf_tbl_state_current = s2cd_pf_tbl_get(loopdata->dev, v, F, loopdata->tablename, &pftbl)) < 0)
+		if (v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_kevent_loop");
 
 		/* I always have problems with && and || operators */
 		pthread_mutex_lock(&fm_mutex);
@@ -244,10 +246,10 @@ void s2cd_kevent_loop(loopdata_t *loopdata) {
 			pthread_mutex_lock(&pf_mutex);
 			pf_reset = 1;
 			pthread_mutex_unlock(&pf_mutex);
-			s2cd_write_file(loopdata->F, loopdata->alertfile, " ");
+			s2cd_write_file(F, loopdata->alertfile, " ");
 		} else {
 			if (!loopdata->C) sleep(S2CD_PF_POLLING_FREQ);
-			if (loopdata->v) if (loopdata->F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
+			if (v) if (F) fprintf(stderr, "%s\n", S2CD_LANG_KE_WAIT);
 		}   /* else */
 	}   /* while (1) */
 
