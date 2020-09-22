@@ -215,15 +215,13 @@ void s2cd_parse_and_block(loopdata_t *loopdata, lineproc_t *lineproc) {
 
 }   /* s2cd_parse_and_block */
 
-void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
+void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id, pftbl_t *pfbls) {
 
 	struct ipulist *ipu = NULL;
 	FILE *file = NULL;
 	int F = loopdata->F;
-	pftbl_t *pfbls = NULL;
 
 	if (id == S2CD_ID_BF) {
-		if ((pfbls = (pftbl_t *)malloc(sizeof(pftbl_t))) == NULL) S2CD_MALLOC_ERR;
 		if (s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->F, loopdata->tablename_static, pfbls) < 0)
                                 if (loopdata->v) s2cd_sw_switch(F, S2CD_LANG_IOCTL_ERROR, "s2cd_parse_load_file");
 	}   /* if (id == S2CD_ID_BF) */
@@ -256,8 +254,6 @@ void s2cd_parse_load_file(loopdata_t *loopdata, lineproc_t *lineproc, char *ufil
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */
-
-	if (id == S2CD_ID_BF) free(pfbls);
 
 	funlockfile(file);
 	fclose(file);
@@ -299,7 +295,7 @@ void s2cd_parse_add_list(int C, int F, struct ipulist *ipu1, struct ifaddrs *ifa
 
 }   /* s2cd_parse_add_list */
 
-void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head) {
+void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc, struct ulist_head *head, pftbl_t *pftbl) {
 
 	struct ipulist *ipu = NULL;
 	struct ifreq *ifr = NULL;
@@ -331,8 +327,8 @@ void s2cd_parse_load_pl(loopdata_t *loopdata, char *pfile, lineproc_t *lineproc,
 		s2cd_parse_add_list(loopdata->C, F, ipu, (struct ifaddrs *)&(ifr->ifr_addr));
 	}   /* else if (!strcmp */
 
-	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu, S2CD_ID_PF);
-	s2cd_parse_load_file(loopdata, lineproc, pfile, head, ipu, S2CD_ID_PF);
+	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu, S2CD_ID_PF, pftbl);
+	s2cd_parse_load_file(loopdata, lineproc, pfile, head, ipu, S2CD_ID_PF, pftbl);
 
 	return;
 
