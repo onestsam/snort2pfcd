@@ -1,7 +1,7 @@
 # snort2pfcd
-v3.2
+v3.1
 <!-- Creator     : groff version 1.22.4 -->
-<!-- CreationDate: Tue Sep 22 16:58:27 2020 -->
+<!-- CreationDate: Wed Sep 23 14:03:06 2020 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -304,7 +304,7 @@ expiretable(1), libcidr(3),</p>
 <p style="margin-left:6%;">Samee Shahzada
 &lt;onestsam@gmail.com&gt;</p>
 
-<p style="margin-left:6%; margin-top: 1em">Sept&nbsp;19th,
+<p style="margin-left:6%; margin-top: 1em">Sept&nbsp;10th,
 2020</p>
 <hr>
 </body>
