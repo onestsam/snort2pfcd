@@ -58,35 +58,38 @@
 
 void *s2cd_kevent_file_monitor(void *arg) {
 
+	struct evdp_t {
+		struct kevent trigger;
+		struct loopdata_t loopdata;
+	};
+
 	struct thread_fm_t *data = (struct thread_fm_t *)arg;
-	struct kevent *trigger = NULL;
 	char local_fn[S2CD_NMBUFSIZ];
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
-	struct loopdata_t *loopdata = NULL;
+	struct evdp_t *evdp = NULL;
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	struct lineproc_t *lineproc = NULL;
 
-	if ((trigger = (struct kevent *)malloc(sizeof(struct kevent))) == NULL) S2CD_MALLOC_ERR;
-	if ((loopdata = (struct loopdata_t *)malloc(sizeof(struct loopdata_t))) == NULL) S2CD_MALLOC_ERR;
-	memset((struct loopdata_t *)loopdata, 0x00, sizeof(struct loopdata_t));
-	memcpy(loopdata, &data->loopdata, sizeof(struct loopdata_t));
+	if ((evdp = (struct evdp_t *)malloc(sizeof(struct evdp_t))) == NULL) S2CD_MALLOC_ERR;
+	memset((struct evdp_t *)evdp, 0x00, sizeof(struct evdp_t));
+	memcpy(&evdp->loopdata, &data->loopdata, sizeof(struct loopdata_t));
 	fid = data->fid;
 	fr = data->fileread;
 	fm = data->file_monitor;
 	free(data);
 
-	if (fid == S2CD_ID_AF) strlcpy(local_fn, loopdata->alertfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_BF) strlcpy(local_fn, loopdata->bfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_PF) strlcpy(local_fn, loopdata->pfile, S2CD_NMBUFSIZ);
+	if (fid == S2CD_ID_AF) strlcpy(local_fn, evdp->loopdata.alertfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_BF) strlcpy(local_fn, evdp->loopdata.bfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_PF) strlcpy(local_fn, evdp->loopdata.pfile, S2CD_NMBUFSIZ);
 	else s2cd_sw_switch_f(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 
 	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
 
 	if (fr) {
-		if (loopdata->t > 0) age = loopdata->t;
+		if (evdp->loopdata.t > 0) age = evdp->loopdata.t;
 		if ((lineproc = (struct lineproc_t *)malloc(sizeof(struct lineproc_t))) == NULL) S2CD_MALLOC_ERR;
-		if (!loopdata->W) s2cd_check_file(loopdata->pfile);
-		if (!loopdata->B) s2cd_check_file(loopdata->bfile);
+		if (!evdp->loopdata.W) s2cd_check_file(evdp->loopdata.pfile);
+		if (!evdp->loopdata.B) s2cd_check_file(evdp->loopdata.bfile);
 	}   /* if (fr) */
 
 	while (1) {
@@ -95,24 +98,24 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 			if (regcomp(&lineproc->expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
-			s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename);
+			s2cd_pf_ruleadd(evdp->loopdata.dev, evdp->loopdata.tablename);
 			if (v) s2cd_sw_switch(S2CD_LANG_CON_EST, "");
 
 			pthread_mutex_lock(&fm_mutex);
 
-			if (!loopdata->W) {
-				s2cd_kevent_plf_reload(loopdata, lineproc);
+			if (!evdp->loopdata.W) {
+				s2cd_kevent_plf_reload(&evdp->loopdata, lineproc);
 				pfile_monitor = 0;
-			}   /* if (!loopdata->W) */
+			}   /* if (!evdp->loopdata.W) */
 
-			if (!loopdata->B) {
-				s2cd_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, S2CD_ID_BF);
+			if (!evdp->loopdata.B) {
+				s2cd_parse_load_file(&evdp->loopdata, lineproc, evdp->loopdata.bfile, &evdp->loopdata.pbhead.phead, NULL, S2CD_ID_BF);
 				bfile_monitor = 0;
-			}   /* if (!loopdata->B) */
+			}   /* if (!evdp->loopdata.B) */
 
 			pthread_mutex_unlock(&fm_mutex);
 
-			this_time = last_time = loopdata->timebuf;
+			this_time = last_time = evdp->loopdata.timebuf;
 			pf_reset_check = 0;
 		}   /* if (fr) */
 
@@ -124,33 +127,33 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 				if ((last_time + age) < (this_time + 1)) {
 					last_time = this_time;
-					s2cd_parse_and_block_list_timeout(age, this_time, &loopdata->pbhead.bhead);
+					s2cd_parse_and_block_list_timeout(age, this_time, &evdp->loopdata.pbhead.bhead);
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2cd_kevent_open(&loopdata->kq, &loopdata->fd, local_fn);
-			memset(trigger, 0x00, sizeof(struct kevent));
-			if (kevent(loopdata->kq, NULL, 0, trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+			s2cd_kevent_open(&evdp->loopdata.kq, &evdp->loopdata.fd, local_fn);
+			memset((struct kevent *)&evdp->trigger, 0x00, sizeof(struct kevent));
+			if (kevent(evdp->loopdata.kq, NULL, 0, &evdp->trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
 				if (fr) {
-					if (s2cd_kevent_read(loopdata, lineproc, trigger->data) == -1) s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+					if (s2cd_kevent_read(&evdp->loopdata, lineproc, evdp->trigger.data) == -1) s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
 
 					if (pfile_monitor) {
-						if (!loopdata->W) {
-							s2cd_kevent_plf_reload(loopdata, lineproc);
-							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, loopdata->pfile, S2CD_LANG_RELOAD);
+						if (!evdp->loopdata.W) {
+							s2cd_kevent_plf_reload(&evdp->loopdata, lineproc);
+							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, evdp->loopdata.pfile, S2CD_LANG_RELOAD);
 						}   /* if (!loopdata->W) */
 						pfile_monitor = 0;
 					}   /* if (pfile_monitor) */
 
 					if (bfile_monitor) {
-						if (!loopdata->B) {
-							s2cd_pf_tbldel(loopdata->dev, loopdata->tablename_static);
-							s2cd_parse_load_file(loopdata, lineproc, loopdata->bfile, &loopdata->pbhead.phead, NULL, S2CD_ID_BF);
-							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, loopdata->bfile, S2CD_LANG_RELOAD);
-						}   /* if (!loopdata->B) */
+						if (!evdp->loopdata.B) {
+							s2cd_pf_tbldel(evdp->loopdata.dev, evdp->loopdata.tablename_static);
+							s2cd_parse_load_file(&evdp->loopdata, lineproc, evdp->loopdata.bfile, &evdp->loopdata.pbhead.phead, NULL, S2CD_ID_BF);
+							if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, evdp->loopdata.bfile, S2CD_LANG_RELOAD);
+						}   /* if (!evdp->loopdata.B) */
 						bfile_monitor = 0;
 					}   /* if (bfile_monitor) */
 
@@ -169,19 +172,19 @@ void *s2cd_kevent_file_monitor(void *arg) {
 				pthread_mutex_unlock(&pf_mutex);
 			}   /* if (fr) */
 
-		close(loopdata->kq);
+		close(evdp->loopdata.kq);
 
 		}   /* while (!pf_reset_check) */
 
-		if (fr) s2cd_parse_and_block_list_clear(&loopdata->pbhead.bhead);
+		if (fr) s2cd_parse_and_block_list_clear(&evdp->loopdata.pbhead.bhead);
 		if (v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, S2CD_LANG_PF, S2CD_LANG_RELOAD);
 
 	}   /* while (1) */
 
 	if (fr) free(lineproc);
 
-	close(loopdata->fd);
-	free(loopdata);
+	close(evdp->loopdata.fd);
+	free(evdp);
 	free(local_fn);
 
 	pthread_exit(NULL);
