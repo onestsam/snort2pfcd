@@ -149,7 +149,7 @@ void s2cd_mutex_init() {
 
 }   /* s2cd_mutex_init */
 
-void s2cd_thr_init(loopdata_t *loopdata) {
+void s2cd_thr_init(struct loopdata_t *loopdata) {
 
 	if (v) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_PRIB, loopdata->priority);
@@ -170,28 +170,28 @@ void s2cd_thr_init(loopdata_t *loopdata) {
 
 }   /* s2cd_thr_init */
 
-int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, loopdata_t *loopdata) {
+int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, struct loopdata_t *loopdata) {
 
-	thread_fm_t *fm_data = NULL;
+	struct thread_fm_t *fm_data = NULL;
 
-	if ((fm_data = (thread_fm_t *)malloc(sizeof(thread_fm_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(fm_data, 0x00, sizeof(thread_fm_t));
+	if ((fm_data = (struct thread_fm_t *)malloc(sizeof(struct thread_fm_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(fm_data, 0x00, sizeof(struct thread_fm_t));
 
 	fm_data->file_monitor = notifaddr;
 	fm_data->fileread = fileread;
 	fm_data->fid = fid;
-	memcpy(&fm_data->loopdata, loopdata, sizeof(loopdata_t));
+	memcpy(&fm_data->loopdata, loopdata, sizeof(struct loopdata_t));
 
 	return(s2cd_spawn_thread(s2cd_kevent_file_monitor, fm_data));
 
 }   /* s2cd_spawn_file_monitor */
 
-int s2cd_spawn_expiretable(loopdata_t *loopdata) {
+int s2cd_spawn_expiretable(struct loopdata_t *loopdata) {
 
-	thread_expt_t *expt_data = NULL;
+	struct thread_expt_t *expt_data = NULL;
 
-	if ((expt_data = (thread_expt_t *)malloc(sizeof(thread_expt_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(expt_data, 0x00, sizeof(thread_expt_t));
+	if ((expt_data = (struct thread_expt_t *)malloc(sizeof(struct thread_expt_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(expt_data, 0x00, sizeof(struct thread_expt_t));
 
 	expt_data->t = loopdata->t;
 	expt_data->dev = loopdata->dev;
@@ -205,10 +205,10 @@ int s2cd_spawn_expiretable(loopdata_t *loopdata) {
 
 int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 
-	thread_log_t *log_data = NULL;
+	struct thread_log_t *log_data = NULL;
 
-	if ((log_data = (thread_log_t *)malloc(sizeof(thread_log_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(log_data, 0x00, sizeof(thread_log_t));
+	if ((log_data = (struct thread_log_t *)malloc(sizeof(struct thread_log_t))) == NULL) S2CD_MALLOC_ERR;
+	memset(log_data, 0x00, sizeof(struct thread_log_t));
 
 	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, S2CD_NMBUFSIZ);

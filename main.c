@@ -74,9 +74,9 @@ pthread_mutex_t fm_mutex;
 
 int main(int argc, char **argv) {
 
-	loopdata_t *loopdata = NULL;
+	struct loopdata_t *loopdata = NULL;
 
-	if ((loopdata = (loopdata_t *)malloc(sizeof(loopdata_t))) == NULL) S2CD_MALLOC_ERR;
+	if ((loopdata = (struct loopdata_t *)malloc(sizeof(struct loopdata_t))) == NULL) S2CD_MALLOC_ERR;
 
 	s2cd_pre_init(loopdata);
 	s2cd_get_optargs(argc, argv, loopdata);
@@ -92,9 +92,9 @@ int main(int argc, char **argv) {
 
 }   /* main */
 
-void s2cd_pre_init(loopdata_t *loopdata) {
+void s2cd_pre_init(struct loopdata_t *loopdata) {
 
-	memset(loopdata, 0x00, sizeof(loopdata_t));
+	memset((struct loopdata_t *)loopdata, 0x00, sizeof(struct loopdata_t));
 
 	loopdata->priority = S2CD_SP_HIGH;
 	loopdata->thr_max = S2CD_THRMAX;
@@ -112,7 +112,7 @@ void s2cd_pre_init(loopdata_t *loopdata) {
 
 }   /* s2cd_pre_init */
 
-void s2cd_init(loopdata_t *loopdata) {
+void s2cd_init(struct loopdata_t *loopdata) {
 
 	if (!C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
@@ -140,12 +140,12 @@ void s2cd_init(loopdata_t *loopdata) {
 
 }   /* s2cd_init */
 
-void s2cd_daemonize(loopdata_t *loopdata) {
+void s2cd_daemonize(struct loopdata_t *loopdata) {
 
 	pid_t otherpid;
 
-	memset(&otherpid, 0x00, sizeof(pid_t));
-	memset(loopdata->randombuf, 0x00, BUFSIZ);
+	memset((pid_t *)&otherpid, 0x00, sizeof(pid_t));
+	memset((char *)loopdata->randombuf, 0x00, BUFSIZ);
 	strlcpy(loopdata->randombuf, S2CD_PATH_RUN, BUFSIZ);
 	strlcat(loopdata->randombuf,  __progname, BUFSIZ);
 	strlcat(loopdata->randombuf, ".pid", BUFSIZ);
@@ -164,7 +164,7 @@ void s2cd_daemonize(loopdata_t *loopdata) {
 
 }   /* s2cd_daemonize */
 
-void s2cd_get_optargs(int argc, char **argv, loopdata_t *loopdata) {
+void s2cd_get_optargs(int argc, char **argv, struct loopdata_t *loopdata) {
 
 	extern char *optarg;
 	extern int optind;
