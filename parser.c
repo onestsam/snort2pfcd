@@ -216,7 +216,7 @@ void s2cd_parse_and_block(struct loopdata_t *loopdata, struct lineproc_t *linepr
 
 }   /* s2cd_parse_and_block */
 
-void s2cd_parse_load_file(struct loopdata_t *loopdata, struct lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
+void s2cd_parse_load_file(struct pftbl_t *pftbl, struct loopdata_t *loopdata, struct lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
 	register struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;
@@ -245,7 +245,7 @@ void s2cd_parse_load_file(struct loopdata_t *loopdata, struct lineproc_t *linepr
 						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
-				s2cd_pf_ruleadd(loopdata->dev, loopdata->tablename_static);
+				s2cd_pf_rule_add(loopdata->dev, loopdata->tablename_static, pftbl);
 				s2cd_pf_block(loopdata->dev, loopdata->tablename_static, lineproc->ret);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
@@ -294,7 +294,7 @@ void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 }   /* s2cd_parse_add_list */
 
-void s2cd_parse_load_pl(struct loopdata_t *loopdata, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
+void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *loopdata, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
 
 	register struct ipulist *ipu1 = NULL;
 	struct ifreq *ifr = NULL;
@@ -325,8 +325,8 @@ void s2cd_parse_load_pl(struct loopdata_t *loopdata, char *pfile, struct linepro
 		s2cd_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
 	}   /* else if (!strcmp */
 
-	if (!loopdata->Z) s2cd_parse_load_file(loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
-	s2cd_parse_load_file(loopdata, lineproc, pfile, head, ipu1, S2CD_ID_PF);
+	if (!loopdata->Z) s2cd_parse_load_file(pftbl, loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
+	s2cd_parse_load_file(pftbl, loopdata, lineproc, pfile, head, ipu1, S2CD_ID_PF);
 
 	return;
 

@@ -58,78 +58,73 @@
 
 void *s2cd_pf_expiretable(void *arg) {
 
-	struct pfr_astats *astats = NULL;
-	struct pfr_table *target = NULL;
-	struct pfr_addr *del_addrs_list = NULL;
+	struct exst_t {
+		struct pfr_astats astats;
+		struct pfr_table target;
+		struct pfr_addr del_addrs_list;
+		struct pfbl_log_t pfbl_log;
+	};
+
 	int astats_count = 0, del_addrs_count = 0, local_dev = 0, i = 0;
 	time_t age = S2CD_EXPTIME;
 	time_t min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
-	char *tablename = NULL;
-	char *nmpfdev = NULL;
-	struct pfbl_log_t *pfbl_log = NULL;
+	char tablename[PF_TABLE_NAME_SIZE];
+	char nmpfdev[S2CD_NMBUFSIZ];
+	struct exst_t *exst = NULL;
 	struct thread_expt_t *data = (struct thread_expt_t *)arg;
 
-	if ((pfbl_log = (struct pfbl_log_t *)malloc(sizeof(struct pfbl_log_t))) == NULL) S2CD_MALLOC_ERR;
-	if ((tablename = (char *)malloc(sizeof(char)*PF_TABLE_NAME_SIZE)) == NULL) S2CD_MALLOC_ERR;
-	if ((nmpfdev = (char *)malloc(sizeof(char)*S2CD_NMBUFSIZ)) == NULL) S2CD_MALLOC_ERR;
-	if ((target = (struct pfr_table *)malloc(sizeof(struct pfr_table))) == NULL) S2CD_MALLOC_ERR;
-	if ((astats = (struct pfr_astats *)malloc(sizeof(struct pfr_astats))) == NULL) S2CD_MALLOC_ERR;
+	if ((exst = (struct exst_t *)malloc(sizeof(struct exst_t))) == NULL) S2CD_MALLOC_ERR;
 
 	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	memset(pfbl_log, 0x00, sizeof(struct pfbl_log_t));
+	memset(nmpfdev, 0x00, S2CD_NMBUFSIZ);
+	memset(exst, 0x00, sizeof(struct exst_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
-	strlcpy(pfbl_log->local_logfile, data->logfile, S2CD_NMBUFSIZ);
+	strlcpy(exst->pfbl_log.local_logfile, data->logfile, S2CD_NMBUFSIZ);
 	strlcpy(nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	local_dev = data->dev;
 	free(data);
 
 	while (1) {
-		memset(target, 0x00, sizeof(struct pfr_table));
-		memset(astats, 0x00, sizeof(struct pfr_astats));
-		strlcpy(target->pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		memset(&exst->target, 0x00, sizeof(struct pfr_table));
+		memset(&exst->astats, 0x00, sizeof(struct pfr_astats));
+		strlcpy(exst->target.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 		if (!C) oldest_entry = time(NULL);
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
-		astats_count = s2cd_radix_get_astats(local_dev, &astats, target, 0);
+		astats_count = s2cd_radix_get_astats(local_dev, &exst->astats, &exst->target, 0);
 
 		if (astats_count > 0) {
 
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++) {
-				if (astats[i].pfras_tzero <= min_timestamp) del_addrs_count++;
-				else oldest_entry = s2cd_lmin(oldest_entry, astats[i].pfras_tzero);
+				if ((&exst->astats)[i].pfras_tzero <= min_timestamp) del_addrs_count++;
+				else oldest_entry = s2cd_lmin(oldest_entry, (&exst->astats)[i].pfras_tzero);
 			}   /* for (i */
 
-			if ((del_addrs_list = malloc(del_addrs_count * sizeof(struct pfr_addr))) == NULL) S2CD_MALLOC_ERR;	
-			memset(del_addrs_list, 0x00, sizeof(struct pfr_addr));
+			memset(&exst->del_addrs_list, 0x00, sizeof(struct pfr_addr));
 
 			del_addrs_count = 0;
 
 			for (i = 0; i < astats_count; i++)
-				if (astats[i].pfras_tzero <= min_timestamp) {
-					del_addrs_list[del_addrs_count] = astats[i].pfras_a;
-					del_addrs_list[del_addrs_count].pfra_fback = 0;
-					((struct sockaddr_in *)&pfbl_log->sa)->sin_addr = astats[i].pfras_a.pfra_ip4addr;
-					s2cd_pf_unblock_log(pfbl_log);
+				if ((&exst->astats)[i].pfras_tzero <= min_timestamp) {
+					(&exst->del_addrs_list)[del_addrs_count] = (&exst->astats)[i].pfras_a;
+					(&exst->del_addrs_list)[del_addrs_count].pfra_fback = 0;
+					((struct sockaddr_in *)&exst->pfbl_log.sa)->sin_addr = (&exst->astats)[i].pfras_a.pfra_ip4addr;
+					s2cd_pf_unblock_log(&exst->pfbl_log);
 					del_addrs_count++;
 				}   /* if (astats */
 
-			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, target, del_addrs_list, del_addrs_count, flags);
+			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, &exst->target, &exst->del_addrs_list, del_addrs_count, flags);
 		}   /* if (astats_count > 0) */
 
-		free(del_addrs_list);
 		sleep(age + 1);
 	}   /* while (1) */
 
-	free(pfbl_log);
-	free(tablename);
-	free(nmpfdev);
-	free(target);
-	free(astats);
+	free(exst);
 
 	pthread_exit(NULL);
 
@@ -160,20 +155,16 @@ int s2cd_radix_ioctl(int dev, unsigned long request, struct pfioc_table *pt) {
 			return(-1);
 		}
 
-		if (pt->pfrio_size + 1 < len)
-			break;
-		if (pt->pfrio_size == 0) {
-			return(0);
-		}
-		if (len == 0)
-			len = pt->pfrio_size;
+		if (pt->pfrio_size + 1 < len) break;
+		if (pt->pfrio_size == 0) return(0);
+		if (len == 0) len = pt->pfrio_size;
 	len *= 2;
 	}
 
 	return pt->pfrio_size;
 }   /* s2cd_radix_ioctl */
 
-int s2cd_radix_get_astats(int dev, struct pfr_astats **astats, const struct pfr_table *filter, int flags) {
+int s2cd_radix_get_astats(int dev, struct pfr_astats *astats, const struct pfr_table *filter, int flags) {
 	struct pfioc_table pt;
 
 	memset((struct pfioc_table *)&pt, 0, sizeof(struct pfioc_table));
@@ -187,7 +178,7 @@ int s2cd_radix_get_astats(int dev, struct pfr_astats **astats, const struct pfr_
 
 	if (s2cd_radix_ioctl(dev, DIOCRGETASTATS, &pt) < 0) return(-1);
 
-	*astats = (struct pfr_astats *)pt.pfrio_buffer;
+	astats = (struct pfr_astats *)pt.pfrio_buffer;
 	return pt.pfrio_size;
 }   /* s2cd_radix_get_astats */
 
@@ -297,12 +288,9 @@ void *s2cd_pf_block_log(void *arg) {
 
 }   /* s2cd_pf_block_log */
 
-void s2cd_pf_ruleadd(int dev, char *tablename) {
+void s2cd_pf_rule_add(int dev, char *tablename, struct pftbl_t *pftbl) {
 
-	struct pftbl_t *pftbl = NULL;
-	
-	if ((pftbl = (struct pftbl_t *)malloc(sizeof(struct pftbl_t))) == NULL) S2CD_MALLOC_ERR;
-	s2cd_pf_tbladd(dev, tablename, pftbl);
+	s2cd_pf_tbl_add(dev, tablename, pftbl);
 
 	pftbl->io_rule.action = PF_CHANGE_GET_TICKET;
 	pftbl->io_rule.rule.direction = PF_IN;
@@ -318,8 +306,6 @@ void s2cd_pf_ruleadd(int dev, char *tablename) {
 	pftbl->io_rule.action = PF_CHANGE_ADD_TAIL;
 	s2cd_pf_ioctl(dev, DIOCCHANGERULE, &pftbl->io_rule);
 
-	free(pftbl);
-
 	return;
 
 }   /* s2cd_pf_ruleadd */
@@ -334,7 +320,7 @@ int s2cd_pf_tbl_get(int dev, char *tablename, struct pftbl_t *pftbl) {
 
 }   /* s2cd_pf_tbl_get */
 
-void s2cd_pf_tbladd(int dev, char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_tbl_add(int dev, char *tablename, struct pftbl_t *pftbl) {
 
 	s2cd_pf_tbl_get(dev, tablename, pftbl);
 
@@ -353,12 +339,10 @@ void s2cd_pf_tbladd(int dev, char *tablename, struct pftbl_t *pftbl) {
 
 }   /* s2cd_pf_tbladd */
 
-void s2cd_pf_tbldel(int dev, char *tablename) {
+void s2cd_pf_tbl_del(int dev, char *tablename, struct pftbl_t *pftbl) {
 
-	struct pftbl_t pftbl;
-
-	s2cd_pftbl_set(tablename, &pftbl);
-	s2cd_pf_ioctl(dev, DIOCRDELTABLES, &pftbl.io);
+	s2cd_pftbl_set(tablename, pftbl);
+	s2cd_pf_ioctl(dev, DIOCRDELTABLES, &pftbl->io);
 
 	return;
 
