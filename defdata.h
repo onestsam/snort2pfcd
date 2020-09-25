@@ -295,7 +295,7 @@ void s2cd_check_file(char *, struct stat *);
 void s2cd_write_file(char *, const char *);
 time_t s2cd_lmin(time_t, time_t);
 void s2cd_pf_block(int, int, char *, char *, struct pftbl_t *);
-void s2cd_pftbl_set(char *, struct pftbl_t *);
+void s2cd_pf_tbl_set(char *, struct pftbl_t *);
 void s2cd_pf_tbl_add(int, int, char *, struct pftbl_t *);
 int s2cd_pf_tbl_get(int, int, char *, struct pftbl_t *);
 void s2cd_pf_tbl_del(int, int, char *, struct pftbl_t *);

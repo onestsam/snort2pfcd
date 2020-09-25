@@ -315,7 +315,7 @@ void s2cd_pf_rule_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 int s2cd_pf_tbl_get(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
-	s2cd_pftbl_set(tablename, pftbl);
+	s2cd_pf_tbl_set(tablename, pftbl);
 	pftbl->io.pfrio_size = 0;
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRGETTABLES, &pftbl->io) < 0)
@@ -334,7 +334,7 @@ void s2cd_pf_tbl_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRGETTABLES, &pftbl->io) == 0) {
 	
-		s2cd_pftbl_set(tablename, pftbl);
+		s2cd_pf_tbl_set(tablename, pftbl);
 		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
 		if (s2cd_pf_ioctl(dev, v, DIOCRADDTABLES, &pftbl->io) < 0)
@@ -345,18 +345,18 @@ void s2cd_pf_tbl_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 	return;
 
-}   /* s2cd_pf_tbladd */
+}   /* s2cd_pf_tbl_add */
 
 void s2cd_pf_tbl_del(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
-	s2cd_pftbl_set(tablename, pftbl);
+	s2cd_pf_tbl_set(tablename, pftbl);
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRDELTABLES, &pftbl->io) < 0)
 	if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_del");
 
 	return;
 
-}   /* s2cd_pf_tbldel */
+}   /* s2cd_pf_tbl_del */
 
 int s2cd_pf_ioctl(int dev, int v, unsigned long request, void *pf_io_arg) {
 
@@ -378,7 +378,7 @@ int s2cd_pf_ioctl(int dev, int v, unsigned long request, void *pf_io_arg) {
 
 }   /* s2cd_pf_ioctl */
 
-void s2cd_pftbl_set(char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_tbl_set(char *tablename, struct pftbl_t *pftbl) {
 
 	memset((struct pftbl_t *)pftbl, 0x00, sizeof(struct pftbl_t));
 	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
@@ -388,4 +388,4 @@ void s2cd_pftbl_set(char *tablename, struct pftbl_t *pftbl) {
 
 	return;
 
-}   /* s2cd_pftbl_set */
+}   /* s2cd_pf_tbl_set */
