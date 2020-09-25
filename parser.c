@@ -297,7 +297,6 @@ void s2cd_parse_add_list(struct ipulist *ipu1, struct ifaddrs *ifa) {
 void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *loopdata, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
 
 	register struct ipulist *ipu1 = NULL;
-	struct ifreq *ifr = NULL;
 	int fd = 0;
 
 	if ((ipu1 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
@@ -310,19 +309,17 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *loopdata, char
 	if (!strcmp(loopdata->extif, "all")) s2cd_parse_load_ifaces(ipu1);
 	else {
 
-		if ((ifr = (struct ifreq *)malloc(sizeof(struct ifreq))) == NULL) S2CD_MALLOC_ERR;
-		memset((struct ifreq *)ifr, 0x00, sizeof(struct ifreq));
+		memset((struct ifreq *)&pftbl->ifr, 0x00, sizeof(struct ifreq));
 		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
-		ifr->ifr_addr.sa_family = AF_INET;
-		strlcpy(ifr->ifr_name, loopdata->extif, IFNAMSIZ);
+		pftbl->ifr.ifr_addr.sa_family = AF_INET;
+		strlcpy(pftbl->ifr.ifr_name, loopdata->extif, IFNAMSIZ);
 
-		if (s2cd_pf_ioctl(fd, SIOCGIFADDR, ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+		if (s2cd_pf_ioctl(fd, SIOCGIFADDR, &pftbl->ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
 
 		close(fd);
-		free(ifr);
 
-		s2cd_parse_add_list(ipu1, (struct ifaddrs *)&(ifr->ifr_addr));
+		s2cd_parse_add_list(ipu1, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
 	}   /* else if (!strcmp */
 
 	if (!loopdata->Z) s2cd_parse_load_file(pftbl, loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);

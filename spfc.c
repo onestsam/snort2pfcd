@@ -139,8 +139,7 @@ int s2cd_radix_ioctl(int dev, unsigned long request, struct pfioc_table *pt) {
 	for(;;) {
 		pt->pfrio_size = len;
 		if (len) {
-			newinbuf = realloc(pt->pfrio_buffer, len * pt->pfrio_esize);
-			if (newinbuf == NULL) {
+			if((newinbuf = realloc(pt->pfrio_buffer, len * pt->pfrio_esize)) == NULL) {
 				free(pt->pfrio_buffer);
 				pt->pfrio_buffer = NULL;
 				S2CD_MALLOC_ERR;
@@ -160,6 +159,7 @@ int s2cd_radix_ioctl(int dev, unsigned long request, struct pfioc_table *pt) {
 	}
 
 	return(pt->pfrio_size);
+
 }   /* s2cd_radix_ioctl */
 
 int s2cd_radix_get_astats(int dev, struct pfioc_table *pt, struct pfr_astats *astats, const struct pfr_table *filter, int flags) {

@@ -183,6 +183,7 @@ struct pftbl_t {
 	struct pfioc_table io;
 	struct pfr_table table;
 	struct pfr_addr addr;
+	struct ifreq ifr;
 };
 
 struct thread_expt_t {
