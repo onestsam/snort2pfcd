@@ -65,7 +65,7 @@ void *s2cd_pf_expiretable(void *arg) {
 		struct pfbl_log_t pfbl_log;
 	};
 
-	int astats_count = 0, del_addrs_count = 0, local_dev = 0, i = 0;
+	int astats_count = 0, del_addrs_count = 0, dev = 0, i = 0;
 	time_t age = S2CD_EXPTIME;
 	time_t min_timestamp = 0, oldest_entry = 0;
 	int flags = PFR_FLAG_FEEDBACK;
@@ -76,25 +76,25 @@ void *s2cd_pf_expiretable(void *arg) {
 
 	if ((exst = (struct exst_t *)malloc(sizeof(struct exst_t))) == NULL) S2CD_MALLOC_ERR;
 
-	memset(tablename, 0x00, PF_TABLE_NAME_SIZE);
-	memset(nmpfdev, 0x00, S2CD_NMBUFSIZ);
-	memset(exst, 0x00, sizeof(struct exst_t));
+	memset((char *)tablename, 0x00, PF_TABLE_NAME_SIZE);
+	memset((char *)nmpfdev, 0x00, S2CD_NMBUFSIZ);
+	memset((struct exst_t *)exst, 0x00, sizeof(struct exst_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
 	strlcpy(exst->pfbl_log.local_logfile, data->logfile, S2CD_NMBUFSIZ);
 	strlcpy(nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	if (data->t > 0) age = data->t;
-	local_dev = data->dev;
+	dev = data->dev;
 	free(data);
 
 	while (1) {
-		memset(&exst->target, 0x00, sizeof(struct pfr_table));
-		memset(&exst->astats, 0x00, sizeof(struct pfr_astats));
+		memset((struct pfr_table *)&exst->target, 0x00, sizeof(struct pfr_table));
+		memset((struct pfr_astats *)&exst->astats, 0x00, sizeof(struct pfr_astats));
 		strlcpy(exst->target.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
 		if (!C) oldest_entry = time(NULL);
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
 
-		astats_count = s2cd_radix_get_astats(local_dev, &exst->astats, &exst->target, 0);
+		astats_count = s2cd_radix_get_astats(dev, &exst->astats, &exst->target, 0);
 
 		if (astats_count > 0) {
 
@@ -105,7 +105,7 @@ void *s2cd_pf_expiretable(void *arg) {
 				else oldest_entry = s2cd_lmin(oldest_entry, (&exst->astats)[i].pfras_tzero);
 			}   /* for (i */
 
-			memset(&exst->del_addrs_list, 0x00, sizeof(struct pfr_addr));
+			memset((struct pfr_addr *)&exst->del_addrs_list, 0x00, sizeof(struct pfr_addr));
 
 			del_addrs_count = 0;
 
@@ -118,7 +118,7 @@ void *s2cd_pf_expiretable(void *arg) {
 					del_addrs_count++;
 				}   /* if (astats */
 
-			if (del_addrs_count > 0) s2cd_radix_del_addrs(local_dev, &exst->target, &exst->del_addrs_list, del_addrs_count, flags);
+			if (del_addrs_count > 0) s2cd_radix_del_addrs(dev, &exst->target, &exst->del_addrs_list, del_addrs_count, flags);
 		}   /* if (astats_count > 0) */
 
 		sleep(age + 1);
@@ -167,7 +167,7 @@ int s2cd_radix_ioctl(int dev, unsigned long request, struct pfioc_table *pt) {
 int s2cd_radix_get_astats(int dev, struct pfr_astats *astats, const struct pfr_table *filter, int flags) {
 	struct pfioc_table pt;
 
-	memset((struct pfioc_table *)&pt, 0, sizeof(struct pfioc_table));
+	memset((struct pfioc_table *)&pt, 0x00, sizeof(struct pfioc_table));
 	pt.pfrio_esize = sizeof(struct pfr_astats);
 	pt.pfrio_flags = flags;
 
@@ -185,7 +185,7 @@ int s2cd_radix_get_astats(int dev, struct pfr_astats *astats, const struct pfr_t
 int s2cd_radix_del_addrs(int dev, const struct pfr_table *table, struct pfr_addr *addrs, int addr_count, int flags) {
 	struct pfioc_table pt;
 
-	memset((struct pfioc_table *)&pt, 0, sizeof(struct pfioc_table));
+	memset((struct pfioc_table *)&pt, 0x00, sizeof(struct pfioc_table));
 	pt.pfrio_size = addr_count;
 	pt.pfrio_esize = sizeof(struct pfr_addr);
 	pt.pfrio_flags = flags;
@@ -234,10 +234,10 @@ void s2cd_pf_unblock_log(struct pfbl_log_t *pfbl_log) {
 	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->local_logip, pfbl_log->hbuf, S2CD_LANG_UNBLOCKED, asctime(localtime(&timebuf)));
 	s2cd_write_file(pfbl_log->local_logfile, pfbl_log->message);
 
-	memset(&pfbl_log->sa, 0x00, sizeof(pfbl_log->sa));
-	memset(pfbl_log->message, 0x00, BUFSIZ);
-	memset(pfbl_log->local_logip, 0x00, BUFSIZ);
-	memset(pfbl_log->hbuf, 0x00, NI_MAXHOST);
+	memset((struct sockaddr_in *)&pfbl_log->sa, 0x00, sizeof(struct sockaddr_in));
+	memset((char *)pfbl_log->message, 0x00, BUFSIZ);
+	memset((char *)pfbl_log->local_logip, 0x00, BUFSIZ);
+	memset((char *)pfbl_log->hbuf, 0x00, NI_MAXHOST);
 
 	return;
 
@@ -251,7 +251,7 @@ void *s2cd_pf_block_log(void *arg) {
 	struct thread_log_t *data = (struct thread_log_t *)arg;
 
 	if ((pfbl_log = (struct pfbl_log_t *)malloc(sizeof(struct pfbl_log_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(pfbl_log, 0x00, sizeof(struct pfbl_log_t));
+	memset((struct pfbl_log_t *)pfbl_log, 0x00, sizeof(struct pfbl_log_t));
 
 	D = data->D;
 	strlcpy(pfbl_log->local_logip, data->logip, BUFSIZ);

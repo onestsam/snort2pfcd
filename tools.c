@@ -98,7 +98,7 @@ void s2cd_check_file(char *namefile) {
 	struct stat *info = NULL;
 
 	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) S2CD_MALLOC_ERR;
-	memset(info, 0x00, sizeof(struct stat));
+	memset((struct stat *)info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
 	if (info->st_mode & S_IFDIR) s2cd_sw_switch_ef(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
@@ -175,7 +175,7 @@ int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, struct loopda
 	struct thread_fm_t *fm_data = NULL;
 
 	if ((fm_data = (struct thread_fm_t *)malloc(sizeof(struct thread_fm_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(fm_data, 0x00, sizeof(struct thread_fm_t));
+	memset((struct thread_fm_t *)fm_data, 0x00, sizeof(struct thread_fm_t));
 
 	fm_data->file_monitor = notifaddr;
 	fm_data->fileread = fileread;
@@ -191,7 +191,7 @@ int s2cd_spawn_expiretable(struct loopdata_t *loopdata) {
 	struct thread_expt_t *expt_data = NULL;
 
 	if ((expt_data = (struct thread_expt_t *)malloc(sizeof(struct thread_expt_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(expt_data, 0x00, sizeof(struct thread_expt_t));
+	memset((struct thread_expt_t *)expt_data, 0x00, sizeof(struct thread_expt_t));
 
 	expt_data->t = loopdata->t;
 	expt_data->dev = loopdata->dev;
@@ -208,7 +208,7 @@ int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 	struct thread_log_t *log_data = NULL;
 
 	if ((log_data = (struct thread_log_t *)malloc(sizeof(struct thread_log_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(log_data, 0x00, sizeof(struct thread_log_t));
+	memset((struct thread_log_t *)log_data, 0x00, sizeof(struct thread_log_t));
 
 	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, S2CD_NMBUFSIZ);
@@ -221,15 +221,15 @@ int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
 int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 
 	int thr_check = 1;
-	typedef struct _twisted_t {
+	struct twisted_t {
 		pthread_t thr;
 		pthread_attr_t attr;
-	} twisted_t;
+	};
 
-	twisted_t *yarn = NULL;
+	struct twisted_t *yarn = NULL;
  
-	if ((yarn = (twisted_t *)malloc(sizeof(twisted_t))) == NULL) S2CD_MALLOC_ERR;
-	memset(yarn, 0x00, sizeof(twisted_t));
+	if ((yarn = (struct twisted_t *)malloc(sizeof(struct twisted_t))) == NULL) S2CD_MALLOC_ERR;
+	memset((struct twisted_t *)yarn, 0x00, sizeof(struct twisted_t));
  
 	if (pthread_attr_init(&yarn->attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
 	else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);

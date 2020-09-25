@@ -131,7 +131,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2cd_kevent_open(&evdp->loopdata.kq, &evdp->loopdata.fd, local_fn);
+			s2cd_kevent_open(&evdp->trigger, &evdp->loopdata.kq, &evdp->loopdata.fd, local_fn);
 			memset((struct kevent *)&evdp->trigger, 0x00, sizeof(struct kevent));
 			if (kevent(evdp->loopdata.kq, NULL, 0, &evdp->trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
@@ -183,7 +183,6 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	close(evdp->loopdata.fd);
 	free(evdp);
-	free(local_fn);
 
 	pthread_exit(NULL);
 
@@ -199,17 +198,15 @@ int s2cd_fd_open(char *file) {
 
 }   /* s2cd_fd_open */
 
-void s2cd_kevent_open(int *kq, int *fd, char *file) {
-
-	struct kevent change;
+void s2cd_kevent_open(struct kevent *change, int *kq, int *fd, char *file) {
 
 	if ((*kq = kqueue()) == -1) s2cd_sw_switch_f(S2CD_LANG_KQ_ERROR, S2CD_LANG_EXIT);
 	if ((*fd = s2cd_fd_open(file)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, file, S2CD_LANG_EXIT);
 
-	memset(&change, 0x00, sizeof(struct kevent));
-	EV_SET(&change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
+	memset((struct kevent *)change, 0x00, sizeof(struct kevent));
+	EV_SET(change, *fd, EVFILT_VNODE, EV_ADD | EV_ENABLE, NOTE_EXTEND | NOTE_WRITE, 0, NULL);
 
-	if (kevent(*kq, &change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
+	if (kevent(*kq, change, 1, NULL, 0, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 
 	return;
 

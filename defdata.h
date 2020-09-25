@@ -324,7 +324,7 @@ int s2cd_radix_del_addrs(int, const struct pfr_table *, struct pfr_addr *, int, 
 
 int s2cd_fd_open(char *);
 int s2cd_kevent_read(struct loopdata_t *, struct lineproc_t *, int);
-void s2cd_kevent_open(int *, int *, char *);
+void s2cd_kevent_open(struct kevent *, int *, int *, char *);
 void s2cd_kevent_plf_reload(struct pftbl_t *, struct loopdata_t *, struct lineproc_t *);
 void s2cd_kevent_loop(struct loopdata_t *);
 void *s2cd_kevent_file_monitor(void *arg);

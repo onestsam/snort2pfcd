@@ -118,7 +118,7 @@ void s2cd_init(struct loopdata_t *loopdata) {
 	else loopdata->timebuf = 0;
 
 	s2cd_check_file(loopdata->logfile);
-	memset(loopdata->randombuf, 0x00, BUFSIZ);
+	memset((char *)loopdata->randombuf, 0x00, BUFSIZ);
 	sprintf(loopdata->randombuf, "\n<=== %s %s %s \n", loopdata->tablename, S2CD_LANG_START, asctime(localtime(&loopdata->timebuf)));
 	s2cd_write_file(loopdata->logfile, loopdata->randombuf);
 
