@@ -224,17 +224,14 @@ int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 		pthread_attr_t attr;
 	};
 
-	struct twisted_t *yarn = NULL;
+	struct twisted_t yarn;
  
-	if ((yarn = (struct twisted_t *)malloc(sizeof(struct twisted_t))) == NULL) S2CD_MALLOC_ERR;
-	memset((struct twisted_t *)yarn, 0x00, sizeof(struct twisted_t));
+	memset((struct twisted_t *)&yarn, 0x00, sizeof(struct twisted_t));
  
-	if (pthread_attr_init(&yarn->attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
-	else if (pthread_attr_setdetachstate(&yarn->attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
-	else if (pthread_create(&yarn->thr, &yarn->attr, func, data)) s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
+	if (pthread_attr_init(&yarn.attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
+	else if (pthread_attr_setdetachstate(&yarn.attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
+	else if (pthread_create(&yarn.thr, &yarn.attr, func, data)) s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
 	else thr_check = 0;
-
-	free(yarn);
 
 	return(thr_check);
 

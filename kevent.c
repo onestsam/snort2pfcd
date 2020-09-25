@@ -67,10 +67,10 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	};
 
 	struct thread_fm_t *data = (struct thread_fm_t *)arg;
-	char lfn[S2CD_NMBUFSIZ];
-	struct evdp_t *evdp = NULL;
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
 	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
+	struct evdp_t *evdp = NULL;
+	char lfn[S2CD_NMBUFSIZ];
 
 	if ((evdp = (struct evdp_t *)malloc(sizeof(struct evdp_t))) == NULL) S2CD_MALLOC_ERR;
 	memset((struct evdp_t *)evdp, 0x00, sizeof(struct evdp_t));
@@ -137,7 +137,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			if (kevent(evdp->lpdt.kq, NULL, 0, &evdp->trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
 				if (fr) {
-					if (s2cd_kevent_read(&evdp->lpdt, &evdp->lnpc, &evdp->pftbl, evdp->trigger.data) == -1) s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+					if (s2cd_kevent_read(&evdp->lpdt, &evdp->lnpc, &evdp->pftbl, evdp->trigger.data) == -1)
+						s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
 

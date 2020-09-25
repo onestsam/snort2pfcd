@@ -90,7 +90,7 @@
 #define S2CD_ID_AF			2	/* ID alertfile */
 #define S2CD_MONITOR_ONLY		0
 #define S2CD_MONITOR_READ		1
-#define S2CD_PF_POLLING_FREQ		10
+#define S2CD_PF_POLLING_FREQ		4	/* seconds */
 
 /* Snort Priorities */
 #define S2CD_SP_HIGH			4

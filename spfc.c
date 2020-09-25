@@ -311,7 +311,7 @@ void s2cd_pf_rule_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 	return;
 
-}   /* s2cd_pf_ruleadd */
+}   /* s2cd_pf_rule_add */
 
 int s2cd_pf_tbl_get(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
