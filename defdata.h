@@ -9,8 +9,8 @@
  * Copyright (c) 2002 Cedric Berger
  *
  * s2cd_pf_expiretable functions from expiretable
- * s2cd_radix_ioctlfrom ioctl_helpers.c
- * s2cd_radix_get_astatsfrom ioctl_helpers.c
+ * s2cd_radix_ioctl from ioctl_helpers.c
+ * s2cd_radix_get_astats from ioctl_helpers.c
  * s2cd_radix_del_addrs from ioctl_helpers.c
  * Copyright (c) 2005 Henrik Gustafsson <henrik.gustafsson@fnord.se>
  *
