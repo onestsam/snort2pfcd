@@ -125,11 +125,11 @@ void s2cd_write_file(char *namefile, char *message) {
 
 void s2cd_mutex_init() {
 
-	memset(&log_mutex, 0x00, sizeof(pthread_mutex_t));
-	memset(&dns_mutex, 0x00, sizeof(pthread_mutex_t));
-	memset(&thr_mutex, 0x00, sizeof(pthread_mutex_t));
-	memset(&pf_mutex, 0x00, sizeof(pthread_mutex_t));
-	memset(&fm_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset((pthread_mutex_t *)&log_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset((pthread_mutex_t *)&dns_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset((pthread_mutex_t *)&thr_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset((pthread_mutex_t *)&pf_mutex, 0x00, sizeof(pthread_mutex_t));
+	memset((pthread_mutex_t *)&fm_mutex, 0x00, sizeof(pthread_mutex_t));
 
 	if (pthread_mutex_init(&log_mutex, NULL) == 0)
 	if (pthread_mutex_init(&dns_mutex, NULL) == 0)
