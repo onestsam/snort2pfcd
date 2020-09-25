@@ -79,7 +79,7 @@ void *s2cd_pf_expiretable(void *arg) {
 	memset((char *)nmpfdev, 0x00, S2CD_NMBUFSIZ);
 	memset((struct exst_t *)exst, 0x00, sizeof(struct exst_t));
 	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
-	strlcpy(exst->pfbl_log.local_logfile, data->logfile, S2CD_NMBUFSIZ);
+	strlcpy(exst->pfbl_log.logfile, data->logfile, S2CD_NMBUFSIZ);
 	strlcpy(nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	if (data->t > 0) age = data->t;
 	dev = data->dev;
@@ -226,15 +226,15 @@ void s2cd_pf_unblock_log(int C, struct pfbl_log_t *pfbl_log) {
 	if (!C) timebuf = time(NULL);
 	
 	pfbl_log->sa.sa_family = AF_INET;
-	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->local_logip, sizeof(struct sockaddr_in)))
+	if(!inet_ntop(AF_INET, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr, pfbl_log->logip, sizeof(struct sockaddr_in)))
 		strlcpy(pfbl_log->hbuf, S2CD_LANG_LOGTHR_ERROR, NI_MAXHOST);
 
-	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->local_logip, pfbl_log->hbuf, S2CD_LANG_UNBLOCKED, asctime(localtime(&timebuf)));
-	s2cd_write_file(pfbl_log->local_logfile, pfbl_log->message);
+	sprintf(pfbl_log->message, "%s %s %s %s", pfbl_log->logip, pfbl_log->hbuf, S2CD_LANG_UNBLOCKED, asctime(localtime(&timebuf)));
+	s2cd_write_file(pfbl_log->logfile, pfbl_log->message);
 
 	memset((struct sockaddr_in *)&pfbl_log->sa, 0x00, sizeof(struct sockaddr_in));
 	memset((char *)pfbl_log->message, 0x00, BUFSIZ);
-	memset((char *)pfbl_log->local_logip, 0x00, BUFSIZ);
+	memset((char *)pfbl_log->logip, 0x00, BUFSIZ);
 	memset((char *)pfbl_log->hbuf, 0x00, NI_MAXHOST);
 
 	return;
@@ -253,15 +253,15 @@ void *s2cd_pf_block_log(void *arg) {
 
 	C = data->C;
 	D = data->D;
-	strlcpy(pfbl_log->local_logip, data->logip, BUFSIZ);
-	strlcpy(pfbl_log->local_logfile, data->logfile, S2CD_NMBUFSIZ);
+	strlcpy(pfbl_log->logip, data->logip, BUFSIZ);
+	strlcpy(pfbl_log->logfile, data->logfile, S2CD_NMBUFSIZ);
 	free(data);
 
 	if (!C) timebuf = time(NULL);
 
 	if (!D) {
 		pfbl_log->sa.sa_family = AF_INET;
-		if (inet_pton(AF_INET, pfbl_log->local_logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
+		if (inet_pton(AF_INET, pfbl_log->logip, &((struct sockaddr_in *)&pfbl_log->sa)->sin_addr)) {
 
 			pthread_mutex_lock(&dns_mutex);
 			gni_error = getnameinfo(&pfbl_log->sa, sizeof(struct sockaddr_in), pfbl_log->hbuf, sizeof(char)*NI_MAXHOST, NULL, 0, NI_NAMEREQD);
@@ -274,8 +274,8 @@ void *s2cd_pf_block_log(void *arg) {
 	} else
 		strlcpy(pfbl_log->hbuf, S2CD_LANG_DNS_DISABLED, NI_MAXHOST);
 
-	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->local_logip, pfbl_log->hbuf, S2CD_LANG_NOT_PASSLISTED, asctime(localtime(&timebuf)));
-	s2cd_write_file(pfbl_log->local_logfile, pfbl_log->message);
+	sprintf(pfbl_log->message, "%s (%s) %s %s", pfbl_log->logip, pfbl_log->hbuf, S2CD_LANG_NOT_PASSLISTED, asctime(localtime(&timebuf)));
+	s2cd_write_file(pfbl_log->logfile, pfbl_log->message);
 	
 	free(pfbl_log);
 

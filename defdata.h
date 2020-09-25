@@ -216,8 +216,8 @@ struct lnpc_t {
 
 struct pfbl_log_t {
 	char message[BUFSIZ];
-	char local_logip[BUFSIZ];
-	char local_logfile[S2CD_NMBUFSIZ];
+	char logip[BUFSIZ];
+	char logfile[S2CD_NMBUFSIZ];
 	char hbuf[NI_MAXHOST];
 	struct sockaddr sa;
 };
