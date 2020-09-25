@@ -66,10 +66,10 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	};
 
 	struct thread_fm_t *data = (struct thread_fm_t *)arg;
-	char local_fn[S2CD_NMBUFSIZ];
-	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
+	char lfn[S2CD_NMBUFSIZ];
 	struct evdp_t *evdp = NULL;
 	time_t age = S2CD_EXPTIME, last_time = 0, this_time = 0;
+	int fid = 0, fr = 0, pf_reset_check = 0, *fm = NULL;
 
 	if ((evdp = (struct evdp_t *)malloc(sizeof(struct evdp_t))) == NULL) S2CD_MALLOC_ERR;
 	memset((struct evdp_t *)evdp, 0x00, sizeof(struct evdp_t));
@@ -79,12 +79,12 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	fm = data->file_monitor;
 	free(data);
 
-	if (fid == S2CD_ID_AF) strlcpy(local_fn, evdp->loopdata.alertfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_BF) strlcpy(local_fn, evdp->loopdata.bfile, S2CD_NMBUFSIZ);
-	else if (fid == S2CD_ID_PF) strlcpy(local_fn, evdp->loopdata.pfile, S2CD_NMBUFSIZ);
+	if (fid == S2CD_ID_AF) strlcpy(lfn, evdp->loopdata.alertfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_BF) strlcpy(lfn, evdp->loopdata.bfile, S2CD_NMBUFSIZ);
+	else if (fid == S2CD_ID_PF) strlcpy(lfn, evdp->loopdata.pfile, S2CD_NMBUFSIZ);
 	else s2cd_sw_switch_f(S2CD_LANG_ERR_ID, S2CD_LANG_EXIT);
 
-	if (v) s2cd_sw_switch(S2CD_LANG_MON, local_fn);
+	if (v) s2cd_sw_switch(S2CD_LANG_MON, lfn);
 
 	if (fr) {
 		if (evdp->loopdata.t > 0) age = evdp->loopdata.t;
@@ -131,7 +131,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 				}   /* if ((last_time */
 			}   /* if (fr) */
 
-			s2cd_kevent_open(&evdp->trigger, &evdp->loopdata.kq, &evdp->loopdata.fd, local_fn);
+			s2cd_kevent_open(&evdp->trigger, &evdp->loopdata.kq, &evdp->loopdata.fd, lfn);
 			memset((struct kevent *)&evdp->trigger, 0x00, sizeof(struct kevent));
 			if (kevent(evdp->loopdata.kq, NULL, 0, &evdp->trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {

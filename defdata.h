@@ -319,8 +319,8 @@ int s2cd_parse_search_list(char *, struct ulist_head *);
 int s2cd_parse_and_block_bl(char *, struct ulist_head *);
 
 int s2cd_radix_ioctl(int, unsigned long, struct pfioc_table *);
-int s2cd_radix_get_astats(int, struct pfr_astats *, const struct pfr_table *, int);
-int s2cd_radix_del_addrs(int, const struct pfr_table *, struct pfr_addr *, int, int);
+int s2cd_radix_get_astats(int, struct pfioc_table *, struct pfr_astats *, const struct pfr_table *, int);
+int s2cd_radix_del_addrs(int, struct pfioc_table *, const struct pfr_table *, struct pfr_addr *, int, int);
 
 int s2cd_fd_open(char *);
 int s2cd_kevent_read(struct loopdata_t *, struct lineproc_t *, int);
