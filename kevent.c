@@ -61,7 +61,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 	struct evdp_t {
 		struct kevent trigger;
 		struct lpdt_t lpdt;
-		struct lineproc_t lineproc;
+		struct lnpc_t lnpc;
 		struct pftbl_t pftbl;
 		struct stat fstat;
 	};
@@ -95,9 +95,9 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	while (1) {
 		if (fr) {
-			memset((struct lineproc_t *)&evdp->lineproc, 0x00, sizeof(struct lineproc_t));
+			memset((struct lnpc_t *)&evdp->lnpc, 0x00, sizeof(struct lnpc_t));
 
-			if (regcomp(&evdp->lineproc.expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
+			if (regcomp(&evdp->lnpc.expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
 			s2cd_pf_rule_add(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tablename, &evdp->pftbl);
 			if (evdp->lpdt.v) s2cd_sw_switch(S2CD_LANG_CON_EST, "");
@@ -105,12 +105,12 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			pthread_mutex_lock(&fm_mutex);
 
 			if (!evdp->lpdt.W) {
-				s2cd_kevent_plf_reload(&evdp->pftbl, &evdp->lpdt, &evdp->lineproc);
+				s2cd_kevent_plf_reload(&evdp->pftbl, &evdp->lpdt, &evdp->lnpc);
 				pfile_monitor = 0;
 			}   /* if (!evdp->lpdt.W) */
 
 			if (!evdp->lpdt.B) {
-				s2cd_parse_load_file(&evdp->pftbl, &evdp->lpdt, &evdp->lineproc, evdp->lpdt.bfile, &evdp->lpdt.pbhead.phead, NULL, S2CD_ID_BF);
+				s2cd_parse_load_file(&evdp->pftbl, &evdp->lpdt, &evdp->lnpc, evdp->lpdt.bfile, &evdp->lpdt.pbhead.phead, NULL, S2CD_ID_BF);
 				bfile_monitor = 0;
 			}   /* if (!evdp->lpdt.B) */
 
@@ -137,13 +137,13 @@ void *s2cd_kevent_file_monitor(void *arg) {
 			if (kevent(evdp->lpdt.kq, NULL, 0, &evdp->trigger, 1, NULL) == -1) s2cd_sw_switch_f(S2CD_LANG_KE_REQ_ERROR, S2CD_LANG_EXIT);
 			else {
 				if (fr) {
-					if (s2cd_kevent_read(&evdp->lpdt, &evdp->lineproc, evdp->trigger.data) == -1) s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
+					if (s2cd_kevent_read(&evdp->lpdt, &evdp->lnpc, evdp->trigger.data) == -1) s2cd_sw_switch(S2CD_LANG_KE_READ_ERROR, S2CD_LANG_WARN);
 
 					pthread_mutex_lock(&fm_mutex);
 
 					if (pfile_monitor) {
 						if (!evdp->lpdt.W) {
-							s2cd_kevent_plf_reload(&evdp->pftbl, &evdp->lpdt, &evdp->lineproc);
+							s2cd_kevent_plf_reload(&evdp->pftbl, &evdp->lpdt, &evdp->lnpc);
 							if (evdp->lpdt.v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, evdp->lpdt.pfile, S2CD_LANG_RELOAD);
 						}   /* if (!lpdt->W) */
 						pfile_monitor = 0;
@@ -152,7 +152,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 					if (bfile_monitor) {
 						if (!evdp->lpdt.B) {
 							s2cd_pf_tbl_del(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tablename_static, &evdp->pftbl);
-							s2cd_parse_load_file(&evdp->pftbl, &evdp->lpdt, &evdp->lineproc, evdp->lpdt.bfile, &evdp->lpdt.pbhead.phead, NULL, S2CD_ID_BF);
+							s2cd_parse_load_file(&evdp->pftbl, &evdp->lpdt, &evdp->lnpc, evdp->lpdt.bfile, &evdp->lpdt.pbhead.phead, NULL, S2CD_ID_BF);
 							if (evdp->lpdt.v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, evdp->lpdt.bfile, S2CD_LANG_RELOAD);
 						}   /* if (!evdp->lpdt.B) */
 						bfile_monitor = 0;
@@ -213,10 +213,10 @@ void s2cd_kevent_open(struct kevent *change, int *kq, int *fd, char *file) {
 
 }   /* s2cd_kevent_open */
 
-void s2cd_kevent_plf_reload(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lineproc_t *lineproc) {
+void s2cd_kevent_plf_reload(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnpc_t *lnpc) {
 
 	s2cd_parse_and_block_list_clear(&lpdt->pbhead.phead);
-	s2cd_parse_load_pl(pftbl, lpdt, lpdt->pfile, lineproc, &lpdt->pbhead.phead);
+	s2cd_parse_load_pl(pftbl, lpdt, lpdt->pfile, lnpc, &lpdt->pbhead.phead);
 	if (lpdt->v) s2cd_parse_print_list(&lpdt->pbhead.phead);
 
 	return;
@@ -259,22 +259,22 @@ void s2cd_kevent_loop(struct lpdt_t *lpdt) {
 
 }   /* s2cd_kevent_loop */
 
-int s2cd_kevent_read(struct lpdt_t *lpdt, struct lineproc_t *lineproc, int nbytes) {
+int s2cd_kevent_read(struct lpdt_t *lpdt, struct lnpc_t *lnpc, int nbytes) {
 
 	register int i = 0;
 	int r = 0, total = 0;
 
 	do  {
 		for (i = 0; i < BUFSIZ; i++) {
-			if ((r = read(lpdt->fd, &lineproc->cad[i], sizeof(char))) <= 0) return(r);
-			if (lineproc->cad[i] == '\n') {
-				lineproc->cad[i] = '\0';
+			if ((r = read(lpdt->fd, &lnpc->cad[i], sizeof(char))) <= 0) return(r);
+			if (lnpc->cad[i] == '\n') {
+				lnpc->cad[i] = '\0';
 				break;
-			}   /* if (lineproc */
+			}   /* if (lnpc */
 		}   /* for (i */
 
-		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_KE_READ, lineproc->cad);
-		s2cd_parse_and_block(lpdt, lineproc);
+		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_KE_READ, lnpc->cad);
+		s2cd_parse_and_block(lpdt, lnpc);
 		total += i;
 
 	} while (i > 0 && total < nbytes);

@@ -135,11 +135,11 @@ int s2cd_parse_line(char *buf, FILE* pfile) {
 
 }   /* s2cd_parse_line */
 
-int s2cd_parse_priority(int priority, int v, struct lineproc_t *lineproc) {
+int s2cd_parse_priority(int priority, int v, struct lnpc_t *lnpc) {
 
 	register char *p = NULL;
 
-	if ((p = strstr(lineproc->cad, "y: "))) {
+	if ((p = strstr(lnpc->cad, "y: "))) {
 		if (v) {
 			if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %c", S2CD_LANG_PRIO, p[3]);
 			else fprintf(stderr, "%s - %c\n", S2CD_LANG_PRIO, p[3]);
@@ -157,23 +157,23 @@ int s2cd_parse_priority(int priority, int v, struct lineproc_t *lineproc) {
 /* s2cd_parse_ip returns the last ip address regmatched per kevent which should be the 
 ip address we are looking for. */
 
-int s2cd_parse_ip(struct lineproc_t *lineproc) {
+int s2cd_parse_ip(struct lnpc_t *lnpc) {
 
 	int len = 0, i = 0;
 	char *regpos = NULL;
 	regmatch_t rado[S2CD_REGARSIZ];
 
 	memset((regmatch_t*)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
-	regpos = lineproc->cad;
+	regpos = lnpc->cad;
 
-	for (i = 0; (regexec(&lineproc->expr, regpos, S2CD_REGARSIZ, rado, 0) == 0); i++) {
+	for (i = 0; (regexec(&lnpc->expr, regpos, S2CD_REGARSIZ, rado, 0) == 0); i++) {
 
 		len = (rado[0].rm_eo - rado[0].rm_so);
 
 		if (len) {
-			memset((char *)lineproc->ret, 0x00, (BUFSIZ * sizeof(char)));
-			memcpy(lineproc->ret, (regpos + rado[0].rm_so), len);
-			lineproc->ret[len]='\0';
+			memset((char *)lnpc->ret, 0x00, (BUFSIZ * sizeof(char)));
+			memcpy(lnpc->ret, (regpos + rado[0].rm_so), len);
+			lnpc->ret[len]='\0';
 			regpos = (regpos + rado[0].rm_eo);
 			memset((regmatch_t*)rado, 0x00, (S2CD_REGARSIZ * sizeof(regmatch_t)));
 		}   /* if (len) */
@@ -183,21 +183,21 @@ int s2cd_parse_ip(struct lineproc_t *lineproc) {
 
 }   /* s2cd_parse_ip */
 
-void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lineproc_t *lineproc) {
+void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc) {
 
 	int pb_status = 0, threadcheck = 0;
 
-	if (!s2cd_parse_priority(lpdt->priority, lpdt->v, lineproc)) return;
-	if (!s2cd_parse_ip(lineproc)) {
+	if (!s2cd_parse_priority(lpdt->priority, lpdt->v, lnpc)) return;
+	if (!s2cd_parse_ip(lnpc)) {
 		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_NO_REG, S2CD_LANG_WARN);
 		return;
 	}   /* if (!s2cd_parse_ip */
 
 	if (!LIST_EMPTY(&lpdt->pbhead.phead))
-		if (s2cd_parse_search_list(lineproc->ret, &lpdt->pbhead.phead))
+		if (s2cd_parse_search_list(lnpc->ret, &lpdt->pbhead.phead))
 			return;
 
-	if ((pb_status = s2cd_parse_and_block_bl(lpdt->C, lineproc->ret, &lpdt->pbhead.bhead)) == lpdt->repeat_offenses) {
+	if ((pb_status = s2cd_parse_and_block_bl(lpdt->C, lnpc->ret, &lpdt->pbhead.bhead)) == lpdt->repeat_offenses) {
 
 		pthread_mutex_lock(&thr_mutex);
 		s2cd_threads++;
@@ -205,10 +205,10 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lineproc_t *lineproc) {
 		pthread_mutex_unlock(&thr_mutex);
 
 		if (threadcheck < lpdt->thr_max)
-			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lineproc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
+			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lnpc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
-		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lineproc->ret);
-		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
+		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lnpc->ret);
+		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lnpc->ret);
 
 	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
@@ -216,7 +216,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lineproc_t *lineproc) {
 
 }   /* s2cd_parse_and_block */
 
-void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
+void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnpc_t *lnpc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
 	register struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;
@@ -228,25 +228,25 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lin
 
 	flockfile(file);
 
-	while (s2cd_parse_line(lineproc->cad, file)) {
-		if (s2cd_parse_ip(lineproc)) {
+	while (s2cd_parse_line(lnpc->cad, file)) {
+		if (s2cd_parse_ip(lnpc)) {
 
 			if (id == S2CD_ID_PF) {
 				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(lpdt->C, lineproc->ret, ipu2);
+				s2cd_parse_ipu_set(lpdt->C, lnpc->ret, ipu2);
 				LIST_INSERT_AFTER(ipu1, ipu2, elem);
 				ipu1 = ipu2;
 			}   /* if(id == S2CD_ID_PF) */
 
 			if (id == S2CD_ID_BF) {
 				if (!LIST_EMPTY(head))
-					if (s2cd_parse_search_list(lineproc->ret, head)) {
-						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
-						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
+					if (s2cd_parse_search_list(lnpc->ret, head)) {
+						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
+						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
 				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tablename_static, pftbl);
-				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lineproc->ret);
+				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lnpc->ret);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */
@@ -294,7 +294,7 @@ void s2cd_parse_add_list(int C, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 }   /* s2cd_parse_add_list */
 
-void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
+void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile, struct lnpc_t *lnpc, struct ulist_head *head) {
 
 	register struct ipulist *ipu1 = NULL;
 	int fd = 0;
@@ -322,8 +322,8 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile,
 		s2cd_parse_add_list(lpdt->C, ipu1, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
 	}   /* else if (!strcmp */
 
-	if (!lpdt->Z) s2cd_parse_load_file(pftbl, lpdt, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
-	s2cd_parse_load_file(pftbl, lpdt, lineproc, pfile, head, ipu1, S2CD_ID_PF);
+	if (!lpdt->Z) s2cd_parse_load_file(pftbl, lpdt, lnpc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
+	s2cd_parse_load_file(pftbl, lpdt, lnpc, pfile, head, ipu1, S2CD_ID_PF);
 
 	return;
 
