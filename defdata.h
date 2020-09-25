@@ -222,7 +222,7 @@ struct pfbl_log_t {
 	struct sockaddr sa;
 };
 
-struct loopdata_t {
+struct lpdt_t {
 	int v;
 	int B;
 	int C;
@@ -253,7 +253,7 @@ struct thread_fm_t {
 	int fid;
         int fileread;
         int *file_monitor;
-        struct loopdata_t loopdata;
+        struct lpdt_t lpdt;
 };
 
 /* Global Vars Decs */
@@ -276,17 +276,17 @@ void s2cd_usage();
 void s2cd_sighandle();
 void s2cd_pre_exit();
 void s2cd_exit_fail();
-void s2cd_init(struct loopdata_t *);
-void s2cd_pre_init(struct loopdata_t *);
-void s2cd_daemonize(struct loopdata_t *);
-void s2cd_thr_init(struct loopdata_t *);
+void s2cd_init(struct lpdt_t *);
+void s2cd_pre_init(struct lpdt_t *);
+void s2cd_daemonize(struct lpdt_t *);
+void s2cd_thr_init(struct lpdt_t *);
 void s2cd_sw_switch(char *, char *);
 void s2cd_sw_switch_f(char *, char *);
 void s2cd_sw_switch_e(char *, char *, char *);
 void s2cd_sw_switch_ef(char *, char *, char *);
-void s2cd_get_optargs(int, char **, struct loopdata_t *);
-int s2cd_spawn_file_monitor(int *, int, int, struct loopdata_t *);
-int s2cd_spawn_expiretable(struct loopdata_t *);
+void s2cd_get_optargs(int, char **, struct lpdt_t *);
+int s2cd_spawn_file_monitor(int *, int, int, struct lpdt_t *);
+int s2cd_spawn_expiretable(struct lpdt_t *);
 int s2cd_spawn_block_log(int, int, char *, char *);
 int s2cd_spawn_thread(void *(*) (void *), void *);
 int s2cd_fd_open(char *);
@@ -310,11 +310,11 @@ void s2cd_parse_ipu_set(int, char *, struct ipulist *);
 void s2cd_parse_add_list(int, struct ipulist *, struct ifaddrs *);
 void s2cd_parse_and_block_list_clear(struct ulist_head *);
 void s2cd_parse_and_block_list_timeout(time_t, time_t, struct ulist_head *);
-void s2cd_parse_and_block(struct loopdata_t *, struct lineproc_t *);
+void s2cd_parse_and_block(struct lpdt_t *, struct lineproc_t *);
 void s2cd_parse_load_bl_static(int, struct lineproc_t *, char*, char *, struct ulist_head *);
-void s2cd_parse_load_file(struct pftbl_t *pftbl, struct loopdata_t *, struct lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
+void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *, struct lineproc_t *, char *, struct ulist_head *, struct ipulist *, int);
 void s2cd_parse_load_ifaces(int, struct ipulist *);
-void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *, char *, struct lineproc_t *, struct ulist_head *);
+void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *, char *, struct lineproc_t *, struct ulist_head *);
 void s2cd_parse_print_list(struct ulist_head *);
 int s2cd_parse_search_list(char *, struct ulist_head *);
 int s2cd_parse_and_block_bl(int, char *, struct ulist_head *);
@@ -323,10 +323,10 @@ int s2cd_parse_line(char *, FILE *);
 int s2cd_radix_ioctl(int, int, unsigned long, struct pfioc_table *);
 int s2cd_radix_get_astats(int, int, struct pfioc_table *, struct pfr_astats *, const struct pfr_table *, int);
 int s2cd_radix_del_addrs(int, int, struct pfioc_table *, const struct pfr_table *, struct pfr_addr *, int, int);
-int s2cd_kevent_read(struct loopdata_t *, struct lineproc_t *, int);
+int s2cd_kevent_read(struct lpdt_t *, struct lineproc_t *, int);
 void s2cd_kevent_open(struct kevent *, int *, int *, char *);
-void s2cd_kevent_plf_reload(struct pftbl_t *, struct loopdata_t *, struct lineproc_t *);
-void s2cd_kevent_loop(struct loopdata_t *);
+void s2cd_kevent_plf_reload(struct pftbl_t *, struct lpdt_t *, struct lineproc_t *);
+void s2cd_kevent_loop(struct lpdt_t *);
 void *s2cd_kevent_file_monitor(void *arg);
 
 #endif /* _DEFDATA_H */

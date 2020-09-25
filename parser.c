@@ -183,32 +183,32 @@ int s2cd_parse_ip(struct lineproc_t *lineproc) {
 
 }   /* s2cd_parse_ip */
 
-void s2cd_parse_and_block(struct loopdata_t *loopdata, struct lineproc_t *lineproc) {
+void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lineproc_t *lineproc) {
 
 	int pb_status = 0, threadcheck = 0;
 
-	if (!s2cd_parse_priority(loopdata->priority, loopdata->v, lineproc)) return;
+	if (!s2cd_parse_priority(lpdt->priority, lpdt->v, lineproc)) return;
 	if (!s2cd_parse_ip(lineproc)) {
-		if (loopdata->v) s2cd_sw_switch(S2CD_LANG_NO_REG, S2CD_LANG_WARN);
+		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_NO_REG, S2CD_LANG_WARN);
 		return;
 	}   /* if (!s2cd_parse_ip */
 
-	if (!LIST_EMPTY(&loopdata->pbhead.phead))
-		if (s2cd_parse_search_list(lineproc->ret, &loopdata->pbhead.phead))
+	if (!LIST_EMPTY(&lpdt->pbhead.phead))
+		if (s2cd_parse_search_list(lineproc->ret, &lpdt->pbhead.phead))
 			return;
 
-	if ((pb_status = s2cd_parse_and_block_bl(loopdata->C, lineproc->ret, &loopdata->pbhead.bhead)) == loopdata->repeat_offenses) {
+	if ((pb_status = s2cd_parse_and_block_bl(lpdt->C, lineproc->ret, &lpdt->pbhead.bhead)) == lpdt->repeat_offenses) {
 
 		pthread_mutex_lock(&thr_mutex);
 		s2cd_threads++;
 		threadcheck = s2cd_threads;
 		pthread_mutex_unlock(&thr_mutex);
 
-		if (threadcheck < loopdata->thr_max)
-			if (s2cd_spawn_block_log(loopdata->C, loopdata->D, lineproc->ret, loopdata->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
+		if (threadcheck < lpdt->thr_max)
+			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lineproc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
-		s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->tablename, lineproc->ret);
-		if (loopdata->v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
+		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lineproc->ret);
+		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lineproc->ret);
 
 	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
@@ -216,7 +216,7 @@ void s2cd_parse_and_block(struct loopdata_t *loopdata, struct lineproc_t *linepr
 
 }   /* s2cd_parse_and_block */
 
-void s2cd_parse_load_file(struct pftbl_t *pftbl, struct loopdata_t *loopdata, struct lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
+void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lineproc_t *lineproc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
 	register struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;
@@ -233,7 +233,7 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct loopdata_t *loopdata, st
 
 			if (id == S2CD_ID_PF) {
 				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(loopdata->C, lineproc->ret, ipu2);
+				s2cd_parse_ipu_set(lpdt->C, lineproc->ret, ipu2);
 				LIST_INSERT_AFTER(ipu1, ipu2, elem);
 				ipu1 = ipu2;
 			}   /* if(id == S2CD_ID_PF) */
@@ -245,8 +245,8 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct loopdata_t *loopdata, st
 						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lineproc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
-				s2cd_pf_rule_add(loopdata->dev, loopdata->v, loopdata->tablename_static, pftbl);
-				s2cd_pf_block(loopdata->dev, loopdata->v, loopdata->tablename_static, lineproc->ret);
+				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tablename_static, pftbl);
+				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lineproc->ret);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */
@@ -294,7 +294,7 @@ void s2cd_parse_add_list(int C, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 }   /* s2cd_parse_add_list */
 
-void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *loopdata, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
+void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile, struct lineproc_t *lineproc, struct ulist_head *head) {
 
 	register struct ipulist *ipu1 = NULL;
 	int fd = 0;
@@ -306,24 +306,24 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct loopdata_t *loopdata, char
 	LIST_INIT(head);
 	LIST_INSERT_HEAD(head, ipu1, elem);
 
-	if (!strcmp(loopdata->extif, "all")) s2cd_parse_load_ifaces(loopdata->C, ipu1);
+	if (!strcmp(lpdt->extif, "all")) s2cd_parse_load_ifaces(lpdt->C, ipu1);
 	else {
 
 		memset((struct ifreq *)&pftbl->ifr, 0x00, sizeof(struct ifreq));
 		
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		pftbl->ifr.ifr_addr.sa_family = AF_INET;
-		strlcpy(pftbl->ifr.ifr_name, loopdata->extif, IFNAMSIZ);
+		strlcpy(pftbl->ifr.ifr_name, lpdt->extif, IFNAMSIZ);
 
-		if (s2cd_pf_ioctl(fd, loopdata->v, SIOCGIFADDR, &pftbl->ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, loopdata->extif, S2CD_LANG_EXIT);
+		if (s2cd_pf_ioctl(fd, lpdt->v, SIOCGIFADDR, &pftbl->ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, lpdt->extif, S2CD_LANG_EXIT);
 
 		close(fd);
 
-		s2cd_parse_add_list(loopdata->C, ipu1, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
+		s2cd_parse_add_list(lpdt->C, ipu1, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
 	}   /* else if (!strcmp */
 
-	if (!loopdata->Z) s2cd_parse_load_file(pftbl, loopdata, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
-	s2cd_parse_load_file(pftbl, loopdata, lineproc, pfile, head, ipu1, S2CD_ID_PF);
+	if (!lpdt->Z) s2cd_parse_load_file(pftbl, lpdt, lineproc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
+	s2cd_parse_load_file(pftbl, lpdt, lineproc, pfile, head, ipu1, S2CD_ID_PF);
 
 	return;
 

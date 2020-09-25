@@ -144,19 +144,19 @@ void s2cd_mutex_init() {
 
 }   /* s2cd_mutex_init */
 
-void s2cd_thr_init(struct loopdata_t *loopdata) {
+void s2cd_thr_init(struct lpdt_t *lpdt) {
 
-	if (loopdata->v) {
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_PRIB, loopdata->priority);
-		else fprintf(stderr, "%s - %d\n", S2CD_LANG_PRIB, loopdata->priority);
-		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_THRS, loopdata->thr_max);
-		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, loopdata->thr_max);
-	}   /* if (loopdata->v) */
+	if (lpdt->v) {
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_PRIB, lpdt->priority);
+		else fprintf(stderr, "%s - %d\n", S2CD_LANG_PRIB, lpdt->priority);
+		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_THRS, lpdt->thr_max);
+		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, lpdt->thr_max);
+	}   /* if (lpdt->v) */
 
-	if (s2cd_spawn_expiretable(loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	if (s2cd_spawn_expiretable(lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else return;
 
 	s2cd_exit_fail();
@@ -165,7 +165,7 @@ void s2cd_thr_init(struct loopdata_t *loopdata) {
 
 }   /* s2cd_thr_init */
 
-int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, struct loopdata_t *loopdata) {
+int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, struct lpdt_t *lpdt) {
 
 	struct thread_fm_t *fm_data = NULL;
 
@@ -175,26 +175,26 @@ int s2cd_spawn_file_monitor(int *notifaddr, int fileread, int fid, struct loopda
 	fm_data->file_monitor = notifaddr;
 	fm_data->fileread = fileread;
 	fm_data->fid = fid;
-	memcpy(&fm_data->loopdata, loopdata, sizeof(struct loopdata_t));
+	memcpy(&fm_data->lpdt, lpdt, sizeof(struct lpdt_t));
 
 	return(s2cd_spawn_thread(s2cd_kevent_file_monitor, fm_data));
 
 }   /* s2cd_spawn_file_monitor */
 
-int s2cd_spawn_expiretable(struct loopdata_t *loopdata) {
+int s2cd_spawn_expiretable(struct lpdt_t *lpdt) {
 
 	struct thread_expt_t *expt_data = NULL;
 
 	if ((expt_data = (struct thread_expt_t *)malloc(sizeof(struct thread_expt_t))) == NULL) S2CD_MALLOC_ERR;
 	memset((struct thread_expt_t *)expt_data, 0x00, sizeof(struct thread_expt_t));
 
-	expt_data->t = loopdata->t;
-	expt_data->v = loopdata->v;
-	expt_data->C = loopdata->C;
-	expt_data->dev = loopdata->dev;
-	strlcpy(expt_data->logfile, loopdata->logfile, S2CD_NMBUFSIZ);
-	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, S2CD_NMBUFSIZ);
-	strlcpy(expt_data->tablename, loopdata->tablename, PF_TABLE_NAME_SIZE);
+	expt_data->t = lpdt->t;
+	expt_data->v = lpdt->v;
+	expt_data->C = lpdt->C;
+	expt_data->dev = lpdt->dev;
+	strlcpy(expt_data->logfile, lpdt->logfile, S2CD_NMBUFSIZ);
+	strlcpy(expt_data->nmpfdev, lpdt->nmpfdev, S2CD_NMBUFSIZ);
+	strlcpy(expt_data->tablename, lpdt->tablename, PF_TABLE_NAME_SIZE);
 
 	return(s2cd_spawn_thread(s2cd_pf_expiretable, expt_data));
 
