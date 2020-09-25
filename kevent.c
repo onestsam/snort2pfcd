@@ -63,6 +63,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 		struct loopdata_t loopdata;
 		struct lineproc_t lineproc;
 		struct pftbl_t pftbl;
+		struct stat fstat;
 	};
 
 	struct thread_fm_t *data = (struct thread_fm_t *)arg;
@@ -88,8 +89,8 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 	if (fr) {
 		if (evdp->loopdata.t > 0) age = evdp->loopdata.t;
-		if (!evdp->loopdata.W) s2cd_check_file(evdp->loopdata.pfile);
-		if (!evdp->loopdata.B) s2cd_check_file(evdp->loopdata.bfile);
+		if (!evdp->loopdata.W) s2cd_check_file(evdp->loopdata.pfile, &evdp->fstat);
+		if (!evdp->loopdata.B) s2cd_check_file(evdp->loopdata.bfile, &evdp->fstat);
 	}   /* if (fr) */
 
 	while (1) {

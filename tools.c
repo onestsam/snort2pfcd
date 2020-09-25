@@ -93,17 +93,12 @@ void s2cd_sw_switch_ef(char *lsw, char *lvar, char *lsw2) {
 
 }   /* s2cd_sw_switch_ef */
 
-void s2cd_check_file(char *namefile) {
+void s2cd_check_file(char *namefile, struct stat *info) {
 
-	struct stat *info = NULL;
-
-	if ((info = (struct stat *)malloc(sizeof(struct stat))) == NULL) S2CD_MALLOC_ERR;
 	memset((struct stat *)info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
 	if (info->st_mode & S_IFDIR) s2cd_sw_switch_ef(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
-
-	free(info);
 
 	return;
 

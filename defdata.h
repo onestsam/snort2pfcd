@@ -288,7 +288,7 @@ int s2cd_spawn_block_log(int, char *, char *);
 int s2cd_spawn_thread(void *(*) (void *), void *);
 void s2cd_mutex_init();
 void s2cd_mutex_destroy();
-void s2cd_check_file(char *);
+void s2cd_check_file(char *, struct stat *);
 void s2cd_write_file(char *, char *);
 void s2cd_pftbl_set(char *, struct pftbl_t *);
 time_t s2cd_lmin(time_t, time_t);
