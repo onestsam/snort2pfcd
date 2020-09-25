@@ -146,12 +146,12 @@ void s2cd_mutex_init() {
 
 void s2cd_thr_init(struct loopdata_t *loopdata) {
 
-	if (v) {
+	if (loopdata->v) {
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_PRIB, loopdata->priority);
 		else fprintf(stderr, "%s - %d\n", S2CD_LANG_PRIB, loopdata->priority);
 		if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %d", S2CD_LANG_THRS, loopdata->thr_max);
 		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, loopdata->thr_max);
-	}   /* if (v) */
+	}   /* if (loopdata->v) */
 
 	if (s2cd_spawn_expiretable(loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, loopdata)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
@@ -189,6 +189,8 @@ int s2cd_spawn_expiretable(struct loopdata_t *loopdata) {
 	memset((struct thread_expt_t *)expt_data, 0x00, sizeof(struct thread_expt_t));
 
 	expt_data->t = loopdata->t;
+	expt_data->v = loopdata->v;
+	expt_data->C = loopdata->C;
 	expt_data->dev = loopdata->dev;
 	strlcpy(expt_data->logfile, loopdata->logfile, S2CD_NMBUFSIZ);
 	strlcpy(expt_data->nmpfdev, loopdata->nmpfdev, S2CD_NMBUFSIZ);
@@ -198,13 +200,14 @@ int s2cd_spawn_expiretable(struct loopdata_t *loopdata) {
 
 }   /* s2cd_spawn_expiretable */
 
-int s2cd_spawn_block_log(int D, char *logip, char *logfile) {
+int s2cd_spawn_block_log(int C, int D, char *logip, char *logfile) {
 
 	struct thread_log_t *log_data = NULL;
 
 	if ((log_data = (struct thread_log_t *)malloc(sizeof(struct thread_log_t))) == NULL) S2CD_MALLOC_ERR;
 	memset((struct thread_log_t *)log_data, 0x00, sizeof(struct thread_log_t));
 
+	log_data->C = C;
 	log_data->D = D;
 	strlcpy(log_data->logfile, logfile, S2CD_NMBUFSIZ);
 	strlcpy(log_data->logip, logip, BUFSIZ);
@@ -265,7 +268,7 @@ void s2cd_mutex_destroy() {
 		s2cd_threads_check = s2cd_threads;
 		pthread_mutex_unlock(&thr_mutex);
 		if (s2cd_threads_check > S2CD_BASE_THR) {
-			if (v) s2cd_sw_switch(S2CD_LANG_THR_WAIT, "");
+			s2cd_sw_switch(S2CD_LANG_THR_WAIT, "");
 			sleep(5);
 		}   /* if (s2cd_threads_check */
 	}   /* while (s2cd_threads_check */

@@ -58,8 +58,6 @@
 
 /* Global Vars Init */
 struct pidfh *pfh = NULL;
-int v = 0;
-int C = 0;
 int F = 0;
 int pf_reset = 0;
 int s2cd_threads = 1;
@@ -116,7 +114,7 @@ void s2cd_init(struct loopdata_t *loopdata) {
 
 	struct stat flstat;
 
-	if (!C) loopdata->timebuf = time(NULL);
+	if (!loopdata->C) loopdata->timebuf = time(NULL);
 	else loopdata->timebuf = 0;
 
 	memset((struct stat *)&flstat, 0x00, sizeof(struct stat));
@@ -175,13 +173,13 @@ void s2cd_get_optargs(int argc, char **argv, struct loopdata_t *loopdata) {
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
-			case 'v': v = 1; break;
 			case 'F': F = 1; break;
-			case 'C': C = 1; F = 1; break;
+			case 'v': loopdata->v = 1; break;
 			case 'W': loopdata->W = 1; break;
 			case 'B': loopdata->B = 1; break;
 			case 'D': loopdata->D = 1; break;
 			case 'Z': loopdata->Z = 1; break;
+			case 'C': loopdata->C = 1; F = 1; break;
 			case 'd': strlcpy(loopdata->nmpfdev, optarg, S2CD_NMBUFSIZ); d = 1; break;
 			case 'a': strlcpy(loopdata->alertfile, optarg, S2CD_NMBUFSIZ); a = 1; break;
 			case 'w': strlcpy(loopdata->pfile, optarg, S2CD_NMBUFSIZ); w = 1; break;
