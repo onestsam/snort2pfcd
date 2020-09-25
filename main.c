@@ -113,15 +113,16 @@ void s2cd_pre_init(struct lpdt_t *lpdt) {
 void s2cd_init(struct lpdt_t *lpdt) {
 
 	struct stat flstat;
+	char randbuf[BUFSIZ];
 
 	if (!lpdt->C) lpdt->timebuf = time(NULL);
 	else lpdt->timebuf = 0;
 
 	memset((struct stat *)&flstat, 0x00, sizeof(struct stat));
 	s2cd_check_file(lpdt->logfile, &flstat);
-	memset((char *)lpdt->randombuf, 0x00, BUFSIZ);
-	sprintf(lpdt->randombuf, "\n<=== %s %s %s \n", lpdt->tablename, S2CD_LANG_START, asctime(localtime(&lpdt->timebuf)));
-	s2cd_write_file(lpdt->logfile, lpdt->randombuf);
+	memset((char *)randbuf, 0x00, BUFSIZ);
+	sprintf(randbuf, "\n<=== %s %s %s \n", lpdt->tablename, S2CD_LANG_START, asctime(localtime(&lpdt->timebuf)));
+	s2cd_write_file(lpdt->logfile, randbuf);
 
 	if (!F) {
 		openlog(lpdt->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
@@ -144,14 +145,15 @@ void s2cd_init(struct lpdt_t *lpdt) {
 void s2cd_daemonize(struct lpdt_t *lpdt) {
 
 	pid_t otherpid;
+	char randbuf[BUFSIZ];
 
 	memset((pid_t *)&otherpid, 0x00, sizeof(pid_t));
-	memset((char *)lpdt->randombuf, 0x00, BUFSIZ);
-	strlcpy(lpdt->randombuf, S2CD_PATH_RUN, BUFSIZ);
-	strlcat(lpdt->randombuf,  __progname, BUFSIZ);
-	strlcat(lpdt->randombuf, ".pid", BUFSIZ);
+	memset((char *)randbuf, 0x00, BUFSIZ);
+	strlcpy(randbuf, S2CD_PATH_RUN, BUFSIZ);
+	strlcat(randbuf,  __progname, BUFSIZ);
+	strlcat(randbuf, ".pid", BUFSIZ);
 
-	if ((pfh = pidfile_open(lpdt->randombuf, 0600, &otherpid)) == NULL)
+	if ((pfh = pidfile_open(randbuf, 0600, &otherpid)) == NULL)
 		fprintf(stderr, "%s\n", S2CD_LANG_NO_PID);
 
 	if (daemon(0, 0) == -1) {

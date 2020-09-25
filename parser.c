@@ -183,7 +183,7 @@ int s2cd_parse_ip(struct lnpc_t *lnpc) {
 
 }   /* s2cd_parse_ip */
 
-void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc) {
+void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc, struct pftbl_t *pftbl) {
 
 	int pb_status = 0, threadcheck = 0;
 
@@ -207,7 +207,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc) {
 		if (threadcheck < lpdt->thr_max)
 			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lnpc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
-		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lnpc->ret);
+		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lnpc->ret, pftbl);
 		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lnpc->ret);
 
 	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
@@ -246,7 +246,7 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 					}   /* if (s2cd_parse_search_list */
 
 				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tablename_static, pftbl);
-				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lnpc->ret);
+				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lnpc->ret, pftbl);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */

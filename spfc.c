@@ -197,24 +197,22 @@ int s2cd_radix_del_addrs(int dev, int v, struct pfioc_table *pt, const struct pf
 
 }   /* s2cd_radix_del_addrs */
 
-void s2cd_pf_block(int dev, int v, char *tablename, char *ip)  {
+void s2cd_pf_block(int dev, int v, char *tablename, char *ip, struct pftbl_t *pftbl)  {
 
-	struct pftbl_t pftbl;
-
-	memset((struct pftbl_t *)&pftbl, 0x00, sizeof(struct pftbl_t));
+	memset((struct pftbl_t *)pftbl, 0x00, sizeof(struct pftbl_t));
 	
-	strlcpy(pftbl.table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
-	inet_aton(ip, (struct in_addr *)&pftbl.addr.pfra_ip4addr.s_addr);
+	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	inet_aton(ip, (struct in_addr *)&pftbl->addr.pfra_ip4addr.s_addr);
 
-	pftbl.addr.pfra_af  = AF_INET;
-	pftbl.addr.pfra_net = 32; 
+	pftbl->addr.pfra_af  = AF_INET;
+	pftbl->addr.pfra_net = 32; 
 
-	pftbl.io.pfrio_table  = pftbl.table; 
-	pftbl.io.pfrio_buffer = &pftbl.addr; 
-	pftbl.io.pfrio_esize  = sizeof(struct pfr_addr); 
-	pftbl.io.pfrio_size   = 1;
+	pftbl->io.pfrio_table  = pftbl->table; 
+	pftbl->io.pfrio_buffer = &pftbl->addr; 
+	pftbl->io.pfrio_esize  = sizeof(struct pfr_addr); 
+	pftbl->io.pfrio_size   = 1;
 
-	if (s2cd_pf_ioctl(dev, v, DIOCRADDADDRS, &pftbl.io) < 0)
+	if (s2cd_pf_ioctl(dev, v, DIOCRADDADDRS, &pftbl->io) < 0)
 	if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, "s2cd_pf_block");
 
 	return;
