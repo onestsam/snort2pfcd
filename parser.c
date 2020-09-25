@@ -216,7 +216,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc) {
 
 }   /* s2cd_parse_and_block */
 
-void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnpc_t *lnpc, char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
+void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnpc_t *lnpc, const char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
 	register struct ipulist *ipu2 = NULL;
 	FILE *file = NULL;

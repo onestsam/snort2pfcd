@@ -169,7 +169,7 @@ void s2cd_get_optargs(int argc, char **argv, struct lpdt_t *lpdt) {
 
 	extern char *optarg;
 	extern int optind;
-	unsigned int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
+	int ch = 0, w = 0, b = 0, a = 0, l = 0, e = 0, d = 0, q = 0;
 
 	while ((ch = getopt(argc, argv, "w:p:q:m:r:vWCDFBZb:a:l:e:t:d:h")) != -1)
 		switch(ch) {
@@ -191,8 +191,8 @@ void s2cd_get_optargs(int argc, char **argv, struct lpdt_t *lpdt) {
 			case 'm': if (!(lpdt->thr_max = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'r': if (!(lpdt->repeat_offenses = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
 			case 'q': if (!(q = (int)strtol(optarg,NULL,0))) s2cd_usage(); break;
-			case 'h': s2cd_usage();
-			case '?': s2cd_usage();
+			case 'h': s2cd_usage(); break;
+			case '?': s2cd_usage(); break;
 			default: s2cd_usage();
 		}   /* switch(ch) */
 

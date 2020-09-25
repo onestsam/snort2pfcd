@@ -133,7 +133,7 @@ void *s2cd_pf_expiretable(void *arg) {
 
 int s2cd_radix_ioctl(int dev, int v, unsigned long request, struct pfioc_table *pt) {
 	void *newinbuf;
-	size_t len = 0;
+	int len = 0;
 	pt->pfrio_buffer = newinbuf = malloc(0);
 
 	if (newinbuf == NULL) S2CD_MALLOC_ERR;

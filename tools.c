@@ -57,7 +57,7 @@
 #include "defdata.h"
 #include "version.h"
 
-void s2cd_sw_switch(char *lsw, char *lvar) {
+void s2cd_sw_switch(const char *lsw, const char *lvar) {
 
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", lsw, lvar);
 	else fprintf(stderr, "%s - %s\n", lsw, lvar);
@@ -66,7 +66,7 @@ void s2cd_sw_switch(char *lsw, char *lvar) {
 
 }   /* s2cd_sw_switch */
 
-void s2cd_sw_switch_f(char *lsw, char *lvar) {
+void s2cd_sw_switch_f(const char *lsw, const char *lvar) {
 
 	s2cd_sw_switch(lsw, lvar);
 	s2cd_exit_fail();
@@ -75,7 +75,7 @@ void s2cd_sw_switch_f(char *lsw, char *lvar) {
 
 }   /* s2cd_sw_switch */
 
-void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
+void s2cd_sw_switch_e(const char *lsw, const char *lvar, const char *lsw2) {
 
 	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", lsw, lvar, lsw2);
 	else fprintf(stderr, "%s %s - %s\n", lsw, lvar, lsw2);
@@ -84,7 +84,7 @@ void s2cd_sw_switch_e(char *lsw, char *lvar, char *lsw2) {
 
 }   /* s2cd_sw_switch_e */
 
-void s2cd_sw_switch_ef(char *lsw, char *lvar, char *lsw2) {
+void s2cd_sw_switch_ef(const char *lsw, const char *lvar, const char *lsw2) {
 
 	s2cd_sw_switch_e(lsw, lvar, lsw2);
 	s2cd_exit_fail();
@@ -104,7 +104,7 @@ void s2cd_check_file(char *namefile, struct stat *info) {
 
 }   /* s2cd_check_file */
 
-void s2cd_write_file(char *namefile, char *message) {
+void s2cd_write_file(char *namefile, const char *message) {
 
 	FILE *lfile = NULL;
 
