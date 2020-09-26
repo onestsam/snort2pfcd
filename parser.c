@@ -61,9 +61,7 @@ int s2cd_parse_and_block_bl(int C, char *ret, struct ulist_head *head) {
 	register struct ipulist *aux2 = NULL, *ipu = NULL;
 
 	if (head->lh_first == NULL){
-		if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-
-		s2cd_parse_ipu_set(C, ret, ipu);
+		S2CD_IPU_INIT;
 		LIST_INIT(head);
 		LIST_INSERT_HEAD(head, ipu, elem);
 		return(0);
@@ -74,8 +72,7 @@ int s2cd_parse_and_block_bl(int C, char *ret, struct ulist_head *head) {
 				aux2->repeat_offenses++;
 				return(aux2->repeat_offenses);
 			} else if (!aux2->elem.le_next) {
-				if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(C, ret, ipu);
+				S2CD_IPU_INIT;
 				LIST_INSERT_AFTER(aux2, ipu, elem);
 				return(0);
 			}   /* else if (!aux2 */
@@ -218,7 +215,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc, struct pftbl
 
 void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnpc_t *lnpc, const char *ufile, struct ulist_head *head, struct ipulist *ipu1, int id) {
 
-	register struct ipulist *ipu2 = NULL;
+	register struct ipulist *ipu = NULL;
 	FILE *file = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
@@ -232,10 +229,10 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 		if (s2cd_parse_ip(lnpc)) {
 
 			if (id == S2CD_ID_PF) {
-				if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-				s2cd_parse_ipu_set(lpdt->C, lnpc->ret, ipu2);
-				LIST_INSERT_AFTER(ipu1, ipu2, elem);
-				ipu1 = ipu2;
+				if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+				s2cd_parse_ipu_set(lpdt->C, lnpc->ret, ipu);
+				LIST_INSERT_AFTER(ipu1, ipu, elem);
+				ipu1 = ipu;
 			}   /* if(id == S2CD_ID_PF) */
 
 			if (id == S2CD_ID_BF) {
@@ -258,7 +255,7 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 
 }   /* s2cd_parse_load_file */
 
-void s2cd_parse_load_ifaces(int C, struct ipulist *ipu1) {
+void s2cd_parse_load_ifaces(int C, struct ipulist *ipu) {
 
 	struct ifaddrs *ifaddr = NULL;
 	register struct ifaddrs *ifa = NULL;
@@ -268,7 +265,7 @@ void s2cd_parse_load_ifaces(int C, struct ipulist *ipu1) {
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
 		if ((ifa->ifa_addr)->sa_family == AF_INET)
-			s2cd_parse_add_list(C, ipu1, ifa);
+			s2cd_parse_add_list(C, ipu, ifa);
 	}   /* for (ifa */
 
 	freeifaddrs(ifaddr);
@@ -279,16 +276,14 @@ void s2cd_parse_load_ifaces(int C, struct ipulist *ipu1) {
 
 void s2cd_parse_add_list(int C, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
-	register struct ipulist *ipu2 = NULL;
+	register struct ipulist *ipu = NULL;
 	char ret[BUFSIZ];
 
-	if ((ipu2 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-
 	inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, ret, INET_ADDRSTRLEN);
-	s2cd_parse_ipu_set(C, ret, ipu2);
 
-	LIST_INSERT_AFTER(ipu1, ipu2, elem);
-	ipu1 = ipu2;
+	S2CD_IPU_INIT;
+	LIST_INSERT_AFTER(ipu1, ipu, elem);
+	ipu1 = ipu;
 
 	return;
 
@@ -296,17 +291,17 @@ void s2cd_parse_add_list(int C, struct ipulist *ipu1, struct ifaddrs *ifa) {
 
 void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile, struct lnpc_t *lnpc, struct ulist_head *head) {
 
-	register struct ipulist *ipu1 = NULL;
+	register struct ipulist *ipu = NULL;
 	int fd = 0;
 
-	if ((ipu1 = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
-	memset((struct ipulist *)ipu1, 0x00, sizeof(struct ipulist));
+	if ((ipu = (struct ipulist *)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR;
+	memset((struct ipulist *)ipu, 0x00, sizeof(struct ipulist));
 
-	ipu1->ciaddr = *cidr_from_str("127.0.0.0/8");
+	ipu->ciaddr = *cidr_from_str("127.0.0.0/8");
 	LIST_INIT(head);
-	LIST_INSERT_HEAD(head, ipu1, elem);
+	LIST_INSERT_HEAD(head, ipu, elem);
 
-	if (!strcmp(lpdt->extif, "all")) s2cd_parse_load_ifaces(lpdt->C, ipu1);
+	if (!strcmp(lpdt->extif, "all")) s2cd_parse_load_ifaces(lpdt->C, ipu);
 	else {
 
 		memset((struct ifreq *)&pftbl->ifr, 0x00, sizeof(struct ifreq));
@@ -319,11 +314,11 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile,
 
 		close(fd);
 
-		s2cd_parse_add_list(lpdt->C, ipu1, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
+		s2cd_parse_add_list(lpdt->C, ipu, (struct ifaddrs *)&pftbl->ifr.ifr_addr);
 	}   /* else if (!strcmp */
 
-	if (!lpdt->Z) s2cd_parse_load_file(pftbl, lpdt, lnpc, S2CD_PATH_RESOLV, head, ipu1, S2CD_ID_PF);
-	s2cd_parse_load_file(pftbl, lpdt, lnpc, pfile, head, ipu1, S2CD_ID_PF);
+	if (!lpdt->Z) s2cd_parse_load_file(pftbl, lpdt, lnpc, S2CD_PATH_RESOLV, head, ipu, S2CD_ID_PF);
+	s2cd_parse_load_file(pftbl, lpdt, lnpc, pfile, head, ipu, S2CD_ID_PF);
 
 	return;
 

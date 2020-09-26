@@ -107,6 +107,7 @@
 #define S2CD_PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
 #define S2CD_PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blocklist"
 #define S2CD_MALLOC_ERR			s2cd_sw_switch_f(S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT)
+#define S2CD_IPU_INIT			if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR; s2cd_parse_ipu_set(C, ret, ipu)
 #define S2CD_OPTIONS			"[-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]"
 #define S2CD_REG_ADDR 			"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
 					/* Regexp modified from https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp */
