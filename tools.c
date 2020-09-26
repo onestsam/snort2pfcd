@@ -224,8 +224,7 @@ int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 		pthread_attr_t attr;
 	};
 
-	struct twisted_t yarn;
- 
+	struct twisted_t yarn; 
 	memset((struct twisted_t *)&yarn, 0x00, sizeof(struct twisted_t));
  
 	if (pthread_attr_init(&yarn.attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
