@@ -194,7 +194,7 @@ int s2cd_spawn_expiretable(struct lpdt_t *lpdt) {
 	expt_data->dev = lpdt->dev;
 	strlcpy(expt_data->logfile, lpdt->logfile, S2CD_NMBUFSIZ);
 	strlcpy(expt_data->nmpfdev, lpdt->nmpfdev, S2CD_NMBUFSIZ);
-	strlcpy(expt_data->tablename, lpdt->tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(expt_data->tblnm, lpdt->tblnm, PF_TABLE_NAME_SIZE);
 
 	return(s2cd_spawn_thread(s2cd_pf_expiretable, expt_data));
 

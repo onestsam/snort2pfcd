@@ -68,17 +68,17 @@ void *s2cd_pf_expiretable(void *arg) {
 
 	int astats_count = 0, del_addrs_count = 0, flags = PFR_FLAG_FEEDBACK, dev = 0, C = 0, v = 0, i = 0;
 	time_t age = S2CD_EXPTIME, min_timestamp = 0, oldest_entry = 0;
-	char tablename[PF_TABLE_NAME_SIZE];
+	char tblnm[PF_TABLE_NAME_SIZE];
 	char nmpfdev[S2CD_NMBUFSIZ];
 	struct exst_t *exst = NULL;
 	struct thread_expt_t *data = (struct thread_expt_t *)arg;
 
 	if ((exst = (struct exst_t *)malloc(sizeof(struct exst_t))) == NULL) S2CD_MALLOC_ERR;
 
-	memset((char *)tablename, 0x00, PF_TABLE_NAME_SIZE);
+	memset((char *)tblnm, 0x00, PF_TABLE_NAME_SIZE);
 	memset((char *)nmpfdev, 0x00, S2CD_NMBUFSIZ);
 	memset((struct exst_t *)exst, 0x00, sizeof(struct exst_t));
-	strlcpy(tablename, data->tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(tblnm, data->tblnm, PF_TABLE_NAME_SIZE);
 	strlcpy(exst->pfbl_log.logfile, data->logfile, S2CD_NMBUFSIZ);
 	strlcpy(nmpfdev, data->nmpfdev, S2CD_NMBUFSIZ);
 	if (data->t > 0) age = data->t;
@@ -90,7 +90,7 @@ void *s2cd_pf_expiretable(void *arg) {
 	while (1) {
 		memset((struct pfr_table *)&exst->target, 0x00, sizeof(struct pfr_table));
 		memset((struct pfr_astats *)&exst->astats, 0x00, sizeof(struct pfr_astats));
-		strlcpy(exst->target.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+		strlcpy(exst->target.pfrt_name, tblnm, PF_TABLE_NAME_SIZE);
 		if (!C) oldest_entry = time(NULL);
 		else oldest_entry = 0;
 		min_timestamp = oldest_entry - age;
@@ -197,11 +197,11 @@ int s2cd_radix_del_addrs(int dev, int v, struct pfioc_table *pt, const struct pf
 
 }   /* s2cd_radix_del_addrs */
 
-void s2cd_pf_block(int dev, int v, char *tablename, char *ip, struct pftbl_t *pftbl)  {
+void s2cd_pf_block(int dev, int v, char *tblnm, char *ip, struct pftbl_t *pftbl)  {
 
 	memset((struct pftbl_t *)pftbl, 0x00, sizeof(struct pftbl_t));
 	
-	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE); 
+	strlcpy(pftbl->table.pfrt_name, tblnm, PF_TABLE_NAME_SIZE); 
 	inet_aton(ip, (struct in_addr *)&pftbl->addr.pfra_ip4addr.s_addr);
 
 	pftbl->addr.pfra_af  = AF_INET;
@@ -287,16 +287,16 @@ void *s2cd_pf_block_log(void *arg) {
 
 }   /* s2cd_pf_block_log */
 
-void s2cd_pf_rule_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_rule_add(int dev, int v, char *tblnm, struct pftbl_t *pftbl) {
 
-	s2cd_pf_tbl_add(dev, v, tablename, pftbl);
+	s2cd_pf_tbl_add(dev, v, tblnm, pftbl);
 
 	pftbl->io_rule.action = PF_CHANGE_GET_TICKET;
 	pftbl->io_rule.rule.direction = PF_IN;
 	pftbl->io_rule.rule.action = PF_DROP;
 	pftbl->io_rule.rule.src.addr.type = PF_ADDR_TABLE;
 	pftbl->io_rule.rule.rule_flag = PFRULE_RETURN;
-	strlcpy(pftbl->io_rule.rule.src.addr.v.tblname, tablename, sizeof(pftbl->io_rule.rule.src.addr.v.tblname));
+	strlcpy(pftbl->io_rule.rule.src.addr.v.tblname, tblnm, sizeof(pftbl->io_rule.rule.src.addr.v.tblname));
 
 	if (s2cd_pf_ioctl(dev, v, DIOCCHANGERULE, &pftbl->io_rule) == 0) {
 		if (s2cd_pf_ioctl(dev, v, DIOCBEGINADDRS, &pftbl->io_paddr) == 0) {
@@ -313,9 +313,9 @@ void s2cd_pf_rule_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 }   /* s2cd_pf_rule_add */
 
-int s2cd_pf_tbl_get(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
+int s2cd_pf_tbl_get(int dev, int v, char *tblnm, struct pftbl_t *pftbl) {
 
-	s2cd_pf_tbl_set(tablename, pftbl);
+	s2cd_pf_tbl_set(tblnm, pftbl);
 	pftbl->io.pfrio_size = 0;
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRGETTABLES, &pftbl->io) < 0)
@@ -325,31 +325,31 @@ int s2cd_pf_tbl_get(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
 
 }   /* s2cd_pf_tbl_get */
 
-void s2cd_pf_tbl_add(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_tbl_add(int dev, int v, char *tblnm, struct pftbl_t *pftbl) {
 
-	s2cd_pf_tbl_get(dev, v, tablename, pftbl);
+	s2cd_pf_tbl_get(dev, v, tblnm, pftbl);
 
 	pftbl->io.pfrio_buffer = &pftbl->table;
 	pftbl->io.pfrio_esize = sizeof(struct pfr_table);
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRGETTABLES, &pftbl->io) == 0) {
 	
-		s2cd_pf_tbl_set(tablename, pftbl);
+		s2cd_pf_tbl_set(tblnm, pftbl);
 		pftbl->table.pfrt_flags = PFR_TFLAG_PERSIST;
 
 		if (s2cd_pf_ioctl(dev, v, DIOCRADDTABLES, &pftbl->io) < 0)
 		if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_add");
 
-		if (v) s2cd_sw_switch(S2CD_LANG_TBLADD, tablename);
+		if (v) s2cd_sw_switch(S2CD_LANG_TBLADD, tblnm);
 	} else if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_add");
 
 	return;
 
 }   /* s2cd_pf_tbl_add */
 
-void s2cd_pf_tbl_del(int dev, int v, char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_tbl_del(int dev, int v, char *tblnm, struct pftbl_t *pftbl) {
 
-	s2cd_pf_tbl_set(tablename, pftbl);
+	s2cd_pf_tbl_set(tblnm, pftbl);
 
 	if (s2cd_pf_ioctl(dev, v, DIOCRDELTABLES, &pftbl->io) < 0)
 	if (v) s2cd_sw_switch(S2CD_LANG_IOCTL_ERROR, "s2cd_pf_tbl_del");
@@ -378,10 +378,10 @@ int s2cd_pf_ioctl(int dev, int v, unsigned long request, void *pf_io_arg) {
 
 }   /* s2cd_pf_ioctl */
 
-void s2cd_pf_tbl_set(char *tablename, struct pftbl_t *pftbl) {
+void s2cd_pf_tbl_set(char *tblnm, struct pftbl_t *pftbl) {
 
 	memset((struct pftbl_t *)pftbl, 0x00, sizeof(struct pftbl_t));
-	strlcpy(pftbl->table.pfrt_name, tablename, PF_TABLE_NAME_SIZE);
+	strlcpy(pftbl->table.pfrt_name, tblnm, PF_TABLE_NAME_SIZE);
 	pftbl->io.pfrio_buffer = &pftbl->table; 
 	pftbl->io.pfrio_esize  = sizeof(struct pfr_table); 
 	pftbl->io.pfrio_size   = 1; 

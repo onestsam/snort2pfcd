@@ -72,18 +72,15 @@ pthread_mutex_t fm_mutex;
 
 int main(int argc, char **argv) {
 
-	struct lpdt_t *lpdt = NULL;
+	struct lpdt_t lpdt;
 
-	if ((lpdt = (struct lpdt_t *)malloc(sizeof(struct lpdt_t))) == NULL) S2CD_MALLOC_ERR;
+	s2cd_pre_init(&lpdt);
+	s2cd_get_optargs(argc, argv, &lpdt);
+	s2cd_init(&lpdt);
 
-	s2cd_pre_init(lpdt);
-	s2cd_get_optargs(argc, argv, lpdt);
-	s2cd_init(lpdt);
+	s2cd_kevent_loop(&lpdt);
 
-	s2cd_kevent_loop(lpdt);
-
-	close(lpdt->dev);
-	free(lpdt);
+	close(lpdt.dev);
 	s2cd_pre_exit();
 
 	return(0);
@@ -97,12 +94,12 @@ void s2cd_pre_init(struct lpdt_t *lpdt) {
 	lpdt->priority = S2CD_SP_HIGH;
 	lpdt->thr_max = S2CD_THRMAX;
 	lpdt->repeat_offenses = S2CD_REPEATO;
-	strlcpy(lpdt->tablename, __progname, PF_TABLE_NAME_SIZE);
-	strlcpy(lpdt->tablename_static, lpdt->tablename, PF_TABLE_NAME_SIZE);
-	strlcat(lpdt->tablename_static, "_static", PF_TABLE_NAME_SIZE);
+	strlcpy(lpdt->tblnm, __progname, PF_TABLE_NAME_SIZE);
+	strlcpy(lpdt->tblnm_static, lpdt->tblnm, PF_TABLE_NAME_SIZE);
+	strlcat(lpdt->tblnm_static, "_static", PF_TABLE_NAME_SIZE);
 
 	if (getuid() != 0) {
-		fprintf(stderr, "%s %s - %s\n", S2CD_LANG_ERR_ROOT, lpdt->tablename, S2CD_LANG_EXIT);
+		fprintf(stderr, "%s %s - %s\n", S2CD_LANG_ERR_ROOT, lpdt->tblnm, S2CD_LANG_EXIT);
 		exit(EXIT_FAILURE);
 	}   /* if (getuid() != 0) */
 
@@ -121,13 +118,13 @@ void s2cd_init(struct lpdt_t *lpdt) {
 	memset((struct stat *)&flstat, 0x00, sizeof(struct stat));
 	s2cd_check_file(lpdt->logfile, &flstat);
 	memset((char *)randbuf, 0x00, BUFSIZ);
-	sprintf(randbuf, "\n<=== %s %s %s \n", lpdt->tablename, S2CD_LANG_START, asctime(localtime(&lpdt->timebuf)));
+	sprintf(randbuf, "\n<=== %s %s %s \n", lpdt->tblnm, S2CD_LANG_START, asctime(localtime(&lpdt->timebuf)));
 	s2cd_write_file(lpdt->logfile, randbuf);
 
 	if (!F) {
-		openlog(lpdt->tablename, LOG_CONS | LOG_PID, LOG_DAEMON);
-		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", lpdt->tablename, S2CD_LANG_START, getpid());
-	} else fprintf(stderr, "%s %s, pid: %d\n", lpdt->tablename, S2CD_LANG_START, getpid());
+		openlog(lpdt->tblnm, LOG_CONS | LOG_PID, LOG_DAEMON);
+		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", lpdt->tblnm, S2CD_LANG_START, getpid());
+	} else fprintf(stderr, "%s %s, pid: %d\n", lpdt->tblnm, S2CD_LANG_START, getpid());
 
 	if ((lpdt->dev = open(lpdt->nmpfdev, O_RDWR)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, lpdt->nmpfdev, S2CD_LANG_EXIT);
 

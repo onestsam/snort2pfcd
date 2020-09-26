@@ -207,7 +207,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc, struct pftbl
 		if (threadcheck < lpdt->thr_max)
 			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lnpc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
-		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename, lnpc->ret, pftbl);
+		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tblnm, lnpc->ret, pftbl);
 		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lnpc->ret);
 
 	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
@@ -245,8 +245,8 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 					}   /* if (s2cd_parse_search_list */
 
-				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tablename_static, pftbl);
-				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tablename_static, lnpc->ret, pftbl);
+				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tblnm_static, pftbl);
+				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tblnm_static, lnpc->ret, pftbl);
 			}   /* if (id == S2CD_ID_BF) */
 		}   /* if (s2cd_parse_ip */
 	}   /* while (s2cd_parse_line */

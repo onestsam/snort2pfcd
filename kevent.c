@@ -99,7 +99,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 			if (regcomp(&evdp->lnpc.expr, S2CD_REG_ADDR, REG_EXTENDED) != 0) s2cd_sw_switch_f(S2CD_LANG_ERR_REGEX, S2CD_LANG_EXIT);
 
-			s2cd_pf_rule_add(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tablename, &evdp->pftbl);
+			s2cd_pf_rule_add(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tblnm, &evdp->pftbl);
 			if (evdp->lpdt.v) s2cd_sw_switch(S2CD_LANG_CON_EST, "");
 
 			pthread_mutex_lock(&fm_mutex);
@@ -152,7 +152,7 @@ void *s2cd_kevent_file_monitor(void *arg) {
 
 					if (bfile_monitor) {
 						if (!evdp->lpdt.B) {
-							s2cd_pf_tbl_del(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tablename_static, &evdp->pftbl);
+							s2cd_pf_tbl_del(evdp->lpdt.dev, evdp->lpdt.v, evdp->lpdt.tblnm_static, &evdp->pftbl);
 							s2cd_parse_load_file(&evdp->pftbl, &evdp->lpdt, &evdp->lnpc, evdp->lpdt.bfile, &evdp->lpdt.pbhead.phead, NULL, S2CD_ID_BF);
 							if (evdp->lpdt.v) s2cd_sw_switch_e(S2CD_LANG_STATE_CHANGE, evdp->lpdt.bfile, S2CD_LANG_RELOAD);
 						}   /* if (!evdp->lpdt.B) */
@@ -229,10 +229,10 @@ void s2cd_kevent_loop(struct lpdt_t *lpdt) {
 	unsigned int pf_reset_check = 0, pf_tbl_state_init = 0, pf_tbl_state_current = 0;
 	struct pftbl_t pftbl;
 
-	pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(lpdt->dev, lpdt->v, lpdt->tablename, &pftbl);
+	pf_tbl_state_init = pf_tbl_state_current = s2cd_pf_tbl_get(lpdt->dev, lpdt->v, lpdt->tblnm, &pftbl);
 
 	while (1) {
-		pf_tbl_state_current = s2cd_pf_tbl_get(lpdt->dev, lpdt->v, lpdt->tablename, &pftbl);
+		pf_tbl_state_current = s2cd_pf_tbl_get(lpdt->dev, lpdt->v, lpdt->tblnm, &pftbl);
 
 		/* I always have problems with && and || operators */
 		pthread_mutex_lock(&fm_mutex);

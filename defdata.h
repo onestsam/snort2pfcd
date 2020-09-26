@@ -193,7 +193,7 @@ struct thread_expt_t {
 	time_t t;
 	char logfile[S2CD_NMBUFSIZ];
 	char nmpfdev[S2CD_NMBUFSIZ];
-	char tablename[PF_TABLE_NAME_SIZE];
+	char tblnm[PF_TABLE_NAME_SIZE];
 };
 
 struct thread_log_t {
@@ -244,8 +244,8 @@ struct lpdt_t {
 	char logfile[S2CD_NMBUFSIZ];
 	char nmpfdev[S2CD_NMBUFSIZ];
 	char alertfile[S2CD_NMBUFSIZ];
-	char tablename[PF_TABLE_NAME_SIZE];
-	char tablename_static[PF_TABLE_NAME_SIZE];
+	char tblnm[PF_TABLE_NAME_SIZE];
+	char tblnm_static[PF_TABLE_NAME_SIZE];
 };
 
 struct thread_fm_t {
