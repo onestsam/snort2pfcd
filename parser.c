@@ -58,7 +58,7 @@
 
 int s2cd_parse_and_block_bl(int C, char *ret, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL, *ipu = NULL;
+	register struct ipulist *ipu1 = NULL, *ipu = NULL;
 
 	if (head->lh_first == NULL){
 		S2CD_IPU_INIT;
@@ -67,16 +67,16 @@ int s2cd_parse_and_block_bl(int C, char *ret, struct ulist_head *head) {
 		return(0);
 
 	} else {
-		for (aux2=head->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next) {
-			if (!strcmp(aux2->chaddr, ret)) {
-				aux2->repeat_offenses++;
-				return(aux2->repeat_offenses);
-			} else if (!aux2->elem.le_next) {
+		for (ipu1 = head->lh_first; ipu1 != NULL; ipu1 = ipu1->elem.le_next) {
+			if (!strcmp(ipu1->chaddr, ret)) {
+				ipu1->repeat_offenses++;
+				return(ipu1->repeat_offenses);
+			} else if (!ipu1->elem.le_next) {
 				S2CD_IPU_INIT;
-				LIST_INSERT_AFTER(aux2, ipu, elem);
+				LIST_INSERT_AFTER(ipu1, ipu, elem);
 				return(0);
-			}   /* else if (!aux2 */
-		}   /* for (aux2 */
+			}   /* else if (!ipu1 */
+		}   /* for (ipu1 */
 	}   /* else if (head */
 
 	return(-1);
@@ -85,15 +85,15 @@ int s2cd_parse_and_block_bl(int C, char *ret, struct ulist_head *head) {
 
 void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
-	register struct ipulist *n1 = NULL, *n2 = NULL;
+	register struct ipulist *ipu1 = NULL, *ipu = NULL;
 
- 	n1 = LIST_FIRST(head);
+ 	ipu1 = LIST_FIRST(head);
 
-	while (n1 != NULL) {
-		n2 = LIST_NEXT(n1, elem);
-		free(n1);
-		n1 = n2;
-	}   /* while (n1 */
+	while (ipu1 != NULL) {
+		ipu = LIST_NEXT(ipu1, elem);
+		free(ipu1);
+		ipu1 = ipu;
+	}   /* while (ipu1 */
 
 	return;
 
@@ -101,13 +101,13 @@ void s2cd_parse_and_block_list_clear(struct ulist_head *head) {
 
 void s2cd_parse_and_block_list_timeout(time_t age, time_t this_time, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *ipu = NULL;
 
-	for (aux2=head->lh_first; aux2 !=NULL; aux2=aux2->elem.le_next)
-		if ((aux2->t + age) < this_time) {
-			LIST_REMOVE(aux2, elem);
-			free(aux2);
-		}   /* if ((aux2->t */
+	for (ipu = head->lh_first; ipu != NULL; ipu = ipu->elem.le_next)
+		if ((ipu->t + age) < this_time) {
+			LIST_REMOVE(ipu, elem);
+			free(ipu);
+		}   /* if ((ipu->t */
 
 	return;
 
@@ -326,12 +326,12 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile,
 
 void s2cd_parse_print_list(struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *ipu = NULL;
 
 	s2cd_sw_switch( "<", S2CD_LANG_PLL);
 
-	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		s2cd_sw_switch("<", aux2->chaddr);
+	for (ipu = head->lh_first; ipu != NULL; ipu = ipu->elem.le_next)
+		s2cd_sw_switch("<", ipu->chaddr);
 
 	return;
 
@@ -339,14 +339,14 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 int s2cd_parse_search_list(char *ip, struct ulist_head *head) {
 
-	register struct ipulist *aux2 = NULL;
+	register struct ipulist *ipu = NULL;
 	CIDR ipcidr;
 	int f = 0;
 
 	ipcidr = *cidr_from_str(ip);
 
-	for (aux2 = head->lh_first; aux2 != NULL; aux2 = aux2->elem.le_next)
-		if (!cidr_contains(&aux2->ciaddr, &ipcidr)) { f = 1; break; }
+	for (ipu = head->lh_first; ipu != NULL; ipu = ipu->elem.le_next)
+		if (!cidr_contains(&ipu->ciaddr, &ipcidr)) { f = 1; break; }
 
 	return(f);
 
