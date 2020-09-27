@@ -126,7 +126,7 @@ void s2cd_init(struct lpdt_t *lpdt) {
 		syslog(LOG_DAEMON | LOG_NOTICE, "%s %s, pid: %d", lpdt->tblnm, S2CD_LANG_START, getpid());
 	} else fprintf(stderr, "%s %s, pid: %d\n", lpdt->tblnm, S2CD_LANG_START, getpid());
 
-	if ((lpdt->dev = open(lpdt->nmpfdev, O_RDWR)) == -1) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, lpdt->nmpfdev, S2CD_LANG_EXIT);
+	if ((lpdt->dev = open(lpdt->nmpfdev, O_RDWR)) == -1) s2cd_sw_sf("", S2CD_LANG_NO_OPEN, lpdt->nmpfdev, S2CD_LANG_EXIT);
 
 	signal(SIGHUP,  s2cd_sighandle);
 	signal(SIGTERM, s2cd_sighandle);

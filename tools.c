@@ -57,48 +57,30 @@
 #include "defdata.h"
 #include "version.h"
 
-void s2cd_sw_switch(const char *lsw, const char *lvar) {
+void s2cd_sw_s(const char *lsw, const char *lsw2, const char *lsw3, const char *lsw4) {
 
-	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s - %s", lsw, lvar);
-	else fprintf(stderr, "%s - %s\n", lsw, lvar);
+	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", lsw, lsw2, lsw3, lsw4);
+	else fprintf(stderr, "%s %s %s - %s\n", lsw, lsw2, lsw3, lsw4);
 
 	return;
 
-}   /* s2cd_sw_switch */
+}   /* s2cd_sw_s */
 
-void s2cd_sw_switch_f(const char *lsw, const char *lvar) {
+void s2cd_sw_sf(const char *lsw, const char *lsw2, const char *lsw3, const char *lsw4) {
 
-	s2cd_sw_switch(lsw, lvar);
+	s2cd_sw_s(lsw, lsw2, lsw3, lsw4);
 	s2cd_exit_fail();
 
 	return;
 
-}   /* s2cd_sw_switch */
-
-void s2cd_sw_switch_e(const char *lsw, const char *lvar, const char *lsw2) {
-
-	if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s - %s", lsw, lvar, lsw2);
-	else fprintf(stderr, "%s %s - %s\n", lsw, lvar, lsw2);
-
-	return;
-
-}   /* s2cd_sw_switch_e */
-
-void s2cd_sw_switch_ef(const char *lsw, const char *lvar, const char *lsw2) {
-
-	s2cd_sw_switch_e(lsw, lvar, lsw2);
-	s2cd_exit_fail();
-
-	return;
-
-}   /* s2cd_sw_switch_ef */
+}   /* s2cd_sw_sf */
 
 void s2cd_check_file(char *namefile, struct stat *info) {
 
 	memset((struct stat *)info, 0x00, sizeof(struct stat));
 	lstat(namefile, info);
 
-	if (info->st_mode & S_IFDIR) s2cd_sw_switch_ef(S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
+	if (info->st_mode & S_IFDIR) s2cd_sw_sf("", S2CD_LANG_FILE_ERROR, namefile, S2CD_LANG_EXIT);
 
 	return;
 
@@ -110,7 +92,7 @@ void s2cd_write_file(char *namefile, const char *message) {
 
 	pthread_mutex_lock(&log_mutex);
 
-	if ((lfile = fopen(namefile, "a")) == NULL) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
+	if ((lfile = fopen(namefile, "a")) == NULL) s2cd_sw_sf("", S2CD_LANG_NO_OPEN, namefile, S2CD_LANG_EXIT);
 
 	flockfile(lfile);
 	fputs(message, lfile);
@@ -138,7 +120,7 @@ void s2cd_mutex_init() {
 	if (pthread_mutex_init(&fm_mutex, NULL) == 0)
 		return;
 
-	s2cd_sw_switch_f(S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
+	s2cd_sw_sf("", "", S2CD_LANG_MUTEX_ERROR, S2CD_LANG_EXIT);
 
 	return;
 
@@ -153,10 +135,10 @@ void s2cd_thr_init(struct lpdt_t *lpdt) {
 		else fprintf(stderr, "%s - %d\n", S2CD_LANG_THRS, lpdt->thr_max);
 	}   /* if (lpdt->v) */
 
-	if (s2cd_spawn_expiretable(lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
-	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, lpdt)) s2cd_sw_switch(S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	if (s2cd_spawn_expiretable(lpdt)) s2cd_sw_s("", "", S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&pfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_PF, lpdt)) s2cd_sw_s("", "", S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&bfile_monitor, S2CD_MONITOR_ONLY, S2CD_ID_BF, lpdt)) s2cd_sw_s("", "", S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
+	else if (s2cd_spawn_file_monitor(&afile_monitor, S2CD_MONITOR_READ, S2CD_ID_AF, lpdt)) s2cd_sw_s("", "", S2CD_LANG_PTRHR_ERROR, S2CD_LANG_EXIT);
 	else return;
 
 	s2cd_exit_fail();
@@ -227,9 +209,9 @@ int s2cd_spawn_thread(void *(*func) (void *), void *data) {
 	struct twisted_t yarn; 
 	memset((struct twisted_t *)&yarn, 0x00, sizeof(struct twisted_t));
  
-	if (pthread_attr_init(&yarn.attr)) s2cd_sw_switch(S2CD_LANG_INIT_THR, S2CD_LANG_WARN); 
-	else if (pthread_attr_setdetachstate(&yarn.attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_switch(S2CD_LANG_SET_THR, S2CD_LANG_WARN);
-	else if (pthread_create(&yarn.thr, &yarn.attr, func, data)) s2cd_sw_switch(S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
+	if (pthread_attr_init(&yarn.attr)) s2cd_sw_s("", "", S2CD_LANG_INIT_THR, S2CD_LANG_WARN);
+	else if (pthread_attr_setdetachstate(&yarn.attr, PTHREAD_CREATE_DETACHED)) s2cd_sw_s("", "", S2CD_LANG_SET_THR, S2CD_LANG_WARN);
+	else if (pthread_create(&yarn.thr, &yarn.attr, func, data)) s2cd_sw_s("", "", S2CD_LANG_LAUNCH_THR, S2CD_LANG_WARN);
 	else thr_check = 0;
 
 	return(thr_check);
@@ -264,7 +246,7 @@ void s2cd_mutex_destroy() {
 		s2cd_threads_check = s2cd_threads;
 		pthread_mutex_unlock(&thr_mutex);
 		if (s2cd_threads_check > S2CD_BASE_THR) {
-			s2cd_sw_switch(S2CD_LANG_THR_WAIT, "");
+			s2cd_sw_s("", "", "", S2CD_LANG_THR_WAIT);
 			sleep(5);
 		}   /* if (s2cd_threads_check */
 	}   /* while (s2cd_threads_check */
@@ -291,7 +273,7 @@ void s2cd_usage() {
 
 void s2cd_sighandle() {
 
-	s2cd_sw_switch(S2CD_LANG_RECEXIT, S2CD_LANG_EXIT);
+	s2cd_sw_s("", "", S2CD_LANG_RECEXIT, S2CD_LANG_EXIT);
 	s2cd_pre_exit();
 	exit(EXIT_SUCCESS);
 

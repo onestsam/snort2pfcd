@@ -186,7 +186,7 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc, struct pftbl
 
 	if (!s2cd_parse_priority(lpdt->priority, lpdt->v, lnpc)) return;
 	if (!s2cd_parse_ip(lnpc)) {
-		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_NO_REG, S2CD_LANG_WARN);
+		if (lpdt->v) s2cd_sw_s("", "", S2CD_LANG_NO_REG, S2CD_LANG_WARN);
 		return;
 	}   /* if (!s2cd_parse_ip */
 
@@ -202,12 +202,12 @@ void s2cd_parse_and_block(struct lpdt_t *lpdt, struct lnpc_t *lnpc, struct pftbl
 		pthread_mutex_unlock(&thr_mutex);
 
 		if (threadcheck < lpdt->thr_max)
-			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lnpc->ret, lpdt->logfile)) s2cd_sw_switch_f(S2CD_LANG_SPBL, S2CD_LANG_EXIT);
+			if (s2cd_spawn_block_log(lpdt->C, lpdt->D, lnpc->ret, lpdt->logfile)) s2cd_sw_sf("", "", S2CD_LANG_SPBL, S2CD_LANG_EXIT);
 
 		s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tblnm, lnpc->ret, pftbl);
-		if (lpdt->v) s2cd_sw_switch(S2CD_LANG_BLK, lnpc->ret);
+		if (lpdt->v) s2cd_sw_s("", "", S2CD_LANG_BLK, lnpc->ret);
 
-	} else if (pb_status == -1) s2cd_sw_switch_f(S2CD_LANG_INTDB, S2CD_LANG_EXIT);
+	} else if (pb_status == -1) s2cd_sw_sf("", "", S2CD_LANG_INTDB, S2CD_LANG_EXIT);
 
 	return;
 
@@ -219,7 +219,7 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 	FILE *file = NULL;
 
 	if ((file = fopen(ufile, "r")) == NULL) {
-		s2cd_sw_switch_e(S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
+		s2cd_sw_s("", S2CD_LANG_NO_OPEN, ufile, S2CD_LANG_WARN);
 		return;
 	}   /* if ((file */
 
@@ -237,10 +237,7 @@ void s2cd_parse_load_file(struct pftbl_t *pftbl, struct lpdt_t *lpdt, struct lnp
 
 			if (id == S2CD_ID_BF) {
 				if (!LIST_EMPTY(head))
-					if (s2cd_parse_search_list(lnpc->ret, head)) {
-						if (!F) syslog(LOG_ERR | LOG_DAEMON, "%s %s %s - %s", S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
-						else fprintf(stderr, "%s %s %s - %s\n", S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
-					}   /* if (s2cd_parse_search_list */
+					if (s2cd_parse_search_list(lnpc->ret, head)) s2cd_sw_s(S2CD_LANG_BENT, lnpc->ret, S2CD_LANG_PL, S2CD_LANG_WARN);
 
 				s2cd_pf_rule_add(lpdt->dev, lpdt->v, lpdt->tblnm_static, pftbl);
 				s2cd_pf_block(lpdt->dev, lpdt->v, lpdt->tblnm_static, lnpc->ret, pftbl);
@@ -260,7 +257,7 @@ void s2cd_parse_load_ifaces(int C, struct ipulist *ipu) {
 	struct ifaddrs *ifaddr = NULL;
 	register struct ifaddrs *ifa = NULL;
 
-	if (getifaddrs(&ifaddr) == -1) s2cd_sw_switch_f(S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
+	if (getifaddrs(&ifaddr) == -1) s2cd_sw_sf("", "", S2CD_LANG_IFADDR_ERROR, S2CD_LANG_EXIT);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL) continue;
@@ -310,7 +307,7 @@ void s2cd_parse_load_pl(struct pftbl_t *pftbl, struct lpdt_t *lpdt, char *pfile,
 		pftbl->ifr.ifr_addr.sa_family = AF_INET;
 		strlcpy(pftbl->ifr.ifr_name, lpdt->extif, IFNAMSIZ);
 
-		if (s2cd_pf_ioctl(fd, lpdt->v, SIOCGIFADDR, &pftbl->ifr) != 0) s2cd_sw_switch_ef(S2CD_LANG_NO_OPEN, lpdt->extif, S2CD_LANG_EXIT);
+		if (s2cd_pf_ioctl(fd, lpdt->v, SIOCGIFADDR, &pftbl->ifr) != 0) s2cd_sw_sf("", S2CD_LANG_NO_OPEN, lpdt->extif, S2CD_LANG_EXIT);
 
 		close(fd);
 
@@ -328,10 +325,10 @@ void s2cd_parse_print_list(struct ulist_head *head) {
 
 	register struct ipulist *ipu = NULL;
 
-	s2cd_sw_switch( "<", S2CD_LANG_PLL);
+	s2cd_sw_s("", "", "<", S2CD_LANG_PLL);
 
 	for (ipu = head->lh_first; ipu != NULL; ipu = ipu->elem.le_next)
-		s2cd_sw_switch("<", ipu->chaddr);
+		s2cd_sw_s("", "", "<", ipu->chaddr);
 
 	return;
 
