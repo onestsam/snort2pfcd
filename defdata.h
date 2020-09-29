@@ -106,7 +106,7 @@
 #define S2CD_PATH_ALERT			"/var/log/snort/alert"
 #define S2CD_PATH_PASSLIST		"/usr/local/etc/snort/rules/iplists/default.passlist"
 #define S2CD_PATH_BLOCKLIST		"/usr/local/etc/snort/rules/iplists/default.blocklist"
-#define S2CD_MALLOC_ERR			s2cd_sw_sf("", "", S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT)
+#define S2CD_MALLOC_ERR			s2cd_sw_sf("", "", S2CD_LANG_MALLOC_ERROR, S2CD_LANG_EXIT, 0)
 #define S2CD_IPU_INIT			if ((ipu = (struct ipulist*)malloc(sizeof(struct ipulist))) == NULL) S2CD_MALLOC_ERR; s2cd_parse_ipu_set(C, ret, ipu)
 #define S2CD_OPTIONS			"[-h] [-v] [-e extif] [-w pfile] [-W] [-b bfile] [-B] [-C] [-D] [-F] [-Z] [-a alertfile] [-d pf_device] [-l logfile] [-p priority] [-t expiretime] [-q wait_time] [-m thr_max] [-r repeat_offenses]"
 #define S2CD_REG_ADDR 			"^(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))((\\.(([0-9])|([1-9][0-9])|(1([0-9]{2}))|(2[0-4][0-9])|(25[0-5]))){3})(\\/(([0-9])|([12][0-9])|(3[0-2])))?"
@@ -273,15 +273,15 @@ extern pthread_mutex_t fm_mutex;
 
 /* Function Defs */
 void s2cd_usage();
-void s2cd_sighandle();
+void s2cd_sighandle(int);
 void s2cd_pre_exit();
 void s2cd_exit_fail();
 void s2cd_init(struct lpdt_t *);
 void s2cd_pre_init(struct lpdt_t *);
 void s2cd_daemonize(struct lpdt_t *);
 void s2cd_thr_init(struct lpdt_t *);
-void s2cd_sw_s(const char *, const char *, const char *, const char *);
-void s2cd_sw_sf(const char *, const char *, const char *, const char *);
+void s2cd_sw_s(const char *, const char *, const char *, const char *, int);
+void s2cd_sw_sf(const char *, const char *, const char *, const char *, int);
 void s2cd_get_optargs(int, char **, struct lpdt_t *);
 int s2cd_spawn_file_monitor(int *, int, int, struct lpdt_t *);
 int s2cd_spawn_expiretable(struct lpdt_t *);
